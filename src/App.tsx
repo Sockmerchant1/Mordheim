@@ -905,7 +905,7 @@ function SkillPicker({
   onChange: (member: RosterMember) => void;
   onLookup: (item: LookupItem) => void;
 }) {
-  const options = getAllowedSkills(member, roster, rulesDb);
+  const options = getAllowedSkills(member, roster, rulesDb).filter((option) => option.allowed);
   const selectedSkills = member.skills.map((id) => rulesDb.skills.find((skill) => skill.id === id)).filter(Boolean) as Skill[];
 
   return (
@@ -927,8 +927,8 @@ function SkillPicker({
       >
         <option value="">Add skill</option>
         {options.map((option) => (
-          <option value={option.item.id} disabled={!option.allowed} key={option.item.id}>
-            {option.item.name} {option.allowed ? "" : `- ${option.reason}`}
+          <option value={option.item.id} key={option.item.id}>
+            {option.item.name}
           </option>
         ))}
       </select>
@@ -947,7 +947,7 @@ function SpellPrayerPicker({
   onChange: (member: RosterMember) => void;
   onLookup: (item: LookupItem) => void;
 }) {
-  const options = getAllowedSpecialRules(member, roster, rulesDb).filter((option) => option.item.validation.selectableAs);
+  const options = getAllowedSpecialRules(member, roster, rulesDb).filter((option) => option.item.validation.selectableAs && option.allowed);
   const selectedRules = member.specialRules
     .map((id) => rulesDb.specialRules.find((rule) => rule.id === id))
     .filter((rule): rule is SpecialRule => Boolean(rule?.validation.selectableAs));
@@ -980,8 +980,8 @@ function SpellPrayerPicker({
       >
         <option value="">Add prayer or spell</option>
         {options.map((option) => (
-          <option value={option.item.id} disabled={!option.allowed} key={option.item.id}>
-            {option.item.name} {option.allowed ? "" : `- ${option.reason}`}
+          <option value={option.item.id} key={option.item.id}>
+            {option.item.name}
           </option>
         ))}
       </select>
