@@ -228,7 +228,7 @@ describe("rules engine - Sisters of Sigmar", () => {
 
   it("validates a basic starting Sisters roster", () => {
     expect(errorCodes(validSistersOfSigmar())).toEqual([]);
-    expect(calculateRosterCost(validSistersOfSigmar(), rulesDb)).toBe(238);
+    expect(calculateRosterCost(validSistersOfSigmar(), rulesDb)).toBe(249);
     expect(calculateWarbandRating(validSistersOfSigmar(), rulesDb)).toBe(63);
   });
 

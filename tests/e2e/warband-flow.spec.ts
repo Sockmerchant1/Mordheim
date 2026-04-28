@@ -27,3 +27,12 @@ test("can select a Mercenary variant in the creation wizard", async ({ page }) =
   await expect(page.getByText(/600 gc/i)).toBeVisible();
   await expect(page.getByRole("button", { name: /Champion · 35 gc/i })).toBeVisible();
 });
+
+test("can select Sisters of Sigmar in the creation wizard", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /new warband/i }).click();
+  await page.getByLabel(/warband type/i).selectOption("sisters-of-sigmar");
+  await expect(page.getByText(/Sisters of Sigmar · MHR/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: /Sister Superior · 35 gc/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Augur · 25 gc/i })).toBeVisible();
+});

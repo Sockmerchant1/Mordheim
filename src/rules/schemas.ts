@@ -127,7 +127,11 @@ export const skillSchema = z.object({
   sourceDocumentId: z.string(),
   sourceUrl: z.string().url(),
   pageRef: z.string().optional(),
-  relatedRuleIds: z.array(z.string()).default([])
+  relatedRuleIds: z.array(z.string()).default([]),
+  validation: z.object({
+    allowedFighterTypeIds: z.array(z.string()).default([]),
+    requiredSpecialRuleIds: z.array(z.string()).default([])
+  }).default({ allowedFighterTypeIds: [], requiredSpecialRuleIds: [] })
 });
 
 export const specialRuleSchema = z.object({

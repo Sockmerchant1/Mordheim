@@ -90,11 +90,20 @@ export function getAllowedSkills(
       return blocked(skill, `${fighterType.name} does not have ${skill.categoryId} skill access.`, source);
     }
 
+    if (
+      skill.validation.allowedFighterTypeIds.length > 0 &&
+      !skill.validation.allowedFighterTypeIds.includes(fighterType.id)
+    ) {
+      return blocked(skill, `${skill.name} is restricted to specific fighter types.`, source);
+    }
+    const missingRequiredRule = skill.validation.requiredSpecialRuleIds.find(
+      (ruleId) => !member.specialRules.includes(ruleId) && !fighterType.specialRuleIds.includes(ruleId)
+    );
+    if (missingRequiredRule) {
+      return blocked(skill, `${skill.name} requires ${missingRequiredRule}.`, source);
+    }
     if (skill.id === "battle-tongue" && warband?.leaderFighterTypeId !== fighterType.id) {
       return blocked(skill, "Battle Tongue is leader-only.", source);
-    }
-    if (skill.id === "utter-determination" && fighterType.id !== "sigmarite-matriarch") {
-      return blocked(skill, "Utter Determination is Matriarch-only.", source);
     }
     if (skill.id === "sorcery" && !member.specialRules.includes("spellcaster")) {
       return blocked(skill, "Sorcery is spellcaster-only.", source);

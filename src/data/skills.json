@@ -206,7 +206,11 @@
       "sourceDocumentId": "mhr-sisters-of-sigmar",
       "sourceUrl": "https://broheim.net/downloads/warbands/official/Sisters%20of%20Sigmar.pdf",
       "pageRef": "Sisters of Sigmar p. 20",
-      "relatedRuleIds": []
+      "relatedRuleIds": [],
+      "validation": {
+        "allowedFighterTypeIds": ["sigmarite-matriarch"],
+        "requiredSpecialRuleIds": []
+      }
     },
     {
       "id": "righteous-fury",

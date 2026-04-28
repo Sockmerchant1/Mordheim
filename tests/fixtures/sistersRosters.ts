@@ -19,7 +19,7 @@ export function validSistersOfSigmar(): Roster {
       henchmen("sisters", "sigmarite-sister", "Sisters", 2, ["dagger", "mace"])
     ],
     campaignLog: [],
-    claimedCost: 238,
+    claimedCost: 249,
     claimedWarbandRating: 63,
     isDraft: false,
     createdAt: now,

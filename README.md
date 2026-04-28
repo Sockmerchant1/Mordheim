@@ -2,7 +2,7 @@
 
 An unofficial local-first Mordheim roster and campaign helper. The app separates canonical rules data from player roster state so rosters reference structured records for fighter types, equipment, skills, special rules, source documents and campaign log entries.
 
-The first fully seeded warbands are **Witch Hunters** and the official **Mercenaries** variants: Reiklanders, Middenheimers and Marienburgers. The attached workbook was used as a roster layout and data-entry reference only; Broheim-hosted rule documents are treated as the source references.
+The first fully seeded warbands are **Witch Hunters**, the official **Mercenaries** variants, and **Sisters of Sigmar**. The attached workbook was used as a roster layout and data-entry reference only; Broheim-hosted rule documents are treated as the source references.
 
 ## Stack
 
@@ -80,6 +80,7 @@ Validation currently covers Witch Hunter composition, leader requirements, model
 - Reiklanders
 - Middenheimers
 - Marienburgers
+- Sisters of Sigmar
 
 ## Adding A Warband
 
