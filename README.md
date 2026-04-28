@@ -2,7 +2,7 @@
 
 An unofficial local-first Mordheim roster and campaign helper. The app separates canonical rules data from player roster state so rosters reference structured records for fighter types, equipment, skills, special rules, source documents and campaign log entries.
 
-The first fully seeded warbands are **Witch Hunters**, the official **Mercenaries** variants, and **Sisters of Sigmar**. The attached workbook was used as a roster layout and data-entry reference only; Broheim-hosted rule documents are treated as the source references.
+The first fully seeded warbands are **Witch Hunters**, the official **Mercenaries** variants, **Sisters of Sigmar**, and **Carnival of Chaos**. The attached workbook was used as a roster layout and data-entry reference only; Broheim-hosted rule documents are treated as the source references.
 
 ## Stack
 
@@ -72,7 +72,7 @@ The pure TypeScript rules engine in `src/rules/engine.ts` accepts a roster and r
 - calculated warband rating
 - structured validation issues with severity, code, detail, suggested fix and source reference
 
-Validation currently covers Witch Hunter composition, leader requirements, model limits, group size limits, equipment list restrictions, weapon count limits, armour conflicts, henchman equipment uniformity, skill category access, experience sanity checks, cost totals and rating totals.
+Validation currently covers implemented-warband composition, leader requirements, model limits, group size limits, equipment list restrictions, required roster options, weapon count limits, armour conflicts, henchman equipment uniformity, skill category access, experience sanity checks, cost totals and rating totals.
 
 ## Implemented Warbands
 
@@ -81,6 +81,7 @@ Validation currently covers Witch Hunter composition, leader requirements, model
 - Middenheimers
 - Marienburgers
 - Sisters of Sigmar
+- Carnival of Chaos
 
 ## Adding A Warband
 

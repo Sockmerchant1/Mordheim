@@ -4,6 +4,7 @@ import ruleReferences from "./ruleReferences.json";
 import skillsSeed from "./skills.json";
 import sourceDocuments from "./sources.json";
 import specialRules from "./specialRules.json";
+import carnivalOfChaos from "./warbands/carnival-of-chaos.json";
 import mercenaries from "./warbands/mercenaries.json";
 import sistersOfSigmar from "./warbands/sisters-of-sigmar.json";
 import witchHunters from "./warbands/witch-hunters.json";
@@ -11,7 +12,11 @@ import warbandIndexSeed from "./warbandIndex.json";
 import { rulesDbSchema, warbandSeedCollectionSchema, warbandSeedSchema } from "../rules/schemas";
 import type { RulesDb } from "../rules/types";
 
-const warbandSeeds = [warbandSeedSchema.parse(witchHunters), warbandSeedSchema.parse(sistersOfSigmar)];
+const warbandSeeds = [
+  warbandSeedSchema.parse(witchHunters),
+  warbandSeedSchema.parse(sistersOfSigmar),
+  warbandSeedSchema.parse(carnivalOfChaos)
+];
 const warbandSeedCollections = [warbandSeedCollectionSchema.parse(mercenaries)];
 
 export const rulesDb: RulesDb = rulesDbSchema.parse({

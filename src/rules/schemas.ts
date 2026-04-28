@@ -73,7 +73,9 @@ export const equipmentValidationSchema = z.object({
   isHelmet: z.boolean().default(false),
   isBuckler: z.boolean().default(false),
   nonRepeatable: z.boolean().default(false),
-  grantsWeaponUse: z.array(z.string()).default([])
+  grantsWeaponUse: z.array(z.string()).default([]),
+  costGroupId: z.string().optional(),
+  costGroupSubsequentMultiplier: z.number().default(1)
 });
 
 const defaultEquipmentValidation = {
@@ -85,7 +87,8 @@ const defaultEquipmentValidation = {
   isHelmet: false,
   isBuckler: false,
   nonRepeatable: false,
-  grantsWeaponUse: []
+  grantsWeaponUse: [],
+  costGroupSubsequentMultiplier: 1
 };
 
 export const equipmentItemSchema = z.object({
@@ -182,6 +185,10 @@ export const fighterTypeSchema = z.object({
   isLargeCreature: z.boolean().default(false),
   ratingOverride: z.number().nullable().optional(),
   notes: z.string().optional(),
+  validation: z.object({
+    requiredOneOfEquipmentItemIds: z.array(z.string()).default([]),
+    warbandMaxWarriorsBonus: z.number().default(0)
+  }).default({ requiredOneOfEquipmentItemIds: [], warbandMaxWarriorsBonus: 0 }),
   source: sourceRefSchema
 });
 

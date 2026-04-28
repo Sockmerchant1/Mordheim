@@ -30,5 +30,13 @@
     "type": "warband_pdf",
     "broheimGrade": "1a",
     "notes": "Official Broheim-hosted Sisters of Sigmar warband PDF from the Mordheim rulebook set."
+  },
+  {
+    "id": "eif-empire-in-flames",
+    "title": "Empire in Flames",
+    "url": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "type": "supplement",
+    "broheimGrade": "1a",
+    "notes": "Official Broheim-hosted Empire in Flames supplement. Carnival of Chaos appears in the warbands section."
   }
 ]

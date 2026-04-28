@@ -18,7 +18,7 @@
     {
       "id": "strength",
       "name": "Strength",
-      "skillIds": ["mighty-blow", "resilient"]
+      "skillIds": ["mighty-blow", "resilient", "strongman"]
     },
     {
       "id": "speed",
@@ -152,6 +152,17 @@
       "sourceUrl": "https://www.broheim.net/downloads/rules/Mordheim%20Core%20Rules%20Printable.pdf",
       "pageRef": "Core p. 85",
       "relatedRuleIds": []
+    },
+    {
+      "id": "strongman",
+      "name": "Strongman",
+      "categoryId": "strength",
+      "effectSummary": "Allows the warrior to use a double-handed weapon without the usual strike-last drawback.",
+      "restrictions": "Only heroes with Strength skill access unless another rule grants access; Brutes start with it.",
+      "sourceDocumentId": "mordheim-core-rules",
+      "sourceUrl": "https://www.broheim.net/downloads/rules/Mordheim%20Core%20Rules%20Printable.pdf",
+      "pageRef": "Core p. 85",
+      "relatedRuleIds": ["unnatural-strength"]
     },
     {
       "id": "step-aside",

@@ -149,6 +149,7 @@ export function validateRoster(roster: Roster, rulesDb: RulesDb): ValidationIssu
 
   const activeMembers = rosterMembersInWarband(roster, rulesDb);
   const warriorCount = countWarriors(roster, rulesDb);
+  const maxWarriors = effectiveMaxWarriors(roster, warband.maxWarriors, rulesDb);
   const heroCount = activeMembers.filter((member) => findFighterType(rulesDb, member.fighterTypeId)?.category === "hero").length;
   const rosterCost = calculateRosterCost(roster, rulesDb);
   const rating = calculateWarbandRating(roster, rulesDb);
@@ -169,8 +170,8 @@ export function validateRoster(roster: Roster, rulesDb: RulesDb): ValidationIssu
   if (warriorCount < warband.minWarriors) {
     issues.push(issue("error", "MIN_WARRIORS", `The warband has ${warriorCount} warriors; minimum is ${warband.minWarriors}.`, "Starting warbands must meet the minimum model count.", undefined, "members", source, "Hire more warriors."));
   }
-  if (warriorCount > warband.maxWarriors) {
-    issues.push(issue("error", "MAX_WARRIORS", `The warband has ${warriorCount} warriors. ${warband.name} are limited to ${warband.maxWarriors}.`, "The warband type sets a maximum number of warriors.", undefined, "members", sourceForWarband(warband), "Remove warriors or reduce henchman group sizes."));
+  if (warriorCount > maxWarriors) {
+    issues.push(issue("error", "MAX_WARRIORS", `The warband has ${warriorCount} warriors. ${warband.name} are limited to ${maxWarriors}.`, "The warband type and active roster rules set the maximum number of warriors.", undefined, "members", sourceForWarband(warband), "Remove warriors or reduce henchman group sizes."));
   }
   if (heroCount > warband.maxHeroes) {
     issues.push(issue("error", "MAX_HEROES", `The warband has ${heroCount} heroes; maximum is ${warband.maxHeroes}.`, "The warband type sets a maximum number of heroes.", undefined, "members", sourceForWarband(warband), "Remove excess heroes."));
@@ -223,6 +224,22 @@ export function validateRoster(roster: Roster, rulesDb: RulesDb): ValidationIssu
       if (!option.allowed) {
         issues.push(issue("error", "INVALID_EQUIPMENT", `${fighterType.name} cannot take ${item.name}.`, option.reason, member.id, "equipment", sourceForEquipment(item), "Choose an item from the fighter's equipment list."));
       }
+    }
+
+    if (
+      fighterType.validation.requiredOneOfEquipmentItemIds.length > 0 &&
+      !fighterType.validation.requiredOneOfEquipmentItemIds.some((itemId) => member.equipment.includes(itemId))
+    ) {
+      issues.push(issue(
+        "error",
+        "REQUIRED_EQUIPMENT_OPTION",
+        `${fighterType.name} must choose a required option.`,
+        "This fighter type has a rules-data requirement to include at least one item from a specific list.",
+        member.id,
+        "equipment",
+        fighterType.source,
+        "Add one of the required options."
+      ));
     }
 
     validateWeaponAndArmourLimits(member, rulesDb, issues);
@@ -434,15 +451,32 @@ function equipmentCost(member: RosterMember, rulesDb: RulesDb): number {
 
 function equipmentSetCost(equipment: string[], rulesDb: RulesDb): number {
   const freeTracker = new Set<string>();
-  return equipment.reduce((total, itemId) => {
+  const groupedCosts = new Map<string, { cost: number; multiplier: number }[]>();
+  let total = 0;
+
+  for (const itemId of equipment) {
     const item = findEquipment(rulesDb, itemId);
-    if (!item) return total;
+    if (!item) continue;
     if (item.validation.isFreeFirstPerWarrior && !freeTracker.has(item.id)) {
       freeTracker.add(item.id);
-      return total;
+      continue;
     }
-    return total + item.cost;
-  }, 0);
+    if (item.validation.costGroupId && item.validation.costGroupSubsequentMultiplier > 1) {
+      const entries = groupedCosts.get(item.validation.costGroupId) ?? [];
+      entries.push({ cost: item.cost, multiplier: item.validation.costGroupSubsequentMultiplier });
+      groupedCosts.set(item.validation.costGroupId, entries);
+      continue;
+    }
+    total += item.cost;
+  }
+
+  for (const entries of groupedCosts.values()) {
+    const [first, ...later] = entries.sort((a, b) => b.cost - a.cost);
+    total += first.cost;
+    total += later.reduce((subtotal, entry) => subtotal + entry.cost * entry.multiplier, 0);
+  }
+
+  return total;
 }
 
 function rosterMembersInWarband(roster: Roster, rulesDb: RulesDb): RosterMember[] {
@@ -458,6 +492,13 @@ function countWarriors(roster: Roster, rulesDb: RulesDb): number {
     (count, member) => count + (member.kind === "henchman_group" ? member.groupSize : 1),
     0
   );
+}
+
+function effectiveMaxWarriors(roster: Roster, baseMax: number, rulesDb: RulesDb): number {
+  return rosterMembersInWarband(roster, rulesDb).reduce((max, member) => {
+    const fighterType = findFighterType(rulesDb, member.fighterTypeId);
+    return max + (fighterType?.validation.warbandMaxWarriorsBonus ?? 0);
+  }, baseMax);
 }
 
 function countFighterType(roster: Roster, fighterTypeId: string, rulesDb: RulesDb): number {

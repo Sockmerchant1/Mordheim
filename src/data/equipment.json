@@ -131,6 +131,19 @@
     "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
+    "id": "carnival-flail",
+    "name": "Flail",
+    "category": "close_combat",
+    "cost": 10,
+    "rulesSummary": "Brute equipment list flail at the Carnival of Chaos listed recruitment cost.",
+    "specialRuleIds": [],
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 61",
+    "restrictions": "Carnival of Chaos Brutes only through the Brute equipment list.",
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+  },
+  {
     "id": "steel-whip",
     "name": "Steel Whip",
     "category": "close_combat",
@@ -168,6 +181,19 @@
     "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
+    "id": "carnival-bow",
+    "name": "Bow",
+    "category": "missile",
+    "cost": 15,
+    "rulesSummary": "Bow bought from the Carnival of Chaos equipment list at its listed recruitment cost.",
+    "specialRuleIds": [],
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 61",
+    "restrictions": "Carnival of Chaos equipment list only.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+  },
+  {
     "id": "sling",
     "name": "Sling",
     "category": "missile",
@@ -189,6 +215,19 @@
     "sourceDocumentId": "mordheim-core-rules",
     "sourceUrl": "https://www.broheim.net/downloads/rules/Mordheim%20Core%20Rules%20Printable.pdf",
     "pageRef": "Witch Hunters p. 16",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+  },
+  {
+    "id": "carnival-short-bow",
+    "name": "Short Bow",
+    "category": "missile",
+    "cost": 10,
+    "rulesSummary": "Short bow bought from the Carnival of Chaos equipment list at its listed recruitment cost.",
+    "specialRuleIds": [],
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 61",
+    "restrictions": "Carnival of Chaos equipment list only.",
     "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
@@ -409,5 +448,83 @@
     "pageRef": "Sisters of Sigmar p. 20",
     "restrictions": "Heroines only.",
     "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+  },
+  {
+    "id": "blessing-stream-of-corruption",
+    "name": "Stream of Corruption",
+    "category": "miscellaneous",
+    "cost": 25,
+    "rulesSummary": "Blessing of Nurgle. Gives the Tainted One a short-ranged Strength 3 shooting attack that allows no armour save.",
+    "specialRuleIds": ["blessings-of-nurgle"],
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 66",
+    "restrictions": "Tainted Ones only, bought at recruitment. Second and later Blessings cost double.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "costGroupId": "nurgle-blessing", "costGroupSubsequentMultiplier": 2 }
+  },
+  {
+    "id": "blessing-nurgles-rot",
+    "name": "Nurgle's Rot",
+    "category": "miscellaneous",
+    "cost": 50,
+    "rulesSummary": "Blessing of Nurgle. The Tainted One is immune to poison and can pass Nurgle's Rot to living enemies in close combat.",
+    "specialRuleIds": ["blessings-of-nurgle", "nurgles-rot"],
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 66",
+    "restrictions": "Tainted Ones only, bought at recruitment. Second and later Blessings cost double.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "costGroupId": "nurgle-blessing", "costGroupSubsequentMultiplier": 2 }
+  },
+  {
+    "id": "blessing-cloud-of-flies",
+    "name": "Cloud of Flies",
+    "category": "miscellaneous",
+    "cost": 25,
+    "rulesSummary": "Blessing of Nurgle. Enemies fighting the Tainted One suffer a to-hit penalty in close combat.",
+    "specialRuleIds": ["blessings-of-nurgle"],
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 66",
+    "restrictions": "Tainted Ones only, bought at recruitment. Second and later Blessings cost double.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "costGroupId": "nurgle-blessing", "costGroupSubsequentMultiplier": 2 }
+  },
+  {
+    "id": "blessing-bloated-foulness",
+    "name": "Bloated Foulness",
+    "category": "miscellaneous",
+    "cost": 40,
+    "rulesSummary": "Blessing of Nurgle. Gives +1 Wound and +1 Toughness, but reduces Movement by 1.",
+    "specialRuleIds": ["blessings-of-nurgle"],
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 66",
+    "restrictions": "Tainted Ones only, bought at recruitment. Second and later Blessings cost double.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "costGroupId": "nurgle-blessing", "costGroupSubsequentMultiplier": 2 }
+  },
+  {
+    "id": "blessing-mark-of-nurgle",
+    "name": "Mark of Nurgle",
+    "category": "miscellaneous",
+    "cost": 35,
+    "rulesSummary": "Blessing of Nurgle. Gives +1 Wound and immunity to poison.",
+    "specialRuleIds": ["blessings-of-nurgle"],
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 66",
+    "restrictions": "Tainted Ones only, bought at recruitment. Second and later Blessings cost double.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "costGroupId": "nurgle-blessing", "costGroupSubsequentMultiplier": 2 }
+  },
+  {
+    "id": "blessing-hideous",
+    "name": "Hideous",
+    "category": "miscellaneous",
+    "cost": 40,
+    "rulesSummary": "Blessing of Nurgle. The Tainted One causes Fear.",
+    "specialRuleIds": ["blessings-of-nurgle", "fear"],
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 66",
+    "restrictions": "Tainted Ones only, bought at recruitment. Second and later Blessings cost double.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "costGroupId": "nurgle-blessing", "costGroupSubsequentMultiplier": 2 }
   }
 ]

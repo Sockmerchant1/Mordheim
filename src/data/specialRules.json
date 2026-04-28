@@ -174,5 +174,181 @@
     "pageRef": "Sisters of Sigmar p. 22",
     "restrictions": "Only the first whip gains the whipcrack bonus when using two whips.",
     "relatedRuleIds": []
+  },
+  {
+    "id": "spellcaster",
+    "name": "Spellcaster",
+    "effectSummary": "This model can use a listed spell or ritual list and is eligible for spellcaster-only rules.",
+    "appliesTo": "Wizard and ritual-casting fighter types.",
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://www.broheim.net/downloads/rules/Mordheim%20Core%20Rules%20Printable.pdf",
+    "pageRef": "Core magic rules and individual warband entries",
+    "restrictions": "Use only where the fighter entry grants access to magic, prayers or rituals.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "nurgle-rituals",
+    "name": "Rituals of Nurgle",
+    "effectSummary": "The Carnival Master uses the Rituals of Nurgle spell list.",
+    "appliesTo": "Carnival Master.",
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 62",
+    "restrictions": "Carnival Master only.",
+    "relatedRuleIds": ["spellcaster"]
+  },
+  {
+    "id": "dangerous-to-know",
+    "name": "Dangerous to Know",
+    "effectSummary": "Hired swords never join the Carnival of Chaos.",
+    "appliesTo": "Carnival of Chaos warbands.",
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 60",
+    "restrictions": "Use when hired swords are implemented for roster hiring.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "unnatural-strength",
+    "name": "Unnatural Strength",
+    "effectSummary": "The Brute starts with the Strongman skill.",
+    "appliesTo": "Carnival of Chaos Brutes.",
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 63",
+    "restrictions": "Applies to Brutes.",
+    "relatedRuleIds": ["strongman"]
+  },
+  {
+    "id": "tainted",
+    "name": "Tainted",
+    "effectSummary": "A Tainted One must begin with at least one Blessing of Nurgle; further Blessings are paid at the higher listed multiplier.",
+    "appliesTo": "Tainted Ones.",
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 63 and p. 66",
+    "restrictions": "Tainted Ones only.",
+    "relatedRuleIds": ["blessings-of-nurgle"]
+  },
+  {
+    "id": "blessings-of-nurgle",
+    "name": "Blessings of Nurgle",
+    "effectSummary": "Paid Tainted One upgrades selected from the Blessings list; the app tracks required selection and doubled cost after the first Blessing.",
+    "appliesTo": "Tainted Ones and Blessing option records.",
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 66",
+    "restrictions": "Tainted Ones only.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "fear",
+    "name": "Fear",
+    "effectSummary": "Enemies must pass a Fear test to charge or fight the model as described in the core rules.",
+    "appliesTo": "Models and effects that cause Fear.",
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://www.broheim.net/downloads/rules/Mordheim%20Core%20Rules%20Printable.pdf",
+    "pageRef": "Core psychology rules",
+    "restrictions": "Use only when a fighter or effect grants Fear.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "nurgles-rot",
+    "name": "Nurgle's Rot",
+    "effectSummary": "A contagious disease effect associated with Nurgle; living enemies wounded by the bearer may suffer campaign consequences.",
+    "appliesTo": "Models with Nurgle's Rot.",
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 66",
+    "restrictions": "Use the source rule for full campaign resolution.",
+    "relatedRuleIds": ["blessings-of-nurgle"]
+  },
+  {
+    "id": "cloud-of-flies",
+    "name": "Cloud of Flies",
+    "effectSummary": "Close combat opponents suffer a to-hit penalty against the model.",
+    "appliesTo": "Plague Bearers, Nurglings and the Cloud of Flies Blessing.",
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 62-66",
+    "restrictions": "Applies only to listed Nurgle models or Blessings.",
+    "relatedRuleIds": ["blessings-of-nurgle"]
+  },
+  {
+    "id": "stream-of-corruption",
+    "name": "Stream of Corruption",
+    "effectSummary": "Short-ranged Strength 3 shooting attack that allows no armour save.",
+    "appliesTo": "Plague Bearers and the Stream of Corruption Blessing.",
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 62 and p. 66",
+    "restrictions": "Use only when the model entry or Blessing grants it.",
+    "relatedRuleIds": ["blessings-of-nurgle"]
+  },
+  {
+    "id": "daemonic-instability",
+    "name": "Daemonic Instability",
+    "effectSummary": "The model may be banished instead of rolling normal injury, and may be destroyed after a failed rout-related Leadership test.",
+    "appliesTo": "Plague Bearers and Nurglings.",
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 62-63",
+    "restrictions": "Use the source entry for the exact roll and timing.",
+    "relatedRuleIds": ["daemon", "plague-cart"]
+  },
+  {
+    "id": "daemonic-aura",
+    "name": "Daemonic Aura",
+    "effectSummary": "The model has a special save against wounds, modified by Strength and ignored by magic as described in the source.",
+    "appliesTo": "Plague Bearers and Nurglings.",
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 62-63",
+    "restrictions": "Use the source entry for the exact save.",
+    "relatedRuleIds": ["daemon"]
+  },
+  {
+    "id": "nurgling-swarm",
+    "name": "Swarm",
+    "effectSummary": "Nurglings may exceed the normal five-model henchman group size while still obeying the warband's overall warrior limit.",
+    "appliesTo": "Nurglings.",
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 63",
+    "restrictions": "Nurglings only.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "daemon",
+    "name": "Daemon",
+    "effectSummary": "The model follows the Daemon special rules referenced by its warband entry.",
+    "appliesTo": "Nurglings and Plague Bearers.",
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 65-66",
+    "restrictions": "Use the source entry for the full Daemon rule text.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "plague-cart-max-warriors",
+    "name": "Plague Cart Warband Size",
+    "effectSummary": "A Carnival of Chaos warband with a Plague Cart may include two additional warriors.",
+    "appliesTo": "Carnival of Chaos warbands with a Plague Cart.",
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 60 and p. 64",
+    "restrictions": "Maximum one Plague Cart.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "plague-cart",
+    "name": "Plague Cart",
+    "effectSummary": "Warband vehicle entry with special campaign and movement rules. The app models its roster cost, cap and warband-size bonus.",
+    "appliesTo": "Plague Cart.",
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "pageRef": "Empire in Flames p. 64",
+    "restrictions": "Use the source entry for full vehicle handling.",
+    "relatedRuleIds": ["plague-cart-max-warriors"]
   }
 ]
