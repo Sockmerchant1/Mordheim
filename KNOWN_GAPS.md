@@ -7,6 +7,7 @@
 - The After Battle flow applies XP, recorded advances, serious injury notes, treasury, wyrdstone and campaign history. Recruiting, equipment moves and other roster edits are captured as review notes for now, then can be handled in the Roster Editor.
 - The rules lookup drawer uses concise local summaries and placeholder entries where full wording has not been reviewed into the rules data.
 - Injuries and advances are recordable, but most roll-table outcomes are manual.
+- Core hired swords can be hired from the Roster Editor. Some unique hired sword equipment such as Elf Bow, Elven Cloak, Lance, Warhorse, Staff and Spiked Gauntlet is currently noted in text rather than fully modeled as separate equipment records.
 - Prayers of Sigmar, Magic of the Horned Rat and Nurgle Rituals are selectable lookup records; other prayer/spell lists are still placeholders until their warbands are implemented.
 - Carnival of Chaos validates roster composition, Blessings of Nurgle costs and the Plague Cart warband-size bonus, but full Plague Cart vehicle handling remains a source-reference lookup.
 - Skaven validates roster composition, Skaven-only equipment, fighting claws exclusivity, Tail Fighting's extra tail weapon allowance, Horned Rat spell lookups and Rat Ogre large-creature rating.

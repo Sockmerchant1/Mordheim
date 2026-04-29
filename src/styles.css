@@ -159,6 +159,7 @@ th {
 .rules-library,
 .roster-header,
 .add-member-band,
+.hired-swords-panel,
 .campaign-panel,
 .validation-panel,
 .save-panel {
@@ -207,6 +208,26 @@ th {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.segmented-control {
+  background: #ece7df;
+  border: 1px solid #d5cabd;
+  border-radius: 8px;
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+
+.segmented-control button {
+  border-color: transparent;
+  min-height: 34px;
+}
+
+.segmented-control button.active {
+  background: #2f4f4f;
+  border-color: #2f4f4f;
+  color: #ffffff;
 }
 
 .roster-list {
@@ -397,6 +418,32 @@ th {
 
 .fighter-buttons button {
   justify-content: center;
+}
+
+.hired-sword-grid {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  margin-top: 0.75rem;
+}
+
+.hired-sword-option {
+  align-items: start;
+  border: 1px solid #ded4c8;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: 1fr auto;
+  padding: 0.75rem;
+}
+
+.hired-sword-option p {
+  color: #675f55;
+  margin: 0.2rem 0;
+}
+
+.hired-sword-option small {
+  font-weight: 800;
 }
 
 button.blocked,
@@ -614,6 +661,22 @@ button.blocked,
   margin: 0.2rem 0;
 }
 
+.campaign-summary {
+  background: #f7f2ea;
+  border: 1px solid #ded4c8;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.15rem;
+  margin: 0.45rem 0;
+  padding: 0.65rem;
+}
+
+.campaign-summary p {
+  color: #4f473e;
+  font-size: 0.92rem;
+  margin: 0;
+}
+
 .lookup-panel {
   background: #fffdf9;
   border-left: 1px solid #d7cbbd;
@@ -819,6 +882,32 @@ button.blocked,
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.battle-xp-controls {
+  background: #f7f2ea;
+  border: 1px solid #ded4c8;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.65rem;
+}
+
+.battle-xp-row {
+  align-items: center;
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: 1fr 42px 32px 42px;
+}
+
+.battle-xp-row button {
+  justify-content: center;
+  min-width: 42px;
+  padding-inline: 0.4rem;
+}
+
+.battle-xp-row b {
+  text-align: center;
 }
 
 .play-xp-line span,

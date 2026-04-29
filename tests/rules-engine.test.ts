@@ -3,6 +3,7 @@ import { rulesDb } from "../src/data/rulesDb";
 import {
   calculateRosterCost,
   calculateWarbandRating,
+  createRosterMemberFromType,
   getAllowedEquipment,
   getAllowedFighterTypes,
   getAllowedSkills,
@@ -192,6 +193,17 @@ describe("rules engine - Witch Hunters", () => {
 
     const fullHunters = tooManyWitchHunters();
     expect(getAllowedFighterTypes("witch-hunters", fullHunters, rulesDb).map((fighter) => fighter.id)).not.toContain("witch-hunter");
+  });
+
+  it("supports hiring available hired swords without counting them toward warband size", () => {
+    const roster = validStartingWitchHunters();
+    const trollSlayer = rulesDb.fighterTypes.find((fighter) => fighter.id === "hired-sword-dwarf-troll-slayer");
+    expect(trollSlayer).toBeTruthy();
+    roster.members.push(createRosterMemberFromType(trollSlayer!, roster.id, "hired_sword", "Snorri"));
+
+    expect(errorCodes(roster)).toEqual([]);
+    expect(calculateRosterCost(roster, rulesDb)).toBe(317);
+    expect(calculateWarbandRating(roster, rulesDb)).toBe(100);
   });
 });
 

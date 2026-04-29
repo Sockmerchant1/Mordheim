@@ -82,6 +82,8 @@ The pure TypeScript rules engine in `src/rules/engine.ts` accepts a roster and r
 
 Validation currently covers implemented-warband composition, leader requirements, model limits, group size limits, equipment list restrictions, required roster options, weapon count limits, Skaven Tail Fighting weapon allowance, armour conflicts, henchman equipment uniformity, skill category access, prayer/spell/ritual access, experience sanity checks, cost totals and rating totals.
 
+Hired swords are seeded from local data and can be hired from the Roster Editor. They are stored as roster members with canonical fighter profiles, hire fees, upkeep notes and source references, but they do not count toward normal warband size or hero limits.
+
 ## Implemented Warbands
 
 - Witch Hunters

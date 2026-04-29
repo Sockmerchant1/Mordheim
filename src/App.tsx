@@ -37,6 +37,7 @@ import { rosterSchema } from "./rules/schemas";
 import type {
   EquipmentItem,
   FighterType,
+  HiredSword,
   Roster,
   RosterMember,
   Skill,
@@ -68,6 +69,9 @@ type BattleMemberState = {
   memberId: string;
   status: BattleStatus;
   currentWounds: number;
+  enemyOoaXp: number;
+  objectiveXp: number;
+  otherXp: number;
 };
 type BattleState = {
   rosterId: string;
@@ -691,6 +695,7 @@ function RosterView({
             <Printer aria-hidden /> Print
           </button>
         </div>
+        <HirePanel roster={roster} onRosterChange={onRosterChange} />
         <MemberSections
           roster={roster}
           validation={validation}
@@ -970,6 +975,28 @@ function PlayFighterCard({
         <span>Current XP {currentXp}</span>
       </div>
 
+      <div className="battle-xp-controls" aria-label={`${member.displayName} battle experience`}>
+        <strong>Battle XP {battleState.enemyOoaXp + battleState.objectiveXp + battleState.otherXp}</strong>
+        <div className="battle-xp-row">
+          <span>Enemy out</span>
+          <button aria-label="Remove enemy out XP" onClick={() => onBattleChange({ enemyOoaXp: Math.max(0, battleState.enemyOoaXp - 1) })}>-</button>
+          <b>{battleState.enemyOoaXp}</b>
+          <button aria-label="Add enemy out XP" onClick={() => onBattleChange({ enemyOoaXp: battleState.enemyOoaXp + 1 })}>+</button>
+        </div>
+        <div className="battle-xp-row">
+          <span>Objective</span>
+          <button aria-label="Remove objective XP" onClick={() => onBattleChange({ objectiveXp: Math.max(0, battleState.objectiveXp - 1) })}>-</button>
+          <b>{battleState.objectiveXp}</b>
+          <button aria-label="Add objective XP" onClick={() => onBattleChange({ objectiveXp: battleState.objectiveXp + 1 })}>+</button>
+        </div>
+        <div className="battle-xp-row">
+          <span>Other</span>
+          <button aria-label="Remove other XP" onClick={() => onBattleChange({ otherXp: Math.max(0, battleState.otherXp - 1) })}>-</button>
+          <b>{battleState.otherXp}</b>
+          <button aria-label="Add other XP" onClick={() => onBattleChange({ otherXp: battleState.otherXp + 1 })}>+</button>
+        </div>
+      </div>
+
       <div className="wound-tracker">
         <span>Wounds</span>
         <button aria-label="Reduce current wounds" onClick={() => onBattleChange({ currentWounds: Math.max(0, battleState.currentWounds - 1) })}>
@@ -1042,6 +1069,162 @@ function PlayChipSection({
       </div>
     </section>
   );
+}
+
+function HirePanel({
+  roster,
+  onRosterChange
+}: {
+  roster: Roster;
+  onRosterChange: (updater: (roster: Roster) => Roster) => void;
+}) {
+  const [hireMode, setHireMode] = useState<"warband" | "hiredSwords">("warband");
+  const warband = currentWarband(roster)!;
+  const allowedWarbandFighters = getAllowedFighterTypes(warband.id, roster, rulesDb);
+  const availableHiredSwords = rulesDb.hiredSwords.filter((hiredSword) => {
+    if (hiredSword.implementationStatus !== "implemented") return false;
+    if (hiredSword.allowedWarbandTypeIds.length > 0 && !hiredSword.allowedWarbandTypeIds.includes(roster.warbandTypeId)) return false;
+    if (hiredSword.blockedWarbandTypeIds.includes(roster.warbandTypeId)) return false;
+    return true;
+  });
+
+  function hireWarbandFighter(fighterType: FighterType) {
+    onRosterChange((current) => {
+      const kind: RosterMember["kind"] = fighterType.category === "henchman" ? "henchman_group" : "hero";
+      const member = createRosterMemberFromType(fighterType, current.id, kind);
+      const hireCost = fighterType.hireCost * member.groupSize;
+      const campaignHire = current.campaignLog.length > 0;
+      return {
+        ...current,
+        treasuryGold: campaignHire ? Math.max(0, current.treasuryGold - hireCost) : current.treasuryGold,
+        members: [...current.members, member],
+        campaignLog: campaignHire
+          ? [
+              {
+                id: id("log"),
+                rosterId: current.id,
+                date: new Date().toISOString(),
+                type: "purchase",
+                description: `Hired ${fighterType.name}`,
+                goldDelta: -hireCost,
+                wyrdstoneDelta: 0,
+                rosterChanges: `${fighterType.name} added to the warband.`
+              },
+              ...current.campaignLog
+            ]
+          : current.campaignLog
+      };
+    });
+  }
+
+  function hireHiredSword(hiredSword: HiredSword) {
+    const fighterType = fighterTypeForHiredSword(hiredSword);
+    if (!fighterType) return;
+    onRosterChange((current) => {
+      const alreadyHired = current.members.some((member) => member.status !== "dead" && member.status !== "retired" && member.fighterTypeId === fighterType.id);
+      if (alreadyHired) return current;
+      const member = createHiredSwordMember(hiredSword, fighterType, current.id);
+      const campaignHire = current.campaignLog.length > 0;
+      return {
+        ...current,
+        treasuryGold: campaignHire ? Math.max(0, current.treasuryGold - hiredSword.hireFee) : current.treasuryGold,
+        members: [...current.members, member],
+        campaignLog: campaignHire
+          ? [
+              {
+                id: id("log"),
+                rosterId: current.id,
+                date: new Date().toISOString(),
+                type: "purchase",
+                description: `Hired ${hiredSword.name}`,
+                goldDelta: -hiredSword.hireFee,
+                wyrdstoneDelta: 0,
+                rosterChanges: `${hiredSword.name} added as a hired sword. Upkeep: ${hiredSword.upkeep} gc.`
+              },
+              ...current.campaignLog
+            ]
+          : current.campaignLog
+      };
+    });
+  }
+
+  return (
+    <section className="hired-swords-panel no-print">
+      <div className="section-heading">
+        <div>
+          <h2>Hire Fighters</h2>
+          <p>Switch between normal warband recruits and hired swords.</p>
+        </div>
+        <div className="segmented-control" role="group" aria-label="Hire type">
+          <button className={hireMode === "warband" ? "active" : ""} onClick={() => setHireMode("warband")}>
+            Warband
+          </button>
+          <button className={hireMode === "hiredSwords" ? "active" : ""} onClick={() => setHireMode("hiredSwords")}>
+            Hired Swords
+          </button>
+        </div>
+      </div>
+      <div className="hired-sword-grid">
+        {hireMode === "warband" && allowedWarbandFighters.length === 0 ? (
+          <div className="empty-state">No legal warband fighters can be hired right now.</div>
+        ) : hireMode === "warband" ? (
+          allowedWarbandFighters.map((fighterType) => {
+            const groupSize = fighterType.category === "henchman" ? fighterType.groupMinSize ?? 1 : 1;
+            const hireCost = fighterType.hireCost * groupSize;
+            return (
+              <article className="hired-sword-option" key={fighterType.id}>
+                <div>
+                  <strong>{fighterType.name}</strong>
+                  <p>{fighterType.category === "henchman" ? `Henchman group starts at ${groupSize}.` : "Hero recruit."}</p>
+                  <small>Hire {hireCost} gc{groupSize > 1 ? ` (${groupSize} models)` : ""}.</small>
+                </div>
+                <button onClick={() => hireWarbandFighter(fighterType)}>
+                  <Plus aria-hidden /> Hire
+                </button>
+              </article>
+            );
+          })
+        ) : availableHiredSwords.length === 0 ? (
+          <div className="empty-state">No hired swords are available to this warband yet.</div>
+        ) : (
+          availableHiredSwords.map((hiredSword) => {
+            const alreadyHired = roster.members.some((member) => member.status !== "dead" && member.status !== "retired" && member.fighterTypeId === `hired-sword-${hiredSword.id}`);
+            return (
+              <article className="hired-sword-option" key={hiredSword.id}>
+                <div>
+                  <strong>{hiredSword.name}</strong>
+                  <p>{hiredSword.availabilitySummary}</p>
+                  <small>Hire {hiredSword.hireFee} gc. Upkeep {hiredSword.upkeep} gc.</small>
+                </div>
+                <button disabled={alreadyHired} onClick={() => hireHiredSword(hiredSword)}>
+                  <Plus aria-hidden /> {alreadyHired ? "Hired" : "Hire"}
+                </button>
+              </article>
+            );
+          })
+        )}
+      </div>
+    </section>
+  );
+}
+
+function fighterTypeForHiredSword(hiredSword: HiredSword) {
+  return rulesDb.fighterTypes.find((fighterType) => fighterType.id === `hired-sword-${hiredSword.id}`);
+}
+
+function createHiredSwordMember(hiredSword: HiredSword, fighterType: FighterType, rosterId: string): RosterMember {
+  const member = createRosterMemberFromType(fighterType, rosterId, "hired_sword", hiredSword.name);
+  return {
+    ...member,
+    equipment: [...hiredSword.equipmentItemIds],
+    skills: [],
+    specialRules: [...fighterType.specialRuleIds],
+    notes: [
+      `Hired Sword. Hire fee: ${hiredSword.hireFee} gc. Upkeep: ${hiredSword.upkeep} gc.`,
+      hiredSword.availabilitySummary,
+      hiredSword.notes
+    ].filter(Boolean).join("\n")
+  };
 }
 
 function AfterBattleView({
@@ -1351,6 +1534,12 @@ function ExplorationStep({
   draft: AfterBattleDraft;
   onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
 }) {
+  const [diceInput, setDiceInput] = useState(() => draft.exploration.diceValues.join(", "));
+
+  useEffect(() => {
+    setDiceInput(draft.exploration.diceValues.join(", "));
+  }, [draft.id]);
+
   function updateExploration(patch: Partial<AfterBattleDraft["exploration"]>) {
     onChange((current) => ({ ...current, exploration: { ...current.exploration, ...patch } }));
   }
@@ -1362,8 +1551,11 @@ function ExplorationStep({
         <label>
           <span>Dice rolled</span>
           <input
-            value={draft.exploration.diceValues.join(", ")}
-            onChange={(event) => updateExploration({ diceValues: parseDiceValues(event.target.value) })}
+            value={diceInput}
+            onChange={(event) => {
+              setDiceInput(event.target.value);
+              updateExploration({ diceValues: parseDiceValues(event.target.value) });
+            }}
             placeholder="Example: 1, 3, 3, 6"
           />
         </label>
@@ -2187,6 +2379,13 @@ function CampaignPanel({
             <article key={entry.id}>
               <strong>{new Date(entry.date).toLocaleDateString()}</strong>
               <p>{entry.description}</p>
+              {entry.rosterChanges && (
+                <div className="campaign-summary">
+                  {entry.rosterChanges.split("\n").filter(Boolean).map((line) => (
+                    <p key={line}>{line}</p>
+                  ))}
+                </div>
+              )}
               <small>
                 Gold {entry.goldDelta >= 0 ? "+" : ""}
                 {entry.goldDelta} · Wyrdstone {entry.wyrdstoneDelta >= 0 ? "+" : ""}
@@ -2515,7 +2714,14 @@ function ensureBattleState(roster: Roster, current?: BattleState): BattleState {
 }
 
 function defaultBattleMemberState(member: RosterMember): BattleMemberState {
-  return { memberId: member.id, status: "active", currentWounds: maxBattleWounds(member) };
+  return {
+    memberId: member.id,
+    status: "active",
+    currentWounds: maxBattleWounds(member),
+    enemyOoaXp: 0,
+    objectiveXp: 0,
+    otherXp: 0
+  };
 }
 
 function readBattleState(roster: Roster): BattleState {
@@ -2575,6 +2781,7 @@ function createAfterBattleDraft(roster: Roster, battleState: BattleState): After
     if (!fighterType?.canGainExperience) return [];
     const startingXp = member.startingXp ?? fighterType.startingExperience;
     const previousXp = member.currentXp ?? member.experience;
+    const memberBattleState = battleState.members[member.id] ?? defaultBattleMemberState(member);
     return [recalculateXpEntry({
       fighterId: member.id,
       fighterName: member.displayName || fighterType.name,
@@ -2582,10 +2789,10 @@ function createAfterBattleDraft(roster: Roster, battleState: BattleState): After
       previousXp,
       survived: 0,
       leaderBonus: 0,
-      enemyOoa: 0,
-      objective: 0,
+      enemyOoa: memberBattleState.enemyOoaXp,
+      objective: memberBattleState.objectiveXp,
       underdog: 0,
-      other: 0,
+      other: memberBattleState.otherXp,
       gainedXp: 0,
       finalXp: previousXp,
       notes: "",
@@ -2742,14 +2949,22 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
 
   const goldDelta = draft.treasury.after - roster.treasuryGold;
   const wyrdstoneDelta = draft.exploration.wyrdstoneShards - draft.treasury.wyrdstoneSold;
+  const resultLabel = draft.battleResult.result?.replaceAll("-", " ") ?? "result not recorded";
   const historyLines = [
-    `After Battle: ${draft.battleResult.result ?? "result not recorded"}`,
-    `XP: ${draft.xp.map((entry) => `${entry.fighterName} +${entry.gainedXp}`).join(", ") || "none"}`,
-    `Injuries: ${draft.injuries.map((entry) => `${entry.fighterName} ${entry.result || "unrecorded"}`).join(", ") || "none"}`,
-    `Exploration: ${draft.exploration.wyrdstoneShards} wyrdstone found`,
-    `Trading: ${draft.transactions.length} transaction(s)`,
-    `Manual updates: ${draft.rosterUpdates.map((entry) => entry.description).filter(Boolean).join("; ") || "none"}`
-  ];
+    `Battle result: ${resultLabel}`,
+    `Opponent: ${draft.battleResult.opponent || "not recorded"}`,
+    `Scenario: ${draft.battleResult.scenario || "not recorded"}`,
+    `Date played: ${draft.battleResult.datePlayed || "not recorded"}`,
+    `Leader survived: ${draft.battleResult.leaderSurvived === false ? "no" : "yes"}`,
+    draft.battleResult.routType ? `Rout: ${draft.battleResult.routType.replaceAll("-", " ")}` : "",
+    `XP: ${draft.xp.map((entry) => `${entry.fighterName} +${entry.gainedXp} (${entry.previousXp} to ${entry.finalXp})`).join(", ") || "none"}`,
+    `Advances: ${draft.advances.map((entry) => `${entry.fighterName} ${entry.xpThreshold} XP - ${entry.result || "not selected"}`).join(", ") || "none"}`,
+    `Injuries: ${draft.injuries.map((entry) => `${entry.fighterName} ${entry.resolvedOutsideApp ? "resolved outside app" : entry.result || "unrecorded"}`).join(", ") || "none"}`,
+    `Exploration: dice ${draft.exploration.diceValues.join(", ") || "not recorded"}; ${draft.exploration.wyrdstoneShards} wyrdstone found`,
+    `Treasury: ${draft.treasury.before} gc to ${draft.treasury.after} gc`,
+    `Trading: ${draft.transactions.map((entry) => `${entry.action} ${entry.itemName || "unnamed item"}${typeof entry.value === "number" ? ` (${entry.value} gc)` : ""}`).join(", ") || "none"}`,
+    `Roster updates: ${draft.rosterUpdates.map((entry) => entry.description).filter(Boolean).join("; ") || "none"}`
+  ].filter(Boolean);
 
   return {
     ...roster,
@@ -2762,7 +2977,7 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
         rosterId: roster.id,
         date: now,
         type: "post_battle",
-        description: `${draft.battleResult.scenario || "Battle"} vs ${draft.battleResult.opponent || "unknown opponent"}`,
+        description: `After Battle: ${resultLabel} - ${draft.battleResult.scenario || "Battle"} vs ${draft.battleResult.opponent || "unknown opponent"}`,
         goldDelta,
         wyrdstoneDelta,
         rosterChanges: historyLines.join("\n")

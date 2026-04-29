@@ -83,7 +83,7 @@ export function getAllowedSkills(
     if (member.skills.includes(skill.id)) {
       return blocked(skill, "Already selected.", source);
     }
-    if (fighterType.category !== "hero") {
+    if (fighterType.category !== "hero" && fighterType.category !== "hired_sword") {
       return blocked(skill, "Only heroes can normally choose skills.", source);
     }
     if (!fighterType.canGainExperience) {
@@ -133,7 +133,8 @@ export function calculateRosterCost(roster: Roster, rulesDb: RulesDb): number {
     const fighterType = findFighterType(rulesDb, member.fighterTypeId);
     if (!fighterType) return total;
     const warriors = member.kind === "henchman_group" ? member.groupSize : 1;
-    return total + fighterType.hireCost * warriors + equipmentCost(member, rulesDb);
+    const fixedEquipmentCost = member.kind === "hired_sword" ? 0 : equipmentCost(member, rulesDb);
+    return total + fighterType.hireCost * warriors + fixedEquipmentCost;
   }, 0);
 }
 
@@ -218,6 +219,10 @@ export function validateRoster(roster: Roster, rulesDb: RulesDb): ValidationIssu
       issues.push(issue("error", "MISSING_MEMBER_NAME", `${fighterType.name} needs a name.`, "Names make campaign logs and injuries auditable.", member.id, "displayName", fighterType.source, "Enter a member or group name."));
     }
 
+    if (member.kind === "hired_sword") {
+      validateHiredSword(member, roster, rulesDb, issues);
+    }
+
     if (member.kind === "henchman_group") {
       const min = fighterType.groupMinSize ?? 1;
       const max = fighterType.groupMaxSize ?? warband.maxWarriors;
@@ -229,15 +234,17 @@ export function validateRoster(roster: Roster, rulesDb: RulesDb): ValidationIssu
       }
     }
 
-    for (const itemId of unique(member.equipment)) {
-      const item = findEquipment(rulesDb, itemId);
-      if (!item) {
-        issues.push(issue("error", "UNKNOWN_EQUIPMENT", `Unknown equipment id: ${itemId}.`, "The roster references equipment that is not present in the rules database.", member.id, "equipment"));
-        continue;
-      }
-      const option = equipmentOptionFor(item, member, roster, rulesDb, { ignoreCurrentLimit: true });
-      if (!option.allowed) {
-        issues.push(issue("error", "INVALID_EQUIPMENT", `${fighterType.name} cannot take ${item.name}.`, option.reason, member.id, "equipment", sourceForEquipment(item), "Choose an item from the fighter's equipment list."));
+    if (member.kind !== "hired_sword") {
+      for (const itemId of unique(member.equipment)) {
+        const item = findEquipment(rulesDb, itemId);
+        if (!item) {
+          issues.push(issue("error", "UNKNOWN_EQUIPMENT", `Unknown equipment id: ${itemId}.`, "The roster references equipment that is not present in the rules database.", member.id, "equipment"));
+          continue;
+        }
+        const option = equipmentOptionFor(item, member, roster, rulesDb, { ignoreCurrentLimit: true });
+        if (!option.allowed) {
+          issues.push(issue("error", "INVALID_EQUIPMENT", `${fighterType.name} cannot take ${item.name}.`, option.reason, member.id, "equipment", sourceForEquipment(item), "Choose an item from the fighter's equipment list."));
+        }
       }
     }
 
@@ -257,7 +264,7 @@ export function validateRoster(roster: Roster, rulesDb: RulesDb): ValidationIssu
       ));
     }
 
-    validateWeaponAndArmourLimits(member, rulesDb, issues);
+    if (member.kind !== "hired_sword") validateWeaponAndArmourLimits(member, rulesDb, issues);
     validateSkills(member, roster, rulesDb, issues);
     validateSpecialRules(member, roster, rulesDb, issues);
     validateExperience(member, fighterType, rulesDb, issues);
@@ -506,6 +513,37 @@ function validateSpecialRules(member: RosterMember, roster: Roster, rulesDb: Rul
   }
 }
 
+function validateHiredSword(member: RosterMember, roster: Roster, rulesDb: RulesDb, issues: ValidationIssue[]) {
+  const hiredSwordId = member.fighterTypeId.replace(/^hired-sword-/, "");
+  const hiredSword = rulesDb.hiredSwords.find((entry) => entry.id === hiredSwordId);
+  if (!hiredSword) {
+    issues.push(issue("error", "UNKNOWN_HIRED_SWORD", "Unknown hired sword.", "The roster references a hired sword that is not in the hired sword data.", member.id, "fighterTypeId"));
+    return;
+  }
+
+  const duplicates = roster.members.filter((entry) => entry.status !== "dead" && entry.status !== "retired" && entry.fighterTypeId === member.fighterTypeId);
+  if (duplicates.length > 1) {
+    issues.push(issue("error", "DUPLICATE_HIRED_SWORD", `${hiredSword.name} can only be hired once.`, "Hired swords are rare; a warband may only have one of each type.", member.id, "members", sourceForHiredSword(hiredSword), "Retire or remove the duplicate hired sword."));
+  }
+
+  if (hiredSword.allowedWarbandTypeIds.length > 0 && !hiredSword.allowedWarbandTypeIds.includes(roster.warbandTypeId)) {
+    issues.push(issue("error", "HIRED_SWORD_NOT_AVAILABLE", `${hiredSword.name} is not available to this warband.`, hiredSword.availabilitySummary, member.id, "members", sourceForHiredSword(hiredSword), "Choose a hired sword available to this warband."));
+  }
+
+  if (hiredSword.blockedWarbandTypeIds.includes(roster.warbandTypeId)) {
+    issues.push(issue("error", "HIRED_SWORD_NOT_AVAILABLE", `${hiredSword.name} is not available to this warband.`, hiredSword.availabilitySummary, member.id, "members", sourceForHiredSword(hiredSword), "Choose a hired sword available to this warband."));
+  }
+}
+
+function sourceForHiredSword(hiredSword: RulesDb["hiredSwords"][number]): SourceRef {
+  return {
+    sourceDocumentId: hiredSword.sourceDocumentId,
+    sourceUrl: hiredSword.sourceUrl,
+    pageRef: hiredSword.pageRef,
+    label: hiredSword.name
+  };
+}
+
 function validateExperience(
   member: RosterMember,
   fighterType: FighterType,
@@ -522,7 +560,7 @@ function validateExperience(
   const possibleAdvanceCount = HERO_ADVANCE_XP.filter(
     (threshold) => threshold > fighterType.startingExperience && threshold <= member.experience
   ).length;
-  if (fighterType.category === "hero" && member.advances.length > possibleAdvanceCount) {
+  if ((fighterType.category === "hero" || fighterType.category === "hired_sword") && member.advances.length > possibleAdvanceCount) {
     issues.push(issue("warning", "ADVANCE_COUNT_HIGH", `${fighterType.name} has more recorded advances than the current XP normally supports.`, "The app uses core hero XP thresholds as a consistency check.", member.id, "advances", sourceForRule(rulesDb, "experience-advances"), "Review XP or remove extra advances."));
   }
 }
@@ -570,12 +608,13 @@ function rosterMembersInWarband(roster: Roster, rulesDb: RulesDb): RosterMember[
   return roster.members.filter((member) => {
     if (member.status === "dead" || member.status === "retired") return false;
     const fighterType = findFighterType(rulesDb, member.fighterTypeId);
+    if (member.kind === "hired_sword" && fighterType?.category === "hired_sword") return true;
     return fighterType?.warbandTypeId === roster.warbandTypeId;
   });
 }
 
 function countWarriors(roster: Roster, rulesDb: RulesDb): number {
-  return rosterMembersInWarband(roster, rulesDb).reduce(
+  return rosterMembersInWarband(roster, rulesDb).filter((member) => member.kind !== "hired_sword").reduce(
     (count, member) => count + (member.kind === "henchman_group" ? member.groupSize : 1),
     0
   );

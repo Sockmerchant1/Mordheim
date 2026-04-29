@@ -232,7 +232,17 @@ export const hiredSwordSchema = z.object({
   sourceDocumentId: z.string(),
   sourceUrl: z.string().url(),
   pageRef: z.string().optional(),
-  implementationStatus: implementationStatusSchema
+  implementationStatus: implementationStatusSchema,
+  allowedWarbandTypeIds: z.array(z.string()).default([]),
+  blockedWarbandTypeIds: z.array(z.string()).default([]),
+  ratingOverride: z.number().optional(),
+  startingExperience: z.number().default(0),
+  profile: profileSchema.optional(),
+  equipmentItemIds: z.array(z.string()).default([]),
+  skillCategoryIds: z.array(z.string()).default([]),
+  specialRuleIds: z.array(z.string()).default([]),
+  isLargeCreature: z.boolean().default(false),
+  notes: z.string().optional()
 });
 
 export const rosterMemberSchema = z.object({
