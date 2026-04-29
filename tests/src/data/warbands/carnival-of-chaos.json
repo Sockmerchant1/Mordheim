@@ -1,0 +1,251 @@
+{
+  "warbandType": {
+    "id": "carnival-of-chaos",
+    "name": "Carnival of Chaos",
+    "race": "Chaos Human/Demon",
+    "broheimGrade": "1a",
+    "sourceCode": "EIF",
+    "sourceDocumentId": "eif-empire-in-flames",
+    "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+    "implementationStatus": "tested",
+    "startingGold": 500,
+    "minWarriors": 3,
+    "maxWarriors": 15,
+    "maxHeroes": 5,
+    "leaderFighterTypeId": "carnival-master",
+    "notes": "Official Empire in Flames Carnival of Chaos warband. Hired swords may never join this warband; a Plague Cart increases maximum warriors by +2."
+  },
+  "fighterTypes": [
+    {
+      "id": "carnival-master",
+      "warbandTypeId": "carnival-of-chaos",
+      "name": "Carnival Master",
+      "category": "hero",
+      "minCount": 1,
+      "maxCount": 1,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 70,
+      "startingExperience": 20,
+      "profile": { "M": 4, "WS": 4, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 8 },
+      "equipmentListIds": ["carnival-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "academic", "strength", "speed"],
+      "specialRuleIds": ["leader", "spellcaster", "nurgle-rituals"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Required leader and wizard using Nurgle Rituals.",
+      "source": {
+        "sourceDocumentId": "eif-empire-in-flames",
+        "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+        "pageRef": "Empire in Flames p. 61",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "carnival-brute",
+      "warbandTypeId": "carnival-of-chaos",
+      "name": "Brute",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 60,
+      "startingExperience": 8,
+      "profile": { "M": 4, "WS": 4, "BS": 0, "S": 4, "T": 4, "W": 1, "I": 2, "A": 2, "Ld": 7 },
+      "equipmentListIds": ["carnival-brute-equipment"],
+      "skillCategoryIds": ["combat", "strength", "speed"],
+      "specialRuleIds": ["unnatural-strength"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Starts with the Strongman skill from the Strength list.",
+      "source": {
+        "sourceDocumentId": "eif-empire-in-flames",
+        "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+        "pageRef": "Empire in Flames p. 61",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "tainted-one",
+      "warbandTypeId": "carnival-of-chaos",
+      "name": "Tainted One",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 25,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["carnival-tainted-equipment"],
+      "skillCategoryIds": ["combat", "speed"],
+      "specialRuleIds": ["tainted", "blessings-of-nurgle"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Must begin with one or more Blessings of Nurgle.",
+      "validation": {
+        "requiredOneOfEquipmentItemIds": [
+          "blessing-stream-of-corruption",
+          "blessing-nurgles-rot",
+          "blessing-cloud-of-flies",
+          "blessing-bloated-foulness",
+          "blessing-mark-of-nurgle",
+          "blessing-hideous"
+        ],
+        "warbandMaxWarriorsBonus": 0
+      },
+      "source": {
+        "sourceDocumentId": "eif-empire-in-flames",
+        "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+        "pageRef": "Empire in Flames p. 61 and p. 66",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "plague-bearer",
+      "warbandTypeId": "carnival-of-chaos",
+      "name": "Plague Bearer",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": 1,
+      "groupMaxSize": 2,
+      "hireCost": 50,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 4, "BS": 3, "S": 4, "T": 4, "W": 1, "I": 4, "A": 2, "Ld": 10 },
+      "equipmentListIds": ["carnival-no-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["cloud-of-flies", "stream-of-corruption", "daemon", "daemonic-aura", "daemonic-instability", "fear"],
+      "canGainExperience": false,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Daemon henchman. Does not use weapons or armour and never gains experience.",
+      "source": {
+        "sourceDocumentId": "eif-empire-in-flames",
+        "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+        "pageRef": "Empire in Flames p. 62",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "brethren",
+      "warbandTypeId": "carnival-of-chaos",
+      "name": "Brethren",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": null,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 25,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["carnival-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": [],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "May be included in any number, subject to overall warband size.",
+      "source": {
+        "sourceDocumentId": "eif-empire-in-flames",
+        "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+        "pageRef": "Empire in Flames p. 63",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "nurgling",
+      "warbandTypeId": "carnival-of-chaos",
+      "name": "Nurgling",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": null,
+      "groupMinSize": 1,
+      "groupMaxSize": null,
+      "hireCost": 15,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 0, "S": 3, "T": 2, "W": 1, "I": 3, "A": 1, "Ld": 10 },
+      "equipmentListIds": ["carnival-no-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["cloud-of-flies", "daemon", "daemonic-aura", "daemonic-instability", "nurgling-swarm"],
+      "canGainExperience": false,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Daemon henchman. Swarm allows more than five models in a group, but the warband maximum still applies.",
+      "source": {
+        "sourceDocumentId": "eif-empire-in-flames",
+        "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+        "pageRef": "Empire in Flames p. 63",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "plague-cart",
+      "warbandTypeId": "carnival-of-chaos",
+      "name": "Plague Cart",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": 1,
+      "groupMinSize": 1,
+      "groupMaxSize": 1,
+      "hireCost": 120,
+      "startingExperience": 0,
+      "profile": { "M": 0, "WS": 0, "BS": 0, "S": 0, "T": 8, "W": 4, "I": 0, "A": 0, "Ld": 0 },
+      "equipmentListIds": ["carnival-no-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["plague-cart", "plague-cart-max-warriors", "daemon", "nurgles-rot"],
+      "canGainExperience": false,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Vehicle entry summarized as the cart profile for roster validation. Guardian, wheels and horse details remain in the source reference.",
+      "validation": {
+        "requiredOneOfEquipmentItemIds": [],
+        "warbandMaxWarriorsBonus": 2
+      },
+      "source": {
+        "sourceDocumentId": "eif-empire-in-flames",
+        "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
+        "pageRef": "Empire in Flames p. 64",
+        "label": "Henchmen"
+      }
+    }
+  ],
+  "equipmentLists": [
+    {
+      "id": "carnival-equipment",
+      "name": "Carnival of Chaos Equipment List",
+      "warbandTypeId": "carnival-of-chaos",
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "double-handed-weapon", "spear", "halberd", "morning-star", "carnival-bow", "carnival-short-bow", "pistol", "brace-of-pistols", "light-armour", "heavy-armour", "shield", "helmet"],
+      "appliesToFighterTypeIds": ["carnival-master", "tainted-one", "brethren"],
+      "notes": "General Carnival equipment list from Empire in Flames."
+    },
+    {
+      "id": "carnival-tainted-equipment",
+      "name": "Carnival of Chaos Tainted One Equipment List",
+      "warbandTypeId": "carnival-of-chaos",
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "double-handed-weapon", "spear", "halberd", "morning-star", "carnival-bow", "carnival-short-bow", "pistol", "brace-of-pistols", "light-armour", "heavy-armour", "shield", "helmet", "blessing-stream-of-corruption", "blessing-nurgles-rot", "blessing-cloud-of-flies", "blessing-bloated-foulness", "blessing-mark-of-nurgle", "blessing-hideous"],
+      "appliesToFighterTypeIds": ["tainted-one"],
+      "notes": "Carnival equipment list plus required Blessings of Nurgle options. Second and later Blessings cost double through equipment validation metadata."
+    },
+    {
+      "id": "carnival-brute-equipment",
+      "name": "Brute Equipment List",
+      "warbandTypeId": "carnival-of-chaos",
+      "allowedEquipmentItemIds": ["dagger", "double-handed-weapon", "carnival-flail"],
+      "appliesToFighterTypeIds": ["carnival-brute"],
+      "notes": "Brute-only list from Empire in Flames."
+    },
+    {
+      "id": "carnival-no-equipment",
+      "name": "Carnival No Equipment",
+      "warbandTypeId": "carnival-of-chaos",
+      "allowedEquipmentItemIds": [],
+      "appliesToFighterTypeIds": ["plague-bearer", "nurgling", "plague-cart"],
+      "notes": "Models with this list cannot take weapons or armour."
+    }
+  ]
+}
