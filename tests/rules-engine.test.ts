@@ -6,7 +6,9 @@ import {
   getAllowedEquipment,
   getAllowedFighterTypes,
   getAllowedSkills,
+  getAllowedSpecialRules,
   getAllowedWarbands,
+  getPendingAdvances,
   validateRoster
 } from "../src/rules/engine";
 import {
@@ -50,8 +52,44 @@ import {
   tooManySistersWarriors,
   validSistersOfSigmar
 } from "./fixtures/sistersRosters";
+import {
+  bruteWithPistol,
+  carnivalNoMaster,
+  carnivalWithCartAtSeventeenWarriors,
+  carnivalWithoutCartAtSeventeenWarriors,
+  invalidCarnivalSkill,
+  taintedWithTwoBlessings,
+  taintedWithoutBlessing,
+  tooManyCarnivalBrutes,
+  tooManyPlagueBearers,
+  tooManyPlagueCarts,
+  tooManyTaintedOnes,
+  validCarnivalOfChaos
+} from "./fixtures/carnivalRosters";
+import {
+  fightingClawsWithSword,
+  giantRatWithWeapon,
+  invalidSkavenSkill,
+  skavenNoAssassin,
+  skavenTailFightingExtraWeapon,
+  skavenTwoAssassins,
+  skavenTooManyWeaponsWithoutTailFighting,
+  skavenWithRatOgre,
+  tooManyBlackSkaven,
+  tooManyEshinSorcerers,
+  tooManyNightRunners,
+  tooManyRatOgres,
+  tooManySkavenWarriors,
+  validSkaven
+} from "./fixtures/skavenRosters";
 
 describe("rules engine - Witch Hunters", () => {
+  it("calculates pending advance thresholds from XP crossings", () => {
+    expect(getPendingAdvances(1, 4)).toEqual([2, 4]);
+    expect(getPendingAdvances(4, 6)).toEqual([6]);
+    expect(getPendingAdvances(6, 6)).toEqual([]);
+  });
+
   it("returns allowed warbands with filters", () => {
     expect(getAllowedWarbands(rulesDb, { officialOnly: true }).map((warband) => warband.id)).toContain("witch-hunters");
     expect(getAllowedWarbands(rulesDb, { race: "Human" }).map((warband) => warband.id)).toContain("witch-hunters");
@@ -129,6 +167,23 @@ describe("rules engine - Witch Hunters", () => {
     expect(stepAside?.item.effectSummary).toContain("5+ save");
     expect(stepAside?.source?.sourceDocumentId).toBe("mordheim-core-rules");
     expect(stepAside?.source?.pageRef).toBeTruthy();
+  });
+
+  it("allows Warrior-Priests to select Prayers of Sigmar", () => {
+    const roster = validStartingWitchHunters();
+    const priestPrayers = getAllowedSpecialRules(roster.members[1], roster, rulesDb);
+    const captainPrayers = getAllowedSpecialRules(roster.members[0], roster, rulesDb);
+
+    expect(priestPrayers.find((option) => option.item.id === "sigmar-healing-hand")?.allowed).toBe(true);
+    expect(captainPrayers.find((option) => option.item.id === "sigmar-healing-hand")?.allowed).toBe(false);
+
+    const rosterWithPrayer = validStartingWitchHunters();
+    rosterWithPrayer.members[1] = { ...rosterWithPrayer.members[1], specialRules: ["sigmar-healing-hand"] };
+    expect(errorCodes(rosterWithPrayer)).toEqual([]);
+
+    const invalidPrayer = validStartingWitchHunters();
+    invalidPrayer.members[0] = { ...invalidPrayer.members[0], specialRules: ["sigmar-healing-hand"] };
+    expect(codes(invalidPrayer)).toContain("INVALID_SPECIAL_RULE");
   });
 
   it("returns only fighter types still legal to add", () => {
@@ -280,6 +335,193 @@ describe("rules engine - Sisters of Sigmar", () => {
     expect(sigmariteWarhammer?.specialRuleIds).toContain("sigmarite-warhammer-holy");
     expect(blessedSight?.sourceDocumentId).toBe("mhr-sisters-of-sigmar");
     expect(signOfSigmar?.sourceDocumentId).toBe("mhr-sisters-of-sigmar");
+  });
+
+  it("allows Sigmarite Matriarchs to select Prayers of Sigmar", () => {
+    const roster = validSistersOfSigmar();
+    const matriarchPrayers = getAllowedSpecialRules(roster.members[0], roster, rulesDb);
+    const superiorPrayers = getAllowedSpecialRules(roster.members[1], roster, rulesDb);
+
+    expect(matriarchPrayers.find((option) => option.item.id === "sigmar-soulfire")?.allowed).toBe(true);
+    expect(superiorPrayers.find((option) => option.item.id === "sigmar-soulfire")?.allowed).toBe(false);
+
+    const rosterWithPrayer = validSistersOfSigmar();
+    rosterWithPrayer.members[0] = { ...rosterWithPrayer.members[0], specialRules: ["sigmar-soulfire"] };
+    expect(errorCodes(rosterWithPrayer)).toEqual([]);
+  });
+});
+
+describe("rules engine - Carnival of Chaos", () => {
+  it("loads the official Carnival of Chaos warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { officialOnly: true }).map((warband) => warband.id);
+    expect(ids).toContain("carnival-of-chaos");
+  });
+
+  it("validates a basic starting Carnival roster", () => {
+    expect(errorCodes(validCarnivalOfChaos())).toEqual([]);
+    expect(calculateRosterCost(validCarnivalOfChaos(), rulesDb)).toBe(321);
+    expect(calculateWarbandRating(validCarnivalOfChaos(), rulesDb)).toBe(68);
+  });
+
+  it("requires exactly one Carnival Master", () => {
+    expect(codes(carnivalNoMaster())).toContain("REQUIRED_LEADER");
+  });
+
+  it("enforces Carnival fighter caps", () => {
+    expect(codes(tooManyCarnivalBrutes())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyTaintedOnes())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyPlagueBearers())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyPlagueCarts())).toContain("FIGHTER_MAX_COUNT");
+  });
+
+  it("requires Tainted Ones to buy a Blessing of Nurgle", () => {
+    expect(codes(taintedWithoutBlessing())).toContain("REQUIRED_EQUIPMENT_OPTION");
+  });
+
+  it("doubles second and later Blessing costs", () => {
+    expect(errorCodes(taintedWithTwoBlessings())).toEqual([]);
+    expect(calculateRosterCost(taintedWithTwoBlessings(), rulesDb)).toBe(396);
+  });
+
+  it("applies the Plague Cart warband size bonus", () => {
+    expect(errorCodes(carnivalWithCartAtSeventeenWarriors())).toEqual([]);
+    expect(codes(carnivalWithoutCartAtSeventeenWarriors())).toContain("MAX_WARRIORS");
+  });
+
+  it("enforces Carnival equipment lists", () => {
+    expect(codes(bruteWithPistol())).toContain("INVALID_EQUIPMENT");
+
+    const roster = validCarnivalOfChaos();
+    const bruteOptions = getAllowedEquipment(roster.members[1], roster, rulesDb);
+    const taintedOptions = getAllowedEquipment(roster.members[2], roster, rulesDb);
+
+    expect(bruteOptions.find((option) => option.item.id === "pistol")?.allowed).toBe(false);
+    expect(bruteOptions.find((option) => option.item.id === "carnival-flail")?.allowed).toBe(true);
+    expect(taintedOptions.find((option) => option.item.id === "blessing-nurgles-rot")?.allowed).toBe(true);
+  });
+
+  it("enforces Carnival skill tables", () => {
+    expect(codes(invalidCarnivalSkill())).toContain("INVALID_SKILL");
+
+    const roster = validCarnivalOfChaos();
+    const masterSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const bruteSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+    const taintedSkills = getAllowedSkills(roster.members[2], roster, rulesDb);
+
+    expect(masterSkills.find((option) => option.item.id === "sorcery")?.allowed).toBe(true);
+    expect(bruteSkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(true);
+    expect(bruteSkills.find((option) => option.item.id === "quick-shot")?.allowed).toBe(false);
+    expect(taintedSkills.find((option) => option.item.id === "step-aside")?.allowed).toBe(true);
+    expect(taintedSkills.find((option) => option.item.id === "wyrdstone-hunter")?.allowed).toBe(false);
+  });
+
+  it("returns source-backed Carnival lookup data", () => {
+    const blessing = rulesDb.equipmentItems.find((item) => item.id === "blessing-nurgles-rot");
+    const rituals = rulesDb.specialRules.find((rule) => rule.id === "nurgle-rituals");
+    const strongman = rulesDb.skills.find((skill) => skill.id === "strongman");
+
+    expect(blessing?.sourceDocumentId).toBe("eif-empire-in-flames");
+    expect(blessing?.pageRef).toContain("Empire in Flames");
+    expect(rituals?.sourceDocumentId).toBe("eif-empire-in-flames");
+    expect(strongman?.sourceDocumentId).toBe("mordheim-core-rules");
+  });
+
+  it("allows Carnival Masters to select Nurgle rituals", () => {
+    const roster = validCarnivalOfChaos();
+    const masterRituals = getAllowedSpecialRules(roster.members[0], roster, rulesDb);
+    const bruteRituals = getAllowedSpecialRules(roster.members[1], roster, rulesDb);
+
+    expect(masterRituals.find((option) => option.item.id === "nurgle-buboes")?.allowed).toBe(true);
+    expect(bruteRituals.find((option) => option.item.id === "nurgle-buboes")?.allowed).toBe(false);
+  });
+});
+
+describe("rules engine - Skaven", () => {
+  it("loads the official Skaven warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { officialOnly: true }).map((warband) => warband.id);
+    expect(ids).toContain("skaven");
+  });
+
+  it("validates a basic starting Skaven roster", () => {
+    expect(errorCodes(validSkaven())).toEqual([]);
+    expect(calculateRosterCost(validSkaven(), rulesDb)).toBe(299);
+    expect(calculateWarbandRating(validSkaven(), rulesDb)).toBe(76);
+  });
+
+  it("requires exactly one Assassin Adept", () => {
+    expect(codes(skavenNoAssassin())).toContain("REQUIRED_LEADER");
+    expect(codes(skavenTwoAssassins())).toContain("REQUIRED_LEADER");
+  });
+
+  it("enforces Skaven fighter caps and warrior limit", () => {
+    expect(codes(tooManySkavenWarriors())).toContain("MAX_WARRIORS");
+    expect(codes(tooManyBlackSkaven())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyEshinSorcerers())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyNightRunners())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyRatOgres())).toContain("FIGHTER_MAX_COUNT");
+  });
+
+  it("enforces Skaven equipment lists and fighting claws exclusivity", () => {
+    expect(codes(giantRatWithWeapon())).toContain("INVALID_EQUIPMENT");
+    expect(codes(fightingClawsWithSword())).toContain("CANNOT_COMBINE_WEAPONS");
+    expect(codes(skavenTooManyWeaponsWithoutTailFighting())).toContain("TOO_MANY_CLOSE_COMBAT_WEAPONS");
+    expect(errorCodes(skavenTailFightingExtraWeapon())).toEqual([]);
+
+    const roster = validSkaven();
+    const assassinOptions = getAllowedEquipment({ ...roster.members[0], equipment: [] }, roster, rulesDb);
+    const nightRunnerOptions = getAllowedEquipment(roster.members[3], roster, rulesDb);
+    const giantRatOptions = getAllowedEquipment(roster.members[5], roster, rulesDb);
+
+    expect(assassinOptions.find((option) => option.item.id === "fighting-claws")?.allowed).toBe(true);
+    expect(assassinOptions.find((option) => option.item.id === "club")?.allowed).toBe(false);
+    expect(nightRunnerOptions.find((option) => option.item.id === "club")?.allowed).toBe(true);
+    expect(nightRunnerOptions.find((option) => option.item.id === "weeping-blades")?.allowed).toBe(false);
+    expect(giantRatOptions.find((option) => option.item.id === "club")?.allowed).toBe(false);
+  });
+
+  it("applies Rat Ogre large creature rating metadata", () => {
+    expect(errorCodes(skavenWithRatOgre())).toEqual([]);
+    expect(calculateWarbandRating(skavenWithRatOgre(), rulesDb)).toBe(55);
+  });
+
+  it("enforces Skaven skill tables", () => {
+    expect(codes(invalidSkavenSkill())).toContain("INVALID_SKILL");
+
+    const roster = validSkaven();
+    const adeptSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const sorcererSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+    const blackSkavenSkills = getAllowedSkills(roster.members[2], roster, rulesDb);
+    const nightRunnerSkills = getAllowedSkills(roster.members[3], roster, rulesDb);
+
+    expect(adeptSkills.find((option) => option.item.id === "battle-tongue")?.allowed).toBe(true);
+    expect(sorcererSkills.find((option) => option.item.id === "sorcery")?.allowed).toBe(true);
+    expect(sorcererSkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(false);
+    expect(blackSkavenSkills.find((option) => option.item.id === "black-hunger")?.allowed).toBe(true);
+    expect(blackSkavenSkills.find((option) => option.item.id === "wyrdstone-hunter")?.allowed).toBe(false);
+    expect(nightRunnerSkills.find((option) => option.item.id === "infiltration")?.allowed).toBe(true);
+    expect(nightRunnerSkills.find((option) => option.item.id === "step-aside")?.allowed).toBe(false);
+  });
+
+  it("returns source-backed Skaven lookup data", () => {
+    const blowpipe = rulesDb.equipmentItems.find((item) => item.id === "blowpipe");
+    const magic = rulesDb.specialRules.find((rule) => rule.id === "magic-of-the-horned-rat");
+    const blackHunger = rulesDb.skills.find((skill) => skill.id === "black-hunger");
+
+    expect(blowpipe?.sourceDocumentId).toBe("mhr-skaven");
+    expect(blowpipe?.specialRuleIds).toContain("blowpipe-stealthy");
+    expect(magic?.sourceDocumentId).toBe("mhr-skaven");
+    expect(magic?.relatedRuleIds).toContain("horned-rat-warpfire");
+    expect(blackHunger?.sourceDocumentId).toBe("mhr-skaven");
+    expect(rulesDb.specialRules.find((rule) => rule.id === "horned-rat-warpfire")?.effectSummary).toContain("Difficulty 8");
+  });
+
+  it("allows Eshin Sorcerers to select Magic of the Horned Rat spells", () => {
+    const roster = validSkaven();
+    const sorcererSpells = getAllowedSpecialRules(roster.members[1], roster, rulesDb);
+    const adeptSpells = getAllowedSpecialRules(roster.members[0], roster, rulesDb);
+
+    expect(sorcererSpells.find((option) => option.item.id === "horned-rat-warpfire")?.allowed).toBe(true);
+    expect(adeptSpells.find((option) => option.item.id === "horned-rat-warpfire")?.allowed).toBe(false);
   });
 });
 

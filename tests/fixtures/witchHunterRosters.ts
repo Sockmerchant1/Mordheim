@@ -183,6 +183,7 @@ function member(
     currentProfile: profileByType[fighterTypeId],
     experience,
     advances: [],
+    advancesTaken: [],
     injuries: [],
     equipment,
     skills: [],

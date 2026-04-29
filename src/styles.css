@@ -641,6 +641,321 @@ button.blocked,
   padding: 0.35rem 0.65rem;
 }
 
+.lookup-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 1rem;
+}
+
+.lookup-source {
+  color: #675f55;
+  font-weight: 700;
+}
+
+.play-mode,
+.after-battle {
+  display: grid;
+  gap: 1rem;
+}
+
+.play-summary,
+.after-battle-header,
+.rules-search-panel,
+.play-controls,
+.after-card {
+  background: #fffdf9;
+  border: 1px solid #ded4c8;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.play-summary {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(220px, 1fr) minmax(320px, 2fr) minmax(260px, 1fr);
+}
+
+.play-summary h2,
+.after-battle-header h2,
+.after-card h3 {
+  margin: 0.1rem 0 0.35rem;
+}
+
+.play-summary p,
+.after-battle-header p {
+  color: #675f55;
+  margin: 0;
+}
+
+.play-metrics {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.play-actions {
+  align-content: start;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.play-actions button,
+.after-step-actions button {
+  justify-content: center;
+}
+
+.rules-search-panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.lookup-results {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.lookup-result {
+  align-items: start;
+  display: grid;
+  gap: 0.15rem;
+  justify-items: start;
+  text-align: left;
+}
+
+.lookup-result span {
+  color: #675f55;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.play-controls {
+  align-items: end;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+}
+
+.play-card-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.play-fighter-card {
+  background: #fffdf9;
+  border: 1px solid #d7cbbd;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem;
+}
+
+.play-fighter-card.status-out_of_action {
+  background: #f8e7e1;
+  border-color: #d9a99b;
+}
+
+.play-fighter-card.status-stunned,
+.play-fighter-card.status-knocked_down {
+  background: #fff6d8;
+}
+
+.play-fighter-card header {
+  align-items: start;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 0.75fr);
+}
+
+.play-fighter-card h3 {
+  margin: 0.1rem 0;
+}
+
+.play-fighter-card header p {
+  color: #675f55;
+  margin: 0;
+}
+
+.compact-profile {
+  border: 1px solid #d7cbbd;
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: repeat(9, minmax(28px, 1fr));
+  overflow: hidden;
+}
+
+.compact-profile div {
+  display: grid;
+  min-height: 44px;
+  place-items: center;
+}
+
+.compact-profile div + div {
+  border-left: 1px solid #e1d9cf;
+}
+
+.compact-profile span {
+  background: #2f4f4f;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.15rem;
+  text-align: center;
+  width: 100%;
+}
+
+.compact-profile strong {
+  font-size: 1rem;
+}
+
+.play-xp-line,
+.wound-tracker,
+.xp-total-line,
+.quick-xp {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.play-xp-line span,
+.wound-tracker span {
+  background: #f4efe7;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  padding: 0.25rem 0.55rem;
+}
+
+.wound-tracker button {
+  justify-content: center;
+  min-width: 42px;
+  padding-inline: 0.65rem;
+}
+
+.play-chip-section {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.play-chip-section h4,
+.review-block h4 {
+  margin: 0;
+}
+
+.play-notes {
+  background: #f7f2ea;
+  border-radius: 8px;
+  padding: 0.65rem;
+}
+
+.play-notes p {
+  margin: 0.25rem 0 0;
+}
+
+.comfortable-play .play-fighter-card {
+  gap: 1rem;
+  padding: 1.1rem;
+}
+
+.after-battle-header {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.after-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.after-steps button {
+  min-height: 36px;
+  padding: 0.4rem 0.6rem;
+}
+
+.after-steps button.active {
+  background: #2f4f4f;
+  border-color: #2f4f4f;
+  color: #ffffff;
+}
+
+.after-step-body {
+  min-height: 280px;
+}
+
+.after-step-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.after-toggle {
+  align-self: end;
+  min-height: 38px;
+}
+
+.xp-grid,
+.injury-grid,
+.advance-grid,
+.transaction-list,
+.review-grid,
+.review-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.xp-panel,
+.injury-panel,
+.advance-panel,
+.transaction-row,
+.review-block {
+  border: 1px solid #ded4c8;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.xp-panel header,
+.injury-panel header {
+  align-items: start;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.xp-panel p,
+.review-block p {
+  color: #675f55;
+  margin: 0.15rem 0;
+}
+
+.xp-controls,
+.transaction-row {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.transaction-row {
+  align-items: end;
+}
+
+.review-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.apply-button {
+  justify-content: center;
+  margin-top: 1rem;
+  width: 100%;
+}
+
 .close-button {
   float: right;
 }
@@ -669,33 +984,46 @@ button.blocked,
   }
 
   .two-column,
-  .roster-header {
+  .roster-header,
+  .play-summary,
+  .play-controls {
     grid-template-columns: 1fr;
+  }
+
+  .after-battle-header {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .side-panel {
     position: static;
   }
 
-  .metric-grid {
+  .metric-grid,
+  .play-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 560px) {
-  .member-grid {
+  .member-grid,
+  .play-card-grid {
     grid-template-columns: 1fr;
   }
 
-  .profile-table {
+  .profile-table,
+  .compact-profile {
     overflow-x: auto;
   }
 
-  .profile-table > div {
+  .profile-table > div,
+  .compact-profile {
     min-width: 420px;
   }
 
-  .metric-grid {
+  .metric-grid,
+  .play-metrics,
+  .review-grid {
     grid-template-columns: 1fr;
   }
 }

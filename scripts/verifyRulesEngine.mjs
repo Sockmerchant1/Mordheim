@@ -7,7 +7,9 @@ import {
   getAllowedEquipment,
   getAllowedFighterTypes,
   getAllowedSkills,
+  getAllowedSpecialRules,
   getAllowedWarbands,
+  getPendingAdvances,
   validateRoster
 } from "../src/rules/engine.ts";
 import {
@@ -39,8 +41,54 @@ import {
   validMiddenheimers,
   validReiklanders
 } from "../tests/fixtures/mercenaryRosters.ts";
+import {
+  augurWithArmour,
+  matriarchWithSpecialSkill,
+  noviceWithHolyTome,
+  sisterSuperiorWithMatriarchOnlySkill,
+  sistersNoMatriarch,
+  tooManyAugurs,
+  tooManyNovices,
+  tooManySisterSuperiors,
+  tooManySistersWarriors,
+  validSistersOfSigmar
+} from "../tests/fixtures/sistersRosters.ts";
+import {
+  bruteWithPistol,
+  carnivalNoMaster,
+  carnivalWithCartAtSeventeenWarriors,
+  carnivalWithoutCartAtSeventeenWarriors,
+  invalidCarnivalSkill,
+  taintedWithTwoBlessings,
+  taintedWithoutBlessing,
+  tooManyCarnivalBrutes,
+  tooManyPlagueBearers,
+  tooManyPlagueCarts,
+  tooManyTaintedOnes,
+  validCarnivalOfChaos
+} from "../tests/fixtures/carnivalRosters.ts";
+import {
+  fightingClawsWithSword,
+  giantRatWithWeapon,
+  invalidSkavenSkill,
+  skavenNoAssassin,
+  skavenTailFightingExtraWeapon,
+  skavenTwoAssassins,
+  skavenTooManyWeaponsWithoutTailFighting,
+  skavenWithRatOgre,
+  tooManyBlackSkaven,
+  tooManyEshinSorcerers,
+  tooManyNightRunners,
+  tooManyRatOgres,
+  tooManySkavenWarriors,
+  validSkaven
+} from "../tests/fixtures/skavenRosters.ts";
 
 const rulesDb = await loadRulesDb();
+
+assert.deepEqual(getPendingAdvances(1, 4), [2, 4]);
+assert.deepEqual(getPendingAdvances(4, 6), [6]);
+assert.deepEqual(getPendingAdvances(6, 6), []);
 
 assert.ok(getAllowedWarbands(rulesDb, { officialOnly: true }).some((warband) => warband.id === "witch-hunters"));
 
@@ -73,6 +121,16 @@ assert.equal(priestSkills.find((option) => option.item.id === "wyrdstone-hunter"
 const stepAside = captainSkills.find((option) => option.item.id === "step-aside");
 assert.match(stepAside?.item.effectSummary ?? "", /5\+ save/);
 assert.equal(stepAside?.source?.sourceDocumentId, "mordheim-core-rules");
+const priestPrayers = getAllowedSpecialRules(roster.members[1], roster, rulesDb);
+const captainPrayers = getAllowedSpecialRules(roster.members[0], roster, rulesDb);
+assert.equal(priestPrayers.find((option) => option.item.id === "sigmar-healing-hand")?.allowed, true);
+assert.equal(captainPrayers.find((option) => option.item.id === "sigmar-healing-hand")?.allowed, false);
+const witchHunterPrayerRoster = validStartingWitchHunters();
+witchHunterPrayerRoster.members[1] = { ...witchHunterPrayerRoster.members[1], specialRules: ["sigmar-healing-hand"] };
+assert.deepEqual(errorCodes(witchHunterPrayerRoster), []);
+const invalidWitchHunterPrayerRoster = validStartingWitchHunters();
+invalidWitchHunterPrayerRoster.members[0] = { ...invalidWitchHunterPrayerRoster.members[0], specialRules: ["sigmar-healing-hand"] };
+assert.ok(codes(invalidWitchHunterPrayerRoster).includes("INVALID_SPECIAL_RULE"));
 
 assert.ok(getAllowedFighterTypes("witch-hunters", roster, rulesDb).some((fighter) => fighter.id === "witch-hunter"));
 assert.ok(!getAllowedFighterTypes("witch-hunters", tooManyWitchHunters(), rulesDb).some((fighter) => fighter.id === "witch-hunter"));
@@ -115,6 +173,137 @@ assert.equal(middenheimChampionSkills.find((option) => option.item.id === "step-
 assert.equal(marienburgChampionSkills.find((option) => option.item.id === "mighty-blow")?.allowed, false);
 assert.equal(marienburgChampionSkills.find((option) => option.item.id === "step-aside")?.allowed, true);
 
+assert.ok(allowedOfficialWarbands.includes("sisters-of-sigmar"));
+assert.deepEqual(errorCodes(validSistersOfSigmar()), []);
+assert.equal(calculateRosterCost(validSistersOfSigmar(), rulesDb), 249);
+assert.equal(calculateWarbandRating(validSistersOfSigmar(), rulesDb), 63);
+assert.ok(codes(sistersNoMatriarch()).includes("REQUIRED_LEADER"));
+assert.ok(codes(tooManySisterSuperiors()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyAugurs()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyNovices()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManySistersWarriors()).includes("MAX_WARRIORS"));
+assert.ok(codes(augurWithArmour()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(noviceWithHolyTome()).includes("INVALID_EQUIPMENT"));
+assert.deepEqual(errorCodes(matriarchWithSpecialSkill()), []);
+assert.ok(codes(sisterSuperiorWithMatriarchOnlySkill()).includes("INVALID_SKILL"));
+
+const sistersRoster = validSistersOfSigmar();
+const augurOptions = getAllowedEquipment(sistersRoster.members[2], sistersRoster, rulesDb);
+const noviceOptions = getAllowedEquipment(sistersRoster.members[3], sistersRoster, rulesDb);
+assert.equal(augurOptions.find((option) => option.item.id === "light-armour")?.allowed, false);
+assert.equal(augurOptions.find((option) => option.item.id === "holy-tome")?.allowed, true);
+assert.equal(noviceOptions.find((option) => option.item.id === "holy-tome")?.allowed, false);
+
+const matriarchSkills = getAllowedSkills(sistersRoster.members[0], sistersRoster, rulesDb);
+const superiorSkills = getAllowedSkills(sistersRoster.members[1], sistersRoster, rulesDb);
+const augurSkills = getAllowedSkills(sistersRoster.members[2], sistersRoster, rulesDb);
+assert.equal(matriarchSkills.find((option) => option.item.id === "utter-determination")?.allowed, true);
+assert.equal(superiorSkills.find((option) => option.item.id === "utter-determination")?.allowed, false);
+assert.equal(augurSkills.find((option) => option.item.id === "absolute-faith")?.allowed, true);
+assert.equal(augurSkills.find((option) => option.item.id === "mighty-blow")?.allowed, false);
+assert.equal(rulesDb.equipmentItems.find((item) => item.id === "sigmarite-warhammer")?.sourceDocumentId, "mhr-sisters-of-sigmar");
+assert.ok(rulesDb.equipmentItems.find((item) => item.id === "sigmarite-warhammer")?.specialRuleIds.includes("sigmarite-warhammer-holy"));
+assert.equal(rulesDb.specialRules.find((rule) => rule.id === "blessed-sight")?.sourceDocumentId, "mhr-sisters-of-sigmar");
+assert.equal(rulesDb.skills.find((skill) => skill.id === "sign-of-sigmar")?.sourceDocumentId, "mhr-sisters-of-sigmar");
+const matriarchPrayers = getAllowedSpecialRules(sistersRoster.members[0], sistersRoster, rulesDb);
+const superiorPrayers = getAllowedSpecialRules(sistersRoster.members[1], sistersRoster, rulesDb);
+assert.equal(matriarchPrayers.find((option) => option.item.id === "sigmar-soulfire")?.allowed, true);
+assert.equal(superiorPrayers.find((option) => option.item.id === "sigmar-soulfire")?.allowed, false);
+const sistersPrayerRoster = validSistersOfSigmar();
+sistersPrayerRoster.members[0] = { ...sistersPrayerRoster.members[0], specialRules: ["sigmar-soulfire"] };
+assert.deepEqual(errorCodes(sistersPrayerRoster), []);
+
+assert.ok(allowedOfficialWarbands.includes("carnival-of-chaos"));
+assert.deepEqual(errorCodes(validCarnivalOfChaos()), []);
+assert.equal(calculateRosterCost(validCarnivalOfChaos(), rulesDb), 321);
+assert.equal(calculateWarbandRating(validCarnivalOfChaos(), rulesDb), 68);
+assert.ok(codes(carnivalNoMaster()).includes("REQUIRED_LEADER"));
+assert.ok(codes(tooManyCarnivalBrutes()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyTaintedOnes()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyPlagueBearers()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyPlagueCarts()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(taintedWithoutBlessing()).includes("REQUIRED_EQUIPMENT_OPTION"));
+assert.deepEqual(errorCodes(taintedWithTwoBlessings()), []);
+assert.equal(calculateRosterCost(taintedWithTwoBlessings(), rulesDb), 396);
+assert.deepEqual(errorCodes(carnivalWithCartAtSeventeenWarriors()), []);
+assert.ok(codes(carnivalWithoutCartAtSeventeenWarriors()).includes("MAX_WARRIORS"));
+assert.ok(codes(bruteWithPistol()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(invalidCarnivalSkill()).includes("INVALID_SKILL"));
+
+const carnivalRoster = validCarnivalOfChaos();
+const bruteOptions = getAllowedEquipment(carnivalRoster.members[1], carnivalRoster, rulesDb);
+const taintedOptions = getAllowedEquipment(carnivalRoster.members[2], carnivalRoster, rulesDb);
+assert.equal(bruteOptions.find((option) => option.item.id === "pistol")?.allowed, false);
+assert.equal(bruteOptions.find((option) => option.item.id === "carnival-flail")?.allowed, true);
+assert.equal(taintedOptions.find((option) => option.item.id === "blessing-nurgles-rot")?.allowed, true);
+
+const masterSkills = getAllowedSkills(carnivalRoster.members[0], carnivalRoster, rulesDb);
+const bruteSkills = getAllowedSkills(carnivalRoster.members[1], carnivalRoster, rulesDb);
+const taintedSkills = getAllowedSkills(carnivalRoster.members[2], carnivalRoster, rulesDb);
+assert.equal(masterSkills.find((option) => option.item.id === "sorcery")?.allowed, true);
+assert.equal(bruteSkills.find((option) => option.item.id === "mighty-blow")?.allowed, true);
+assert.equal(bruteSkills.find((option) => option.item.id === "quick-shot")?.allowed, false);
+assert.equal(taintedSkills.find((option) => option.item.id === "step-aside")?.allowed, true);
+assert.equal(taintedSkills.find((option) => option.item.id === "wyrdstone-hunter")?.allowed, false);
+assert.equal(rulesDb.equipmentItems.find((item) => item.id === "blessing-nurgles-rot")?.sourceDocumentId, "eif-empire-in-flames");
+assert.equal(rulesDb.specialRules.find((rule) => rule.id === "nurgle-rituals")?.sourceDocumentId, "eif-empire-in-flames");
+assert.equal(rulesDb.skills.find((skill) => skill.id === "strongman")?.sourceDocumentId, "mordheim-core-rules");
+const masterRituals = getAllowedSpecialRules(carnivalRoster.members[0], carnivalRoster, rulesDb);
+const bruteRituals = getAllowedSpecialRules(carnivalRoster.members[1], carnivalRoster, rulesDb);
+assert.equal(masterRituals.find((option) => option.item.id === "nurgle-buboes")?.allowed, true);
+assert.equal(bruteRituals.find((option) => option.item.id === "nurgle-buboes")?.allowed, false);
+
+assert.ok(allowedOfficialWarbands.includes("skaven"));
+assert.deepEqual(errorCodes(validSkaven()), []);
+assert.equal(calculateRosterCost(validSkaven(), rulesDb), 299);
+assert.equal(calculateWarbandRating(validSkaven(), rulesDb), 76);
+assert.ok(codes(skavenNoAssassin()).includes("REQUIRED_LEADER"));
+assert.ok(codes(skavenTwoAssassins()).includes("REQUIRED_LEADER"));
+assert.ok(codes(tooManySkavenWarriors()).includes("MAX_WARRIORS"));
+assert.ok(codes(tooManyBlackSkaven()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyEshinSorcerers()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyNightRunners()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyRatOgres()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(giantRatWithWeapon()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(fightingClawsWithSword()).includes("CANNOT_COMBINE_WEAPONS"));
+assert.ok(codes(skavenTooManyWeaponsWithoutTailFighting()).includes("TOO_MANY_CLOSE_COMBAT_WEAPONS"));
+assert.deepEqual(errorCodes(skavenTailFightingExtraWeapon()), []);
+assert.deepEqual(errorCodes(skavenWithRatOgre()), []);
+assert.equal(calculateWarbandRating(skavenWithRatOgre(), rulesDb), 55);
+assert.ok(codes(invalidSkavenSkill()).includes("INVALID_SKILL"));
+
+const skavenRoster = validSkaven();
+const assassinOptions = getAllowedEquipment({ ...skavenRoster.members[0], equipment: [] }, skavenRoster, rulesDb);
+const nightRunnerOptions = getAllowedEquipment(skavenRoster.members[3], skavenRoster, rulesDb);
+const giantRatOptions = getAllowedEquipment(skavenRoster.members[5], skavenRoster, rulesDb);
+assert.equal(assassinOptions.find((option) => option.item.id === "fighting-claws")?.allowed, true);
+assert.equal(assassinOptions.find((option) => option.item.id === "club")?.allowed, false);
+assert.equal(nightRunnerOptions.find((option) => option.item.id === "club")?.allowed, true);
+assert.equal(nightRunnerOptions.find((option) => option.item.id === "weeping-blades")?.allowed, false);
+assert.equal(giantRatOptions.find((option) => option.item.id === "club")?.allowed, false);
+
+const adeptSkills = getAllowedSkills(skavenRoster.members[0], skavenRoster, rulesDb);
+const sorcererSkills = getAllowedSkills(skavenRoster.members[1], skavenRoster, rulesDb);
+const blackSkavenSkills = getAllowedSkills(skavenRoster.members[2], skavenRoster, rulesDb);
+const nightRunnerSkills = getAllowedSkills(skavenRoster.members[3], skavenRoster, rulesDb);
+assert.equal(adeptSkills.find((option) => option.item.id === "battle-tongue")?.allowed, true);
+assert.equal(sorcererSkills.find((option) => option.item.id === "sorcery")?.allowed, true);
+assert.equal(sorcererSkills.find((option) => option.item.id === "mighty-blow")?.allowed, false);
+assert.equal(blackSkavenSkills.find((option) => option.item.id === "black-hunger")?.allowed, true);
+assert.equal(blackSkavenSkills.find((option) => option.item.id === "wyrdstone-hunter")?.allowed, false);
+assert.equal(nightRunnerSkills.find((option) => option.item.id === "infiltration")?.allowed, true);
+assert.equal(nightRunnerSkills.find((option) => option.item.id === "step-aside")?.allowed, false);
+assert.equal(rulesDb.equipmentItems.find((item) => item.id === "blowpipe")?.sourceDocumentId, "mhr-skaven");
+assert.ok(rulesDb.equipmentItems.find((item) => item.id === "blowpipe")?.specialRuleIds.includes("blowpipe-stealthy"));
+assert.equal(rulesDb.specialRules.find((rule) => rule.id === "magic-of-the-horned-rat")?.sourceDocumentId, "mhr-skaven");
+assert.ok(rulesDb.specialRules.find((rule) => rule.id === "magic-of-the-horned-rat")?.relatedRuleIds.includes("horned-rat-warpfire"));
+assert.match(rulesDb.specialRules.find((rule) => rule.id === "horned-rat-warpfire")?.effectSummary ?? "", /Difficulty 8/);
+assert.equal(rulesDb.skills.find((skill) => skill.id === "black-hunger")?.sourceDocumentId, "mhr-skaven");
+const sorcererSpells = getAllowedSpecialRules(skavenRoster.members[1], skavenRoster, rulesDb);
+const adeptSpells = getAllowedSpecialRules(skavenRoster.members[0], skavenRoster, rulesDb);
+assert.equal(sorcererSpells.find((option) => option.item.id === "horned-rat-warpfire")?.allowed, true);
+assert.equal(adeptSpells.find((option) => option.item.id === "horned-rat-warpfire")?.allowed, false);
+
 console.log("Rules engine verification passed.");
 
 function codes(roster) {
@@ -128,7 +317,7 @@ function errorCodes(roster) {
 }
 
 async function loadRulesDb() {
-  const [sourceDocuments, equipmentItems, skillSeed, specialRules, hiredSwords, ruleReferences, witchHunters, mercenaries] = await Promise.all([
+  const [sourceDocuments, equipmentItems, skillSeed, specialRules, hiredSwords, ruleReferences, witchHunters, mercenaries, sisters, carnival, skaven] = await Promise.all([
     readJson("../src/data/sources.json"),
     readJson("../src/data/equipment.json"),
     readJson("../src/data/skills.json"),
@@ -136,16 +325,22 @@ async function loadRulesDb() {
     readJson("../src/data/hiredSwords.json"),
     readJson("../src/data/ruleReferences.json"),
     readJson("../src/data/warbands/witch-hunters.json"),
-    readJson("../src/data/warbands/mercenaries.json")
+    readJson("../src/data/warbands/mercenaries.json"),
+    readJson("../src/data/warbands/sisters-of-sigmar.json"),
+    readJson("../src/data/warbands/carnival-of-chaos.json"),
+    readJson("../src/data/warbands/skaven.json")
   ]);
   const warbandSeed = warbandSeedSchema.parse(witchHunters);
+  const sistersSeed = warbandSeedSchema.parse(sisters);
+  const carnivalSeed = warbandSeedSchema.parse(carnival);
+  const skavenSeed = warbandSeedSchema.parse(skaven);
   const mercenarySeed = warbandSeedCollectionSchema.parse(mercenaries);
   return rulesDbSchema.parse({
     sourceDocuments,
-    warbandTypes: [warbandSeed.warbandType, ...mercenarySeed.warbandTypes],
-    fighterTypes: [...warbandSeed.fighterTypes, ...mercenarySeed.fighterTypes],
+    warbandTypes: [warbandSeed.warbandType, sistersSeed.warbandType, carnivalSeed.warbandType, skavenSeed.warbandType, ...mercenarySeed.warbandTypes],
+    fighterTypes: [...warbandSeed.fighterTypes, ...sistersSeed.fighterTypes, ...carnivalSeed.fighterTypes, ...skavenSeed.fighterTypes, ...mercenarySeed.fighterTypes],
     equipmentItems,
-    equipmentLists: [...warbandSeed.equipmentLists, ...mercenarySeed.equipmentLists],
+    equipmentLists: [...warbandSeed.equipmentLists, ...sistersSeed.equipmentLists, ...carnivalSeed.equipmentLists, ...skavenSeed.equipmentLists, ...mercenarySeed.equipmentLists],
     skillCategories: skillSeed.categories,
     skills: skillSeed.skills,
     specialRules,

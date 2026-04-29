@@ -3,6 +3,9 @@
 - Witch Hunters, the three official Mercenary variants, Sisters of Sigmar, Carnival of Chaos, and Skaven are implemented and covered by rules-engine verification.
 - Warband index discovery is implemented, but most discovered warbands are still `not_started`.
 - Trading post rarity, rare item search, campaign discounts and selling rules are not fully automated.
+- Play Mode and the After Battle workflow are implemented, but injury rolls, exploration tables, trading availability and most roster update details remain manual entry by design.
+- The After Battle flow applies XP, recorded advances, serious injury notes, treasury, wyrdstone and campaign history. Recruiting, equipment moves and other roster edits are captured as review notes for now, then can be handled in the Roster Editor.
+- The rules lookup drawer uses concise local summaries and placeholder entries where full wording has not been reviewed into the rules data.
 - Injuries and advances are recordable, but most roll-table outcomes are manual.
 - Prayers of Sigmar, Magic of the Horned Rat and Nurgle Rituals are selectable lookup records; other prayer/spell lists are still placeholders until their warbands are implemented.
 - Carnival of Chaos validates roster composition, Blessings of Nurgle costs and the Plague Cart warband-size bonus, but full Plague Cart vehicle handling remains a source-reference lookup.

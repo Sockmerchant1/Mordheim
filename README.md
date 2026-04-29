@@ -61,7 +61,15 @@ Roster state:
 - `RosterMember`
 - `CampaignLogEntry`
 
-Rules live in JSON seed files under `src/data`; campaign roster state is saved separately as JSON in SQLite.
+Rules live in JSON seed files under `src/data`; campaign roster state is saved separately as JSON in SQLite. Play Mode battle state and in-progress After Battle drafts are temporary local browser data and are only applied to the permanent roster after final confirmation.
+
+## App Modes
+
+- **Roster Editor**: the existing long-term roster builder and campaign editor.
+- **Play Mode**: opened by the Roster button for quick table use, temporary fighter status, wound tracking and rules lookup.
+- **After Battle**: a guided post-game draft for result, XP, serious injuries, exploration, income, trading, advances, roster updates and final review.
+
+The After Battle flow compares pre-battle XP with final XP using the central advancement threshold helper in `src/rules/engine.ts`, queues one advance slot per crossed threshold, and writes one campaign history entry when updates are applied.
 
 ## Rules Validation
 

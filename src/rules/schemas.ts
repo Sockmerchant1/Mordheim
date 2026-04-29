@@ -243,8 +243,17 @@ export const rosterMemberSchema = z.object({
   kind: memberKindSchema,
   groupSize: z.number(),
   currentProfile: profileSchema,
+  startingXp: z.number().optional(),
+  currentXp: z.number().optional(),
   experience: z.number(),
   advances: z.array(z.string()).default([]),
+  advancesTaken: z.array(z.object({
+    id: z.string(),
+    xpAt: z.number(),
+    result: z.string(),
+    date: z.string().optional(),
+    notes: z.string().optional()
+  })).default([]),
   injuries: z.array(z.string()).default([]),
   equipment: z.array(z.string()).default([]),
   perModelEquipment: z.array(z.array(z.string())).optional(),

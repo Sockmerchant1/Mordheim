@@ -123,6 +123,7 @@ function member(
     currentProfile: profileFor(fighterTypeId),
     experience,
     advances: [],
+    advancesTaken: [],
     injuries: [],
     equipment,
     skills: [],

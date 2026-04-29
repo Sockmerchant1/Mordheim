@@ -13,10 +13,16 @@ import type {
   WarbandType
 } from "./types";
 
-const HERO_ADVANCE_XP = [
+export const DEFAULT_MORDHEIM_ADVANCE_THRESHOLDS = [
   2, 4, 6, 8, 11, 14, 17, 20, 24, 28, 32, 36, 40, 45, 50, 55, 60, 65, 70, 75,
   80, 90
 ];
+
+const HERO_ADVANCE_XP = DEFAULT_MORDHEIM_ADVANCE_THRESHOLDS;
+
+export function getPendingAdvances(previousXp: number, newXp: number, thresholds = DEFAULT_MORDHEIM_ADVANCE_THRESHOLDS): number[] {
+  return thresholds.filter((threshold) => previousXp < threshold && newXp >= threshold);
+}
 
 export function getAllowedWarbands(rulesDb: RulesDb, filters: WarbandFilter = {}): WarbandType[] {
   return rulesDb.warbandTypes.filter((warband) => {
@@ -286,8 +292,11 @@ export function createRosterMemberFromType(
     kind,
     groupSize: kind === "henchman_group" ? fighterType.groupMinSize ?? 1 : 1,
     currentProfile: { ...fighterType.profile },
+    startingXp: fighterType.startingExperience,
+    currentXp: fighterType.startingExperience,
     experience: fighterType.startingExperience,
     advances: [],
+    advancesTaken: [],
     injuries: [],
     equipment: [],
     skills: [],

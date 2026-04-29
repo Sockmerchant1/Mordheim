@@ -1,0 +1,83 @@
+[
+  {
+    "id": "injury-full-recovery",
+    "name": "Full Recovery",
+    "category": "injury",
+    "text": "Placeholder injury entry. Record the serious injury result here, then check the referenced rulebook table for the exact campaign effect.",
+    "source": "Mordheim Core Rules",
+    "page": "Serious Injuries table",
+    "tags": ["after battle", "serious injury"],
+    "aliases": ["recovery"]
+  },
+  {
+    "id": "injury-dead",
+    "name": "Dead",
+    "category": "injury",
+    "text": "Placeholder injury entry. A dead fighter should be removed from active campaign play when after-battle updates are applied.",
+    "source": "Mordheim Core Rules",
+    "page": "Serious Injuries table",
+    "tags": ["after battle", "serious injury", "death"],
+    "aliases": ["killed"]
+  },
+  {
+    "id": "injury-miss-next-game",
+    "name": "Miss Next Game",
+    "category": "injury",
+    "text": "Placeholder injury entry. Mark the fighter as unavailable for the next battle, then check the rulebook table for the exact result wording.",
+    "source": "Mordheim Core Rules",
+    "page": "Serious Injuries table",
+    "tags": ["after battle", "serious injury"],
+    "aliases": ["misses next game"]
+  },
+  {
+    "id": "injury-captured",
+    "name": "Captured",
+    "category": "injury",
+    "text": "Placeholder injury entry. Record capture details and resolve ransom, rescue or campaign consequences with the rulebook and your campaign group.",
+    "source": "Mordheim Core Rules",
+    "page": "Serious Injuries table",
+    "tags": ["after battle", "serious injury"],
+    "aliases": ["capture"]
+  },
+  {
+    "id": "battle-hidden",
+    "name": "Hidden",
+    "category": "misc",
+    "text": "Temporary battle status used by Play Mode. This marker is table state only and is cleared when battle state is reset.",
+    "tags": ["battle state", "play mode"],
+    "aliases": ["hide"]
+  },
+  {
+    "id": "battle-knocked-down",
+    "name": "Knocked Down",
+    "category": "misc",
+    "text": "Temporary battle status used by Play Mode. Rule text not available yet. Add this rule to the rules data file.",
+    "tags": ["battle state", "play mode"],
+    "aliases": ["down"]
+  },
+  {
+    "id": "battle-stunned",
+    "name": "Stunned",
+    "category": "misc",
+    "text": "Temporary battle status used by Play Mode. Rule text not available yet. Add this rule to the rules data file.",
+    "tags": ["battle state", "play mode"]
+  },
+  {
+    "id": "battle-out-of-action",
+    "name": "Out of Action",
+    "category": "misc",
+    "text": "Temporary battle status used by Play Mode. Fighters marked Out of Action are automatically copied into the After Battle serious injury step.",
+    "tags": ["battle state", "play mode", "after battle"],
+    "aliases": ["ooa"]
+  },
+  {
+    "id": "after-battle-advances",
+    "name": "Advances",
+    "category": "misc",
+    "text": "The app detects advance thresholds crossed by comparing pre-battle XP with final XP after the battle. It queues one advance slot for each threshold and leaves the result for manual entry.",
+    "source": "Mordheim Core Rules",
+    "page": "Experience and advances",
+    "tags": ["experience", "campaign", "after battle"],
+    "aliases": ["xp advance", "experience advance"]
+  }
+]

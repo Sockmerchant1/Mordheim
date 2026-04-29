@@ -8,6 +8,7 @@ import {
   Download,
   Plus,
   Printer,
+  RotateCcw,
   Save,
   Search,
   Shield,
@@ -18,8 +19,10 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { deleteRoster, listRosters, saveRoster } from "./api/rosters";
+import rulesLookupSeed from "./data/rulesLookup.json";
 import { rulesDb, warbandIndex, type WarbandIndexRecord } from "./data/rulesDb";
 import {
+  DEFAULT_MORDHEIM_ADVANCE_THRESHOLDS,
   calculateRosterCost,
   calculateWarbandRating,
   createRosterMemberFromType,
@@ -27,6 +30,7 @@ import {
   getAllowedFighterTypes,
   getAllowedSkills,
   getAllowedSpecialRules,
+  getPendingAdvances,
   validateRoster
 } from "./rules/engine";
 import { rosterSchema } from "./rules/schemas";
@@ -40,11 +44,121 @@ import type {
   ValidationIssue
 } from "./rules/types";
 
-type Mode = "list" | "create" | "roster";
+type Mode = "list" | "create" | "roster" | "play" | "afterBattle";
+type RuleLookupCategory = "skill" | "spell" | "prayer" | "weapon-rule" | "injury" | "special-rule" | "equipment" | "misc";
+type RuleLookupRecord = {
+  id: string;
+  name: string;
+  category: RuleLookupCategory;
+  text: string;
+  source?: string;
+  page?: string;
+  tags?: string[];
+  aliases?: string[];
+};
 type LookupItem =
   | { type: "equipment"; item: EquipmentItem }
   | { type: "skill"; item: Skill }
-  | { type: "specialRule"; item: SpecialRule };
+  | { type: "specialRule"; item: SpecialRule }
+  | { type: "rule"; item: RuleLookupRecord };
+
+type BattleStatus = "active" | "hidden" | "knocked_down" | "stunned" | "out_of_action";
+type BattleMemberState = {
+  memberId: string;
+  status: BattleStatus;
+  currentWounds: number;
+};
+type BattleState = {
+  rosterId: string;
+  updatedAt: string;
+  members: Record<string, BattleMemberState>;
+};
+type BattleResult = "win" | "loss" | "draw" | "routed" | "wiped-out" | "other";
+type AfterBattleDraft = {
+  id: string;
+  warbandId: string;
+  createdAt: string;
+  battleStateSnapshot: BattleState;
+  battleResult: {
+    opponent?: string;
+    scenario?: string;
+    result?: BattleResult;
+    notes?: string;
+    datePlayed?: string;
+    leaderSurvived?: boolean;
+    routType?: string;
+  };
+  xp: AfterBattleXpEntry[];
+  injuries: AfterBattleInjuryEntry[];
+  exploration: {
+    diceValues: number[];
+    wyrdstoneShards: number;
+    specialResults?: string[];
+    notes?: string;
+  };
+  treasury: {
+    before: number;
+    wyrdstoneSold: number;
+    shardSaleIncome: number;
+    otherIncome: number;
+    deductions: number;
+    manualAdjustment: number;
+    after: number;
+  };
+  transactions: AfterBattleTransaction[];
+  advances: AfterBattleAdvanceEntry[];
+  rosterUpdates: AfterBattleRosterUpdate[];
+};
+type AfterBattleXpEntry = {
+  fighterId: string;
+  fighterName: string;
+  startingXp: number;
+  previousXp: number;
+  survived: number;
+  leaderBonus: number;
+  enemyOoa: number;
+  objective: number;
+  underdog: number;
+  other: number;
+  gainedXp: number;
+  finalXp: number;
+  notes?: string;
+  pendingAdvanceThresholds: number[];
+};
+type AfterBattleInjuryEntry = {
+  fighterId: string;
+  fighterName: string;
+  result: string;
+  permanentEffect?: string;
+  notes?: string;
+  resolvedOutsideApp?: boolean;
+  casualties?: number;
+};
+type AfterBattleTransaction = {
+  id: string;
+  action: "bought" | "sold" | "moved" | "discarded" | "found" | "other";
+  itemName: string;
+  value?: number;
+  assignedTo?: string;
+  notes?: string;
+};
+type AfterBattleAdvanceEntry = {
+  id: string;
+  fighterId: string;
+  fighterName: string;
+  xpThreshold: number;
+  result: string;
+  notes?: string;
+};
+type AfterBattleRosterUpdate = {
+  id: string;
+  type: string;
+  targetId?: string;
+  description: string;
+  payload?: Record<string, unknown>;
+};
+
+const rulesLookupRecords = buildRulesLookupRecords();
 
 export default function App() {
   const [mode, setMode] = useState<Mode>("list");
@@ -68,7 +182,7 @@ export default function App() {
     [activeRosterId, draftRoster, mode, rosters]
   );
 
-  async function persistRoster(roster: Roster) {
+  async function persistRoster(roster: Roster, nextMode: Mode = "play") {
     const saved = await saveRoster({
       ...roster,
       claimedCost: calculateRosterCost(roster, rulesDb),
@@ -79,7 +193,7 @@ export default function App() {
     });
     setRosters((current) => [saved, ...current.filter((item) => item.id !== saved.id)]);
     setActiveRosterId(saved.id);
-    setMode("roster");
+    setMode(nextMode);
   }
 
   async function removeRoster(id: string) {
@@ -154,7 +268,7 @@ export default function App() {
           >
             <Plus aria-hidden /> Create
           </button>
-          <button className={mode === "roster" ? "active" : ""} disabled={!activeRosterId} onClick={() => setMode("roster")}>
+          <button className={mode === "play" ? "active" : ""} disabled={!activeRosterId} onClick={() => setMode("play")}>
             <Swords aria-hidden /> Roster
           </button>
         </nav>
@@ -169,7 +283,7 @@ export default function App() {
           }}
           onSelect={(id) => {
             setActiveRosterId(id);
-            setMode("roster");
+            setMode("play");
           }}
           onDuplicate={duplicateRoster}
           onDelete={removeRoster}
@@ -178,7 +292,7 @@ export default function App() {
         />
       )}
 
-      {(mode === "create" || mode === "roster") && activeRoster && (
+      {(mode === "create" || mode === "roster" || mode === "play" || mode === "afterBattle") && activeRoster && (
         <main className="workspace">
           {mode === "create" ? (
             <CreateWizard
@@ -193,7 +307,7 @@ export default function App() {
               onToggleDraftSave={setAllowDraftSave}
               onSave={() => persistRoster({ ...activeRoster, isDraft: blockingErrors })}
             />
-          ) : (
+          ) : mode === "roster" ? (
             <RosterView
               roster={activeRoster}
               validation={validation}
@@ -204,8 +318,22 @@ export default function App() {
               onLookup={setLookupItem}
               onToggleIllegal={setShowIllegalOptions}
               onToggleDraftSave={setAllowDraftSave}
-              onSave={() => persistRoster({ ...activeRoster, isDraft: blockingErrors })}
+              onSave={() => persistRoster({ ...activeRoster, isDraft: blockingErrors }, "roster")}
               onExport={() => exportRoster(activeRoster)}
+            />
+          ) : mode === "play" ? (
+            <PlayModeView
+              roster={activeRoster}
+              onEditRoster={() => setMode("roster")}
+              onAfterBattle={() => setMode("afterBattle")}
+              onLookup={setLookupItem}
+            />
+          ) : (
+            <AfterBattleView
+              roster={activeRoster}
+              onBackToPlay={() => setMode("play")}
+              onEditRoster={() => setMode("roster")}
+              onApply={(updatedRoster) => persistRoster(updatedRoster, "play")}
             />
           )}
         </main>
@@ -292,7 +420,7 @@ function WarbandList({
                 </p>
               </div>
               <div className="icon-row">
-                <button onClick={() => onSelect(roster.id)}>Open</button>
+                <button onClick={() => onSelect(roster.id)}>Play</button>
                 <button aria-label={`Duplicate ${roster.name}`} onClick={() => onDuplicate(roster)}>
                   <Copy aria-hidden />
                 </button>
@@ -581,6 +709,1005 @@ function RosterView({
         />
       </aside>
     </div>
+  );
+}
+
+function PlayModeView({
+  roster,
+  onEditRoster,
+  onAfterBattle,
+  onLookup
+}: {
+  roster: Roster;
+  onEditRoster: () => void;
+  onAfterBattle: () => void;
+  onLookup: (item: LookupItem) => void;
+}) {
+  const [battleState, setBattleState] = useState<BattleState>(() => readBattleState(roster));
+  const [fighterFilter, setFighterFilter] = useState<"all" | "active">("all");
+  const [heroesFirst, setHeroesFirst] = useState(true);
+  const [compact, setCompact] = useState(true);
+  const [showRulesSearch, setShowRulesSearch] = useState(false);
+  const [rulesQuery, setRulesQuery] = useState("");
+  const [recentRuleIds, setRecentRuleIds] = useState<string[]>(() => readRecentRuleIds());
+
+  useEffect(() => {
+    setBattleState(readBattleState(roster));
+  }, [roster.id]);
+
+  useEffect(() => {
+    setBattleState((current) => {
+      const next = ensureBattleState(roster, current);
+      writeBattleState(next);
+      return next;
+    });
+  }, [roster]);
+
+  function updateBattleMember(member: RosterMember, patch: Partial<BattleMemberState>) {
+    setBattleState((current) => {
+      const currentMember = current.members[member.id] ?? defaultBattleMemberState(member);
+      const next = {
+        ...ensureBattleState(roster, current),
+        updatedAt: new Date().toISOString(),
+        members: {
+          ...current.members,
+          [member.id]: { ...currentMember, ...patch, memberId: member.id }
+        }
+      };
+      writeBattleState(next);
+      return next;
+    });
+  }
+
+  function resetBattleState() {
+    if (!window.confirm("Reset temporary battle state for this warband? This will not change the saved roster.")) return;
+    const next = createBattleState(roster);
+    writeBattleState(next);
+    setBattleState(next);
+  }
+
+  function openRule(record: RuleLookupRecord) {
+    const nextRecent = [record.id, ...recentRuleIds.filter((id) => id !== record.id)].slice(0, 6);
+    setRecentRuleIds(nextRecent);
+    writeRecentRuleIds(nextRecent);
+    onLookup({ type: "rule", item: record });
+  }
+
+  const playableMembers = roster.members.filter((member) => member.status !== "dead" && member.status !== "retired");
+  const sortedMembers = [...playableMembers].sort((a, b) => {
+    if (!heroesFirst) return playableMembers.indexOf(a) - playableMembers.indexOf(b);
+    const aOrder = a.kind === "hero" ? 0 : a.kind === "henchman_group" ? 1 : 2;
+    const bOrder = b.kind === "hero" ? 0 : b.kind === "henchman_group" ? 1 : 2;
+    return aOrder - bOrder;
+  });
+  const visibleMembers = sortedMembers.filter((member) => {
+    const state = battleState.members[member.id] ?? defaultBattleMemberState(member);
+    return fighterFilter === "all" || state.status !== "out_of_action";
+  });
+  const totalFighters = countRosterFighters(playableMembers);
+  const outOfAction = playableMembers.reduce((total, member) => {
+    const state = battleState.members[member.id];
+    return total + (state?.status === "out_of_action" ? memberModelCount(member) : 0);
+  }, 0);
+  const warband = currentWarband(roster);
+
+  return (
+    <section className={`play-mode ${compact ? "compact-play" : "comfortable-play"}`}>
+      <div className="play-summary">
+        <div>
+          <p className="eyebrow">Play Mode</p>
+          <h2>{roster.name}</h2>
+          <p>{warband?.name ?? roster.warbandTypeId}</p>
+        </div>
+        <div className="play-metrics">
+          <Metric icon={<Shield aria-hidden />} label="Rating" value={calculateWarbandRating(roster, rulesDb).toString()} />
+          <Metric icon={<Swords aria-hidden />} label="Fighters" value={totalFighters.toString()} />
+          <Metric icon={<AlertTriangle aria-hidden />} label="Out" value={outOfAction.toString()} tone={outOfAction > 0 ? "bad" : undefined} />
+          <Metric icon={<BookOpen aria-hidden />} label="Rout at" value={`${calculateRoutThreshold(totalFighters)} out`} />
+        </div>
+        <div className="play-actions">
+          <button onClick={() => setShowRulesSearch((value) => !value)}>
+            <Search aria-hidden /> Rules
+          </button>
+          <button onClick={resetBattleState}>
+            <RotateCcw aria-hidden /> Reset Battle State
+          </button>
+          <button onClick={onEditRoster}>Edit roster</button>
+          <button className="primary" onClick={onAfterBattle}>
+            End Battle / After Battle
+          </button>
+        </div>
+      </div>
+
+      {showRulesSearch && (
+        <RulesSearchPanel
+          query={rulesQuery}
+          recentRuleIds={recentRuleIds}
+          onQueryChange={setRulesQuery}
+          onOpenRule={openRule}
+        />
+      )}
+
+      <div className="play-controls" aria-label="Play Mode filters">
+        <label>
+          <span>Show fighters</span>
+          <select value={fighterFilter} onChange={(event) => setFighterFilter(event.target.value as "all" | "active")}>
+            <option value="all">Show all fighters</option>
+            <option value="active">Show active only</option>
+          </select>
+        </label>
+        <label className="toggle">
+          <input type="checkbox" checked={heroesFirst} onChange={(event) => setHeroesFirst(event.target.checked)} />
+          Heroes first
+        </label>
+        <label className="toggle">
+          <input type="checkbox" checked={compact} onChange={(event) => setCompact(event.target.checked)} />
+          Compact density
+        </label>
+      </div>
+
+      <div className="play-card-grid">
+        {visibleMembers.map((member) => (
+          <PlayFighterCard
+            key={member.id}
+            roster={roster}
+            member={member}
+            battleState={battleState.members[member.id] ?? defaultBattleMemberState(member)}
+            onBattleChange={(patch) => updateBattleMember(member, patch)}
+            onOpenRule={openRule}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RulesSearchPanel({
+  query,
+  recentRuleIds,
+  onQueryChange,
+  onOpenRule
+}: {
+  query: string;
+  recentRuleIds: string[];
+  onQueryChange: (value: string) => void;
+  onOpenRule: (record: RuleLookupRecord) => void;
+}) {
+  const normalizedQuery = query.trim().toLowerCase();
+  const recentRules = recentRuleIds
+    .map((id) => rulesLookupRecords.find((record) => record.id === id))
+    .filter((record): record is RuleLookupRecord => Boolean(record));
+  const results = normalizedQuery
+    ? rulesLookupRecords
+        .filter((record) => ruleMatchesQuery(record, normalizedQuery))
+        .slice(0, 30)
+    : recentRules;
+
+  return (
+    <section className="rules-search-panel">
+      <label>
+        <span>Rules search</span>
+        <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Search skills, spells, equipment and rules" />
+      </label>
+      <div className="lookup-results">
+        {results.length === 0 ? (
+          <div className="empty-state">{query ? "No rules found." : "Recent lookups will appear here."}</div>
+        ) : (
+          results.map((record) => (
+            <button className="lookup-result" key={record.id} onClick={() => onOpenRule(record)}>
+              <strong>{record.name}</strong>
+              <span>{record.category.replaceAll("-", " ")}</span>
+            </button>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+function PlayFighterCard({
+  roster,
+  member,
+  battleState,
+  onBattleChange,
+  onOpenRule
+}: {
+  roster: Roster;
+  member: RosterMember;
+  battleState: BattleMemberState;
+  onBattleChange: (patch: Partial<BattleMemberState>) => void;
+  onOpenRule: (record: RuleLookupRecord) => void;
+}) {
+  const fighterType = rulesDb.fighterTypes.find((item) => item.id === member.fighterTypeId)!;
+  const equipment = member.equipment
+    .map((itemId) => rulesDb.equipmentItems.find((item) => item.id === itemId))
+    .filter((item): item is EquipmentItem => Boolean(item));
+  const weapons = equipment.filter((item) => item.category === "close_combat" || item.category === "missile");
+  const armour = equipment.filter((item) => item.category === "armour");
+  const otherEquipment = equipment.filter((item) => item.category !== "close_combat" && item.category !== "missile" && item.category !== "armour");
+  const skills = member.skills
+    .map((id) => rulesDb.skills.find((skill) => skill.id === id))
+    .filter((skill): skill is Skill => Boolean(skill));
+  const specialRules = unique([...fighterType.specialRuleIds, ...member.specialRules])
+    .map((id) => rulesDb.specialRules.find((rule) => rule.id === id))
+    .filter((rule): rule is SpecialRule => Boolean(rule));
+  const castableRules = specialRules.filter((rule) => rule.validation.selectableAs);
+  const passiveRules = specialRules.filter((rule) => !rule.validation.selectableAs);
+  const maxWounds = maxBattleWounds(member);
+  const startingXp = member.startingXp ?? fighterType.startingExperience;
+  const currentXp = member.currentXp ?? member.experience;
+  const equipmentRuleIds = unique(equipment.flatMap((item) => item.specialRuleIds));
+  const equipmentRules = equipmentRuleIds
+    .map((id) => rulesDb.specialRules.find((rule) => rule.id === id))
+    .filter((rule): rule is SpecialRule => Boolean(rule));
+
+  return (
+    <article className={`play-fighter-card status-${battleState.status}`}>
+      <header>
+        <div>
+          <p className="eyebrow">{member.kind === "henchman_group" ? `Henchmen x${member.groupSize}` : fighterType.category}</p>
+          <h3>{member.displayName || fighterType.name}</h3>
+          <p>{fighterType.name}</p>
+        </div>
+        <label>
+          <span>Battle status</span>
+          <select value={battleState.status} onChange={(event) => onBattleChange({ status: event.target.value as BattleStatus })}>
+            <option value="active">Active</option>
+            <option value="hidden">Hidden</option>
+            <option value="knocked_down">Knocked down</option>
+            <option value="stunned">Stunned</option>
+            <option value="out_of_action">Out of action</option>
+          </select>
+        </label>
+      </header>
+
+      <CompactProfile profile={member.currentProfile} />
+
+      <div className="play-xp-line">
+        <span>Starting XP {startingXp}</span>
+        <span>Current XP {currentXp}</span>
+      </div>
+
+      <div className="wound-tracker">
+        <span>Wounds</span>
+        <button aria-label="Reduce current wounds" onClick={() => onBattleChange({ currentWounds: Math.max(0, battleState.currentWounds - 1) })}>
+          -
+        </button>
+        <strong>{Math.min(battleState.currentWounds, maxWounds)} / {maxWounds}</strong>
+        <button aria-label="Increase current wounds" onClick={() => onBattleChange({ currentWounds: Math.min(maxWounds, battleState.currentWounds + 1) })}>
+          +
+        </button>
+      </div>
+
+      <PlayChipSection title="Weapons" items={weapons.map(ruleRecordForEquipment)} onOpenRule={onOpenRule} />
+      <PlayChipSection title="Armour" items={armour.map(ruleRecordForEquipment)} onOpenRule={onOpenRule} />
+      <PlayChipSection title="Equipment" items={otherEquipment.map(ruleRecordForEquipment)} onOpenRule={onOpenRule} />
+      <PlayChipSection title="Skills" items={skills.map(ruleRecordForSkill)} onOpenRule={onOpenRule} />
+      <PlayChipSection title="Spells & Prayers" items={castableRules.map(ruleRecordForSpecialRule)} onOpenRule={onOpenRule} />
+      <PlayChipSection title="Injuries" items={member.injuries.map(ruleRecordForInjury)} onOpenRule={onOpenRule} />
+      <PlayChipSection
+        title="Special Rules"
+        items={[...passiveRules, ...equipmentRules].map(ruleRecordForSpecialRule)}
+        onOpenRule={onOpenRule}
+      />
+      {member.notes && (
+        <div className="play-notes">
+          <strong>Notes</strong>
+          <p>{member.notes}</p>
+        </div>
+      )}
+    </article>
+  );
+}
+
+function CompactProfile({ profile }: { profile: RosterMember["currentProfile"] }) {
+  const stats = ["M", "WS", "BS", "S", "T", "W", "I", "A", "Ld"] as const;
+  return (
+    <div className="compact-profile" role="table" aria-label="Current profile">
+      {stats.map((stat) => (
+        <div role="cell" key={stat}>
+          <span>{stat}</span>
+          <strong>{profile[stat]}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PlayChipSection({
+  title,
+  items,
+  onOpenRule
+}: {
+  title: string;
+  items: RuleLookupRecord[];
+  onOpenRule: (record: RuleLookupRecord) => void;
+}) {
+  const uniqueItems = uniqueById(items);
+  return (
+    <section className="play-chip-section">
+      <h4>{title}</h4>
+      <div className="chip-list">
+        {uniqueItems.length ? (
+          uniqueItems.map((record) => (
+            <button className="chip" key={record.id} onClick={() => onOpenRule(record)}>
+              {record.name}
+            </button>
+          ))
+        ) : (
+          <span className="muted">None</span>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function AfterBattleView({
+  roster,
+  onBackToPlay,
+  onEditRoster,
+  onApply
+}: {
+  roster: Roster;
+  onBackToPlay: () => void;
+  onEditRoster: () => void;
+  onApply: (roster: Roster) => void;
+}) {
+  const [stepIndex, setStepIndex] = useState(0);
+  const [draft, setDraft] = useState<AfterBattleDraft>(() => readAfterBattleDraft(roster) ?? createAfterBattleDraft(roster, readBattleState(roster)));
+  const steps = [
+    "Battle result",
+    "Experience",
+    "Serious injuries",
+    "Exploration",
+    "Income",
+    "Trading",
+    "Advances",
+    "Roster updates",
+    "Review"
+  ];
+
+  useEffect(() => {
+    setDraft(readAfterBattleDraft(roster) ?? createAfterBattleDraft(roster, readBattleState(roster)));
+    setStepIndex(0);
+  }, [roster.id]);
+
+  useEffect(() => {
+    writeAfterBattleDraft(draft);
+  }, [draft]);
+
+  function updateDraft(updater: (current: AfterBattleDraft) => AfterBattleDraft) {
+    setDraft((current) => syncDraftAdvances(updater(current)));
+  }
+
+  const canContinue = canContinueAfterBattleStep(stepIndex, draft, roster);
+
+  return (
+    <section className="after-battle">
+      <div className="after-battle-header">
+        <div>
+          <p className="eyebrow">After Battle</p>
+          <h2>{roster.name}</h2>
+          <p>Draft saved locally until you apply the final updates.</p>
+        </div>
+        <div className="button-row">
+          <button onClick={onBackToPlay}>Back to Play Mode</button>
+          <button onClick={onEditRoster}>Edit roster</button>
+        </div>
+      </div>
+
+      <nav className="after-steps" aria-label="After Battle steps">
+        {steps.map((step, index) => (
+          <button
+            key={step}
+            className={index === stepIndex ? "active" : ""}
+            onClick={() => setStepIndex(index)}
+          >
+            {index + 1}. {step}
+          </button>
+        ))}
+      </nav>
+
+      <div className="after-step-body">
+        {stepIndex === 0 && <BattleResultStep draft={draft} onChange={updateDraft} />}
+        {stepIndex === 1 && <ExperienceStep draft={draft} onChange={updateDraft} />}
+        {stepIndex === 2 && <SeriousInjuriesStep draft={draft} roster={roster} onChange={updateDraft} />}
+        {stepIndex === 3 && <ExplorationStep draft={draft} onChange={updateDraft} />}
+        {stepIndex === 4 && <IncomeStep draft={draft} onChange={updateDraft} />}
+        {stepIndex === 5 && <TradingStep draft={draft} roster={roster} onChange={updateDraft} />}
+        {stepIndex === 6 && <AdvancesStep draft={draft} onChange={updateDraft} />}
+        {stepIndex === 7 && <RosterUpdatesStep draft={draft} roster={roster} onChange={updateDraft} />}
+        {stepIndex === 8 && (
+          <ReviewApplyStep
+            draft={draft}
+            roster={roster}
+            onApply={() => {
+              const updated = applyAfterBattleDraft(roster, draft);
+              clearAfterBattleDraft(roster.id);
+              resetBattleStateStorage(roster);
+              onApply(updated);
+            }}
+          />
+        )}
+      </div>
+
+      <div className="after-step-actions">
+        <button disabled={stepIndex === 0} onClick={() => setStepIndex((index) => Math.max(0, index - 1))}>
+          Previous
+        </button>
+        {stepIndex < steps.length - 1 ? (
+          <button className="primary" disabled={!canContinue} onClick={() => setStepIndex((index) => Math.min(steps.length - 1, index + 1))}>
+            Next
+          </button>
+        ) : (
+          <span className="muted">Review the draft, then apply when ready.</span>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function BattleResultStep({
+  draft,
+  onChange
+}: {
+  draft: AfterBattleDraft;
+  onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
+}) {
+  function updateBattleResult(patch: Partial<AfterBattleDraft["battleResult"]>) {
+    onChange((current) => ({ ...current, battleResult: { ...current.battleResult, ...patch } }));
+  }
+
+  return (
+    <section className="after-card">
+      <h3>Battle result</h3>
+      <div className="form-grid">
+        <label>
+          <span>Opponent warband</span>
+          <input value={draft.battleResult.opponent ?? ""} onChange={(event) => updateBattleResult({ opponent: event.target.value })} />
+        </label>
+        <label>
+          <span>Scenario</span>
+          <input value={draft.battleResult.scenario ?? ""} onChange={(event) => updateBattleResult({ scenario: event.target.value })} />
+        </label>
+        <label>
+          <span>Result</span>
+          <select value={draft.battleResult.result ?? ""} onChange={(event) => updateBattleResult({ result: event.target.value as BattleResult })}>
+            <option value="">Select result</option>
+            <option value="win">Win</option>
+            <option value="loss">Loss</option>
+            <option value="draw">Draw</option>
+            <option value="routed">Routed</option>
+            <option value="wiped-out">Wiped out</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label>
+          <span>Date played</span>
+          <input type="date" value={draft.battleResult.datePlayed ?? ""} onChange={(event) => updateBattleResult({ datePlayed: event.target.value })} />
+        </label>
+        <label>
+          <span>Rout detail</span>
+          <select value={draft.battleResult.routType ?? ""} onChange={(event) => updateBattleResult({ routType: event.target.value })}>
+            <option value="">Not recorded</option>
+            <option value="voluntary">Voluntary rout</option>
+            <option value="failed-test">Failed rout test</option>
+            <option value="not-routed">Did not rout</option>
+          </select>
+        </label>
+        <label className="toggle after-toggle">
+          <input
+            type="checkbox"
+            checked={draft.battleResult.leaderSurvived ?? true}
+            onChange={(event) => updateBattleResult({ leaderSurvived: event.target.checked })}
+          />
+          Leader survived
+        </label>
+      </div>
+      <label>
+        <span>Notes</span>
+        <textarea value={draft.battleResult.notes ?? ""} onChange={(event) => updateBattleResult({ notes: event.target.value })} />
+      </label>
+    </section>
+  );
+}
+
+function ExperienceStep({
+  draft,
+  onChange
+}: {
+  draft: AfterBattleDraft;
+  onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
+}) {
+  function updateXpEntry(fighterId: string, patch: Partial<AfterBattleXpEntry>) {
+    onChange((current) => ({
+      ...current,
+      xp: current.xp.map((entry) => {
+        if (entry.fighterId !== fighterId) return entry;
+        return recalculateXpEntry({ ...entry, ...patch });
+      })
+    }));
+  }
+
+  return (
+    <section className="after-card">
+      <h3>Experience</h3>
+      <div className="xp-grid">
+        {draft.xp.length === 0 ? (
+          <div className="empty-state">No fighters in this roster can gain experience.</div>
+        ) : (
+          draft.xp.map((entry) => (
+            <article className="xp-panel" key={entry.fighterId}>
+              <header>
+                <div>
+                  <strong>{entry.fighterName}</strong>
+                  <p>Starting {entry.startingXp} XP. Previous {entry.previousXp} XP.</p>
+                </div>
+                <span className="pill">{advanceSummary(entry.pendingAdvanceThresholds.length)}</span>
+              </header>
+              <div className="xp-controls">
+                <NumberField label="Survived" value={entry.survived} onChange={(value) => updateXpEntry(entry.fighterId, { survived: value })} />
+                <NumberField label="Leader bonus" value={entry.leaderBonus} onChange={(value) => updateXpEntry(entry.fighterId, { leaderBonus: value })} />
+                <NumberField label="Enemy OOA" value={entry.enemyOoa} onChange={(value) => updateXpEntry(entry.fighterId, { enemyOoa: value })} />
+                <NumberField label="Objective" value={entry.objective} onChange={(value) => updateXpEntry(entry.fighterId, { objective: value })} />
+                <NumberField label="Underdog" value={entry.underdog} onChange={(value) => updateXpEntry(entry.fighterId, { underdog: value })} />
+                <NumberField label="Manual / other" value={entry.other} onChange={(value) => updateXpEntry(entry.fighterId, { other: value })} />
+              </div>
+              <div className="quick-xp">
+                <button onClick={() => updateXpEntry(entry.fighterId, { other: entry.other - 1 })}>-1 other XP</button>
+                <button onClick={() => updateXpEntry(entry.fighterId, { other: entry.other + 1 })}>+1 other XP</button>
+              </div>
+              <div className="xp-total-line">
+                <strong>Gained {entry.gainedXp}</strong>
+                <strong>Final XP {entry.finalXp}</strong>
+                <span>Thresholds: {entry.pendingAdvanceThresholds.length ? entry.pendingAdvanceThresholds.join(", ") : "none"}</span>
+              </div>
+              <label>
+                <span>XP notes</span>
+                <input value={entry.notes ?? ""} onChange={(event) => updateXpEntry(entry.fighterId, { notes: event.target.value })} />
+              </label>
+            </article>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+function SeriousInjuriesStep({
+  draft,
+  roster,
+  onChange
+}: {
+  draft: AfterBattleDraft;
+  roster: Roster;
+  onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
+}) {
+  function updateInjury(fighterId: string, patch: Partial<AfterBattleInjuryEntry>) {
+    onChange((current) => ({
+      ...current,
+      injuries: current.injuries.map((entry) => (entry.fighterId === fighterId ? { ...entry, ...patch } : entry))
+    }));
+  }
+
+  return (
+    <section className="after-card">
+      <h3>Serious injuries</h3>
+      {draft.injuries.length === 0 ? (
+        <div className="empty-state">No fighters were marked Out of Action in Play Mode.</div>
+      ) : (
+        <div className="injury-grid">
+          {draft.injuries.map((entry) => {
+            const member = roster.members.find((item) => item.id === entry.fighterId);
+            return (
+              <article className="injury-panel" key={entry.fighterId}>
+                <header>
+                  <strong>{entry.fighterName}</strong>
+                  <span className="pill">{member?.kind === "henchman_group" ? "Henchman group" : "Hero"}</span>
+                </header>
+                {member?.kind === "henchman_group" && (
+                  <NumberField label="Casualties / group size reduction" value={entry.casualties ?? 0} onChange={(value) => updateInjury(entry.fighterId, { casualties: Math.max(0, value) })} />
+                )}
+                <label>
+                  <span>Injury result</span>
+                  <select value={entry.result} onChange={(event) => updateInjury(entry.fighterId, { result: event.target.value })}>
+                    <option value="">Select or mark resolved</option>
+                    {SERIOUS_INJURY_RESULTS.map((result) => (
+                      <option key={result}>{result}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>Permanent effect</span>
+                  <input value={entry.permanentEffect ?? ""} onChange={(event) => updateInjury(entry.fighterId, { permanentEffect: event.target.value })} />
+                </label>
+                <label className="toggle">
+                  <input
+                    type="checkbox"
+                    checked={entry.resolvedOutsideApp ?? false}
+                    onChange={(event) => updateInjury(entry.fighterId, { resolvedOutsideApp: event.target.checked })}
+                  />
+                  Resolved outside app
+                </label>
+                <label>
+                  <span>Notes</span>
+                  <textarea value={entry.notes ?? ""} onChange={(event) => updateInjury(entry.fighterId, { notes: event.target.value })} />
+                </label>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ExplorationStep({
+  draft,
+  onChange
+}: {
+  draft: AfterBattleDraft;
+  onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
+}) {
+  function updateExploration(patch: Partial<AfterBattleDraft["exploration"]>) {
+    onChange((current) => ({ ...current, exploration: { ...current.exploration, ...patch } }));
+  }
+
+  return (
+    <section className="after-card">
+      <h3>Exploration</h3>
+      <div className="form-grid">
+        <label>
+          <span>Dice rolled</span>
+          <input
+            value={draft.exploration.diceValues.join(", ")}
+            onChange={(event) => updateExploration({ diceValues: parseDiceValues(event.target.value) })}
+            placeholder="Example: 1, 3, 3, 6"
+          />
+        </label>
+        <NumberField label="Wyrdstone shards found" value={draft.exploration.wyrdstoneShards} onChange={(value) => updateExploration({ wyrdstoneShards: Math.max(0, value) })} />
+        <label>
+          <span>Special results</span>
+          <input
+            value={(draft.exploration.specialResults ?? []).join(", ")}
+            onChange={(event) => updateExploration({ specialResults: splitList(event.target.value) })}
+          />
+        </label>
+      </div>
+      <p className="muted">Notable combinations: {describeExplorationDice(draft.exploration.diceValues)}</p>
+      <label>
+        <span>Exploration notes</span>
+        <textarea value={draft.exploration.notes ?? ""} onChange={(event) => updateExploration({ notes: event.target.value })} />
+      </label>
+    </section>
+  );
+}
+
+function IncomeStep({
+  draft,
+  onChange
+}: {
+  draft: AfterBattleDraft;
+  onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
+}) {
+  function updateTreasury(patch: Partial<AfterBattleDraft["treasury"]>) {
+    onChange((current) => ({ ...current, treasury: { ...current.treasury, ...patch } }));
+  }
+
+  return (
+    <section className="after-card">
+      <h3>Income and treasury</h3>
+      <div className="form-grid">
+        <NumberField label="Treasury before" value={draft.treasury.before} onChange={(value) => updateTreasury({ before: value })} />
+        <NumberField label="Wyrdstone sold" value={draft.treasury.wyrdstoneSold} onChange={(value) => updateTreasury({ wyrdstoneSold: Math.max(0, value) })} />
+        <NumberField label="Shard sale income" value={draft.treasury.shardSaleIncome} onChange={(value) => updateTreasury({ shardSaleIncome: value })} />
+        <NumberField label="Other income" value={draft.treasury.otherIncome} onChange={(value) => updateTreasury({ otherIncome: value })} />
+        <NumberField label="Upkeep / deductions" value={draft.treasury.deductions} onChange={(value) => updateTreasury({ deductions: value })} />
+        <NumberField label="Manual adjustment" value={draft.treasury.manualAdjustment} onChange={(value) => updateTreasury({ manualAdjustment: value })} />
+        <NumberField label="Treasury after" value={draft.treasury.after} onChange={(value) => updateTreasury({ after: value })} />
+      </div>
+    </section>
+  );
+}
+
+function TradingStep({
+  draft,
+  roster,
+  onChange
+}: {
+  draft: AfterBattleDraft;
+  roster: Roster;
+  onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
+}) {
+  function addTransaction() {
+    onChange((current) => ({
+      ...current,
+      transactions: [
+        ...current.transactions,
+        { id: id("trade"), action: "bought", itemName: "", value: 0, assignedTo: "stash", notes: "" }
+      ]
+    }));
+  }
+
+  function updateTransaction(transactionId: string, patch: Partial<AfterBattleTransaction>) {
+    onChange((current) => ({
+      ...current,
+      transactions: current.transactions.map((entry) => (entry.id === transactionId ? { ...entry, ...patch } : entry))
+    }));
+  }
+
+  return (
+    <section className="after-card">
+      <div className="section-heading">
+        <div>
+          <h3>Trading and equipment</h3>
+          <p>Record purchases, sales, found items and equipment moves as a ledger.</p>
+        </div>
+        <button onClick={addTransaction}>
+          <Plus aria-hidden /> Add transaction
+        </button>
+      </div>
+      <div className="transaction-list">
+        {draft.transactions.length === 0 ? (
+          <div className="empty-state">No trading transactions recorded.</div>
+        ) : (
+          draft.transactions.map((transaction) => (
+            <article className="transaction-row" key={transaction.id}>
+              <label>
+                <span>Action</span>
+                <select value={transaction.action} onChange={(event) => updateTransaction(transaction.id, { action: event.target.value as AfterBattleTransaction["action"] })}>
+                  <option value="bought">Bought</option>
+                  <option value="sold">Sold</option>
+                  <option value="moved">Moved</option>
+                  <option value="discarded">Discarded</option>
+                  <option value="found">Found</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+              <label>
+                <span>Item</span>
+                <input value={transaction.itemName} onChange={(event) => updateTransaction(transaction.id, { itemName: event.target.value })} />
+              </label>
+              <NumberField label="Cost / income" value={transaction.value ?? 0} onChange={(value) => updateTransaction(transaction.id, { value })} />
+              <label>
+                <span>Assigned to</span>
+                <select value={transaction.assignedTo ?? ""} onChange={(event) => updateTransaction(transaction.id, { assignedTo: event.target.value })}>
+                  <option value="">Unassigned</option>
+                  <option value="stash">Stash</option>
+                  {roster.members.map((member) => (
+                    <option value={member.id} key={member.id}>
+                      {member.displayName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Notes / rarity</span>
+                <input value={transaction.notes ?? ""} onChange={(event) => updateTransaction(transaction.id, { notes: event.target.value })} />
+              </label>
+              <button
+                className="icon-danger"
+                aria-label="Remove transaction"
+                onClick={() => onChange((current) => ({ ...current, transactions: current.transactions.filter((entry) => entry.id !== transaction.id) }))}
+              >
+                <Trash2 aria-hidden />
+              </button>
+            </article>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+function AdvancesStep({
+  draft,
+  onChange
+}: {
+  draft: AfterBattleDraft;
+  onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
+}) {
+  function updateAdvance(advanceId: string, patch: Partial<AfterBattleAdvanceEntry>) {
+    onChange((current) => ({
+      ...current,
+      advances: current.advances.map((entry) => (entry.id === advanceId ? { ...entry, ...patch } : entry))
+    }));
+  }
+
+  return (
+    <section className="after-card">
+      <h3>Advances</h3>
+      {draft.advances.length === 0 ? (
+        <div className="empty-state">No advances are due from the XP entered so far.</div>
+      ) : (
+        <div className="advance-grid">
+          {draft.advances.map((advance) => (
+            <article className="advance-panel" key={advance.id}>
+              <strong>{advance.fighterName}</strong>
+              <p>XP threshold reached: {advance.xpThreshold}</p>
+              <label>
+                <span>Advance result</span>
+                <select value={advance.result} onChange={(event) => updateAdvance(advance.id, { result: event.target.value })}>
+                  <option value="">Select result</option>
+                  {ADVANCE_RESULTS.map((result) => (
+                    <option key={result}>{result}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Notes</span>
+                <input value={advance.notes ?? ""} onChange={(event) => updateAdvance(advance.id, { notes: event.target.value })} />
+              </label>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function RosterUpdatesStep({
+  draft,
+  roster,
+  onChange
+}: {
+  draft: AfterBattleDraft;
+  roster: Roster;
+  onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
+}) {
+  const automaticUpdates = previewRosterUpdates(roster, draft);
+
+  function addManualUpdate() {
+    onChange((current) => ({
+      ...current,
+      rosterUpdates: [...current.rosterUpdates, { id: id("update"), type: "note", description: "" }]
+    }));
+  }
+
+  function updateRosterUpdate(updateId: string, patch: Partial<AfterBattleRosterUpdate>) {
+    onChange((current) => ({
+      ...current,
+      rosterUpdates: current.rosterUpdates.map((entry) => (entry.id === updateId ? { ...entry, ...patch } : entry))
+    }));
+  }
+
+  return (
+    <section className="after-card">
+      <div className="section-heading">
+        <div>
+          <h3>Roster updates</h3>
+          <p>Automatic updates are previewed here. Add extra manual campaign changes as notes before review.</p>
+        </div>
+        <button onClick={addManualUpdate}>
+          <Plus aria-hidden /> Add manual update
+        </button>
+      </div>
+      <div className="review-list">
+        {automaticUpdates.map((line) => (
+          <p key={line}>{line}</p>
+        ))}
+      </div>
+      <div className="transaction-list">
+        {draft.rosterUpdates.map((update) => (
+          <article className="transaction-row" key={update.id}>
+            <label>
+              <span>Update type</span>
+              <select value={update.type} onChange={(event) => updateRosterUpdate(update.id, { type: event.target.value })}>
+                <option value="note">Note</option>
+                <option value="recruit">Recruit new warrior</option>
+                <option value="equipment">Equipment change</option>
+                <option value="rename">Rename fighter</option>
+                <option value="skill">Skill / spell / rule</option>
+                <option value="injury">Injury</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label>
+              <span>Target</span>
+              <select value={update.targetId ?? ""} onChange={(event) => updateRosterUpdate(update.id, { targetId: event.target.value })}>
+                <option value="">Roster / stash</option>
+                {roster.members.map((member) => (
+                  <option value={member.id} key={member.id}>
+                    {member.displayName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Description</span>
+              <input value={update.description} onChange={(event) => updateRosterUpdate(update.id, { description: event.target.value })} />
+            </label>
+            <button
+              className="icon-danger"
+              aria-label="Remove roster update"
+              onClick={() => onChange((current) => ({ ...current, rosterUpdates: current.rosterUpdates.filter((entry) => entry.id !== update.id) }))}
+            >
+              <Trash2 aria-hidden />
+            </button>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ReviewApplyStep({
+  draft,
+  roster,
+  onApply
+}: {
+  draft: AfterBattleDraft;
+  roster: Roster;
+  onApply: () => void;
+}) {
+  const updatedRoster = applyAfterBattleDraft(roster, draft);
+  const beforeRating = calculateWarbandRating(roster, rulesDb);
+  const afterRating = calculateWarbandRating(updatedRoster, rulesDb);
+  const blockingMessages = reviewBlockingMessages(draft, roster);
+
+  return (
+    <section className="after-card">
+      <h3>Review and apply</h3>
+      {blockingMessages.length > 0 && (
+        <div className="member-issues">
+          {blockingMessages.map((message) => (
+            <article className="validation-message error" key={message}>
+              <AlertTriangle aria-hidden />
+              <div>
+                <strong>{message}</strong>
+                <p>Return to the relevant step and finish this before applying permanent updates.</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+      <div className="review-grid">
+        <ReviewBlock title="Battle result" lines={[
+          `Opponent: ${draft.battleResult.opponent || "not recorded"}`,
+          `Scenario: ${draft.battleResult.scenario || "not recorded"}`,
+          `Result: ${draft.battleResult.result || "not recorded"}`
+        ]} />
+        <ReviewBlock title="XP gained" lines={draft.xp.map((entry) => `${entry.fighterName}: ${entry.previousXp} -> ${entry.finalXp} XP (${advanceSummary(entry.pendingAdvanceThresholds.length)})`)} />
+        <ReviewBlock title="Injuries" lines={draft.injuries.map((entry) => `${entry.fighterName}: ${entry.resolvedOutsideApp ? "resolved outside app" : entry.result || "not recorded"}`)} />
+        <ReviewBlock title="Exploration" lines={[
+          `Dice: ${draft.exploration.diceValues.join(", ") || "not recorded"}`,
+          `Wyrdstone found: ${draft.exploration.wyrdstoneShards}`,
+          `Special: ${(draft.exploration.specialResults ?? []).join(", ") || "none"}`
+        ]} />
+        <ReviewBlock title="Treasury" lines={[
+          `${draft.treasury.before} gc -> ${draft.treasury.after} gc`,
+          `Wyrdstone sold: ${draft.treasury.wyrdstoneSold}`
+        ]} />
+        <ReviewBlock title="Trading" lines={draft.transactions.map((entry) => `${entry.action}: ${entry.itemName || "unnamed item"} ${entry.value ? `(${entry.value} gc)` : ""}`)} />
+        <ReviewBlock title="Advances" lines={draft.advances.map((entry) => `${entry.fighterName} at ${entry.xpThreshold} XP: ${entry.result || "not selected"}`)} />
+        <ReviewBlock title="Roster changes" lines={previewRosterUpdates(roster, draft)} />
+        <ReviewBlock title="Warband rating" lines={[`${beforeRating} before`, `${afterRating} after`]} />
+      </div>
+      <button className="primary apply-button" disabled={blockingMessages.length > 0} onClick={onApply}>
+        Apply After Battle Updates
+      </button>
+    </section>
+  );
+}
+
+function NumberField({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+  return (
+    <label>
+      <span>{label}</span>
+      <input type="number" value={value} onChange={(event) => onChange(Number(event.target.value))} />
+    </label>
+  );
+}
+
+function ReviewBlock({ title, lines }: { title: string; lines: string[] }) {
+  const visibleLines = lines.length ? lines : ["None"];
+  return (
+    <article className="review-block">
+      <h4>{title}</h4>
+      {visibleLines.map((line) => (
+        <p key={line}>{line}</p>
+      ))}
+    </article>
   );
 }
 
@@ -1133,20 +2260,25 @@ function LookupPanel({ lookupItem, onClose }: { lookupItem: LookupItem; onClose:
   const item = lookupItem.item;
   const title = item.name;
   const category =
-    lookupItem.type === "equipment"
-      ? lookupItem.item.category.replaceAll("_", " ")
-      : lookupItem.type === "skill"
-        ? skillCategoryName(lookupItem.item.categoryId)
-        : lookupItem.item.validation.selectableAs ?? "special rule";
+    lookupItem.type === "rule"
+      ? lookupItem.item.category.replaceAll("-", " ")
+      : lookupItem.type === "equipment"
+        ? lookupItem.item.category.replaceAll("_", " ")
+        : lookupItem.type === "skill"
+          ? skillCategoryName(lookupItem.item.categoryId)
+          : lookupItem.item.validation.selectableAs ?? "special rule";
   const summary =
-    lookupItem.type === "equipment"
-      ? lookupItem.item.rulesSummary
-      : lookupItem.type === "skill"
-        ? lookupItem.item.effectSummary
-        : lookupItem.item.effectSummary;
-  const restrictions = "restrictions" in item ? item.restrictions : undefined;
-  const sourceUrl = "sourceUrl" in item ? item.sourceUrl : undefined;
-  const pageRef = "pageRef" in item ? item.pageRef : undefined;
+    lookupItem.type === "rule"
+      ? lookupItem.item.text || "Rule text not available yet. Add this rule to the rules data file."
+      : lookupItem.type === "equipment"
+        ? lookupItem.item.rulesSummary
+        : lookupItem.type === "skill"
+          ? lookupItem.item.effectSummary
+          : lookupItem.item.effectSummary;
+  const restrictions = lookupItem.type !== "rule" && "restrictions" in item ? item.restrictions : undefined;
+  const sourceUrl = lookupItem.type !== "rule" && "sourceUrl" in item ? item.sourceUrl : undefined;
+  const pageRef = lookupItem.type === "rule" ? lookupItem.item.page : "pageRef" in item ? item.pageRef : undefined;
+  const sourceLabel = lookupItem.type === "rule" ? lookupItem.item.source : undefined;
 
   return (
     <aside className="lookup-panel" role="dialog" aria-modal="true" aria-label={`${title} lookup`}>
@@ -1163,6 +2295,25 @@ function LookupPanel({ lookupItem, onClose }: { lookupItem: LookupItem; onClose:
         </>
       )}
       {lookupItem.type === "equipment" && <p className="cost-line">{lookupItem.item.cost} gc</p>}
+      {lookupItem.type === "rule" && (
+        <>
+          {(lookupItem.item.tags?.length || lookupItem.item.aliases?.length) && (
+            <div className="lookup-tags">
+              {[...(lookupItem.item.tags ?? []), ...(lookupItem.item.aliases ?? [])].map((tag) => (
+                <span className="pill" key={tag}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+          {(sourceLabel || pageRef) && (
+            <p className="lookup-source">
+              {sourceLabel}
+              {pageRef ? ` · ${pageRef}` : ""}
+            </p>
+          )}
+        </>
+      )}
       {sourceUrl && (
         <a href={sourceUrl} target="_blank" rel="noreferrer">
           Source {pageRef ? `· ${pageRef}` : ""}
@@ -1188,6 +2339,500 @@ function SourceNote({ sourceUrl, label }: { sourceUrl: string; label: string }) 
       <BookOpen aria-hidden /> {label}
     </a>
   );
+}
+
+const SERIOUS_INJURY_RESULTS = [
+  "Dead",
+  "Multiple injuries",
+  "Miss next game",
+  "Captured",
+  "Hardened",
+  "Bitter enmity / hatred",
+  "Nervous condition",
+  "Leg wound / movement reduction",
+  "Arm wound / combat reduction",
+  "Eye injury / ballistic skill reduction",
+  "Old battle wound",
+  "Full recovery",
+  "Other / custom"
+];
+
+const ADVANCE_RESULTS = [
+  "+1 M",
+  "+1 WS",
+  "+1 BS",
+  "+1 S",
+  "+1 T",
+  "+1 W",
+  "+1 I",
+  "+1 A",
+  "+1 Ld",
+  "New skill",
+  "New spell / prayer",
+  "Other / custom"
+];
+
+function buildRulesLookupRecords(): RuleLookupRecord[] {
+  return uniqueById([
+    ...(rulesLookupSeed as RuleLookupRecord[]),
+    ...rulesDb.equipmentItems.map(ruleRecordForEquipment),
+    ...rulesDb.skills.map(ruleRecordForSkill),
+    ...rulesDb.specialRules.map(ruleRecordForSpecialRule),
+    ...rulesDb.ruleReferences.map((rule): RuleLookupRecord => ({
+      id: `reference-${rule.id}`,
+      name: rule.name,
+      category: "misc",
+      text: rule.summary || "Rule text not available yet. Add this rule to the rules data file.",
+      source: rule.sourceDocumentId,
+      page: rule.pageRef,
+      tags: [rule.ruleCategory],
+      aliases: [rule.id]
+    }))
+  ]);
+}
+
+function ruleRecordForEquipment(item: EquipmentItem): RuleLookupRecord {
+  return {
+    id: `equipment-${item.id}`,
+    name: item.name,
+    category: "equipment",
+    text: item.rulesSummary || "Rule text not available yet. Add this rule to the rules data file.",
+    source: item.sourceDocumentId,
+    page: item.pageRef,
+    tags: [item.category.replaceAll("_", " "), ...(item.specialRuleIds ?? [])],
+    aliases: [item.id, item.rarity ?? ""].filter(Boolean)
+  };
+}
+
+function ruleRecordForSkill(skill: Skill): RuleLookupRecord {
+  return {
+    id: `skill-${skill.id}`,
+    name: skill.name,
+    category: "skill",
+    text: skill.effectSummary || "Rule text not available yet. Add this rule to the rules data file.",
+    source: skill.sourceDocumentId,
+    page: skill.pageRef,
+    tags: [skill.categoryId, ...skill.relatedRuleIds],
+    aliases: [skill.id]
+  };
+}
+
+function ruleRecordForSpecialRule(rule: SpecialRule): RuleLookupRecord {
+  const category: RuleLookupCategory =
+    rule.validation.selectableAs === "prayer" ? "prayer" :
+      rule.validation.selectableAs === "spell" ? "spell" :
+        rule.validation.selectableAs === "ritual" ? "spell" :
+          "special-rule";
+  return {
+    id: `special-${rule.id}`,
+    name: rule.name,
+    category,
+    text: rule.effectSummary || "Rule text not available yet. Add this rule to the rules data file.",
+    source: rule.sourceDocumentId,
+    page: rule.pageRef,
+    tags: [rule.appliesTo, ...rule.relatedRuleIds, rule.validation.selectableAs ?? ""].filter(Boolean),
+    aliases: [rule.id]
+  };
+}
+
+function ruleRecordForInjury(injury: string): RuleLookupRecord {
+  const normalized = injury.toLowerCase();
+  const existing = rulesLookupRecords.find((record) => {
+    if (record.category !== "injury") return false;
+    return record.name.toLowerCase() === normalized || record.aliases?.some((alias) => alias.toLowerCase() === normalized);
+  });
+  if (existing) return existing;
+  return {
+    id: `injury-${slug(injury)}`,
+    name: injury,
+    category: "injury",
+    text: "Rule text not available yet. Add this rule to the rules data file.",
+    tags: ["injury"],
+    aliases: [injury]
+  };
+}
+
+function ruleMatchesQuery(record: RuleLookupRecord, normalizedQuery: string) {
+  return [
+    record.name,
+    record.category,
+    record.text,
+    ...(record.tags ?? []),
+    ...(record.aliases ?? [])
+  ].some((value) => value.toLowerCase().includes(normalizedQuery));
+}
+
+function createBattleState(roster: Roster): BattleState {
+  return {
+    rosterId: roster.id,
+    updatedAt: new Date().toISOString(),
+    members: Object.fromEntries(
+      roster.members
+        .filter((member) => member.status !== "dead" && member.status !== "retired")
+        .map((member) => [member.id, defaultBattleMemberState(member)])
+    )
+  };
+}
+
+function ensureBattleState(roster: Roster, current?: BattleState): BattleState {
+  const base = current?.rosterId === roster.id ? current : createBattleState(roster);
+  const liveMemberIds = new Set(roster.members.filter((member) => member.status !== "dead" && member.status !== "retired").map((member) => member.id));
+  const members = Object.fromEntries(
+    roster.members
+      .filter((member) => liveMemberIds.has(member.id))
+      .map((member) => {
+        const existing = base.members[member.id];
+        const maxWounds = maxBattleWounds(member);
+        return [
+          member.id,
+          {
+            ...defaultBattleMemberState(member),
+            ...existing,
+            memberId: member.id,
+            currentWounds: Math.min(existing?.currentWounds ?? maxWounds, maxWounds)
+          }
+        ];
+      })
+  );
+  return { rosterId: roster.id, updatedAt: base.updatedAt, members };
+}
+
+function defaultBattleMemberState(member: RosterMember): BattleMemberState {
+  return { memberId: member.id, status: "active", currentWounds: maxBattleWounds(member) };
+}
+
+function readBattleState(roster: Roster): BattleState {
+  try {
+    const stored = JSON.parse(localStorage.getItem(battleStateKey(roster.id)) ?? "null") as BattleState | null;
+    return ensureBattleState(roster, stored ?? undefined);
+  } catch {
+    return createBattleState(roster);
+  }
+}
+
+function writeBattleState(state: BattleState) {
+  localStorage.setItem(battleStateKey(state.rosterId), JSON.stringify(state));
+}
+
+function resetBattleStateStorage(roster: Roster) {
+  localStorage.setItem(battleStateKey(roster.id), JSON.stringify(createBattleState(roster)));
+}
+
+function battleStateKey(rosterId: string) {
+  return `mordheim.playState.${rosterId}`;
+}
+
+function readRecentRuleIds(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem("mordheim.recentRules") ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+function writeRecentRuleIds(ids: string[]) {
+  localStorage.setItem("mordheim.recentRules", JSON.stringify(ids));
+}
+
+function maxBattleWounds(member: RosterMember) {
+  return Math.max(1, member.currentProfile.W * memberModelCount(member));
+}
+
+function memberModelCount(member: RosterMember) {
+  return member.kind === "henchman_group" ? Math.max(0, member.groupSize) : 1;
+}
+
+function countRosterFighters(members: RosterMember[]) {
+  return members.reduce((total, member) => total + memberModelCount(member), 0);
+}
+
+function calculateRoutThreshold(totalFighters: number) {
+  return Math.max(1, Math.ceil(totalFighters / 4));
+}
+
+function createAfterBattleDraft(roster: Roster, battleState: BattleState): AfterBattleDraft {
+  const now = new Date().toISOString();
+  const activeMembers = roster.members.filter((member) => member.status !== "dead" && member.status !== "retired");
+  const xp = activeMembers.flatMap((member) => {
+    const fighterType = rulesDb.fighterTypes.find((item) => item.id === member.fighterTypeId);
+    if (!fighterType?.canGainExperience) return [];
+    const startingXp = member.startingXp ?? fighterType.startingExperience;
+    const previousXp = member.currentXp ?? member.experience;
+    return [recalculateXpEntry({
+      fighterId: member.id,
+      fighterName: member.displayName || fighterType.name,
+      startingXp,
+      previousXp,
+      survived: 0,
+      leaderBonus: 0,
+      enemyOoa: 0,
+      objective: 0,
+      underdog: 0,
+      other: 0,
+      gainedXp: 0,
+      finalXp: previousXp,
+      notes: "",
+      pendingAdvanceThresholds: []
+    })];
+  });
+  const injuries = activeMembers
+    .filter((member) => battleState.members[member.id]?.status === "out_of_action")
+    .map((member) => ({
+      fighterId: member.id,
+      fighterName: member.displayName,
+      result: "",
+      permanentEffect: "",
+      notes: "",
+      casualties: member.kind === "henchman_group" ? 0 : undefined
+    }));
+
+  return syncDraftAdvances({
+    id: id("after-battle"),
+    warbandId: roster.id,
+    createdAt: now,
+    battleStateSnapshot: ensureBattleState(roster, battleState),
+    battleResult: {
+      datePlayed: now.slice(0, 10),
+      leaderSurvived: true
+    },
+    xp,
+    injuries,
+    exploration: {
+      diceValues: [],
+      wyrdstoneShards: 0,
+      specialResults: [],
+      notes: ""
+    },
+    treasury: {
+      before: roster.treasuryGold,
+      wyrdstoneSold: 0,
+      shardSaleIncome: 0,
+      otherIncome: 0,
+      deductions: 0,
+      manualAdjustment: 0,
+      after: roster.treasuryGold
+    },
+    transactions: [],
+    advances: [],
+    rosterUpdates: []
+  });
+}
+
+function recalculateXpEntry(entry: AfterBattleXpEntry): AfterBattleXpEntry {
+  const gainedXp = entry.survived + entry.leaderBonus + entry.enemyOoa + entry.objective + entry.underdog + entry.other;
+  const finalXp = Math.max(entry.startingXp, entry.previousXp + gainedXp);
+  return {
+    ...entry,
+    gainedXp,
+    finalXp,
+    pendingAdvanceThresholds: getPendingAdvances(entry.previousXp, finalXp, DEFAULT_MORDHEIM_ADVANCE_THRESHOLDS)
+  };
+}
+
+function syncDraftAdvances(draft: AfterBattleDraft): AfterBattleDraft {
+  const existing = new Map(draft.advances.map((advance) => [`${advance.fighterId}:${advance.xpThreshold}`, advance]));
+  const advances = draft.xp.flatMap((entry) =>
+    entry.pendingAdvanceThresholds.map((threshold) => {
+      const key = `${entry.fighterId}:${threshold}`;
+      return existing.get(key) ?? {
+        id: `advance-${entry.fighterId}-${threshold}`,
+        fighterId: entry.fighterId,
+        fighterName: entry.fighterName,
+        xpThreshold: threshold,
+        result: "",
+        notes: ""
+      };
+    })
+  );
+  return { ...draft, advances };
+}
+
+function readAfterBattleDraft(roster: Roster): AfterBattleDraft | undefined {
+  try {
+    const stored = JSON.parse(localStorage.getItem(afterBattleKey(roster.id)) ?? "null") as AfterBattleDraft | null;
+    if (!stored || stored.warbandId !== roster.id) return undefined;
+    return syncDraftAdvances(stored);
+  } catch {
+    return undefined;
+  }
+}
+
+function writeAfterBattleDraft(draft: AfterBattleDraft) {
+  localStorage.setItem(afterBattleKey(draft.warbandId), JSON.stringify(draft));
+}
+
+function clearAfterBattleDraft(rosterId: string) {
+  localStorage.removeItem(afterBattleKey(rosterId));
+}
+
+function afterBattleKey(rosterId: string) {
+  return `mordheim.afterBattle.${rosterId}`;
+}
+
+function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster {
+  const now = new Date().toISOString();
+  const xpByMember = new Map(draft.xp.map((entry) => [entry.fighterId, entry]));
+  const injuriesByMember = new Map(draft.injuries.map((entry) => [entry.fighterId, entry]));
+  const advancesByMember = new Map<string, AfterBattleAdvanceEntry[]>();
+  for (const advance of draft.advances.filter((entry) => entry.result.trim())) {
+    advancesByMember.set(advance.fighterId, [...(advancesByMember.get(advance.fighterId) ?? []), advance]);
+  }
+
+  const members = roster.members.map((member) => {
+    const xp = xpByMember.get(member.id);
+    const injury = injuriesByMember.get(member.id);
+    const advances = advancesByMember.get(member.id) ?? [];
+    let next: RosterMember = { ...member };
+
+    if (xp) {
+      next = {
+        ...next,
+        startingXp: xp.startingXp,
+        currentXp: xp.finalXp,
+        experience: xp.finalXp
+      };
+    }
+
+    if (advances.length) {
+      next = {
+        ...next,
+        advances: [...next.advances, ...advances.map((advance) => `${advance.xpThreshold}: ${advance.result}`)],
+        advancesTaken: [
+          ...(next.advancesTaken ?? []),
+          ...advances.map((advance) => ({
+            id: advance.id,
+            xpAt: advance.xpThreshold,
+            result: advance.result,
+            date: draft.battleResult.datePlayed || now,
+            notes: advance.notes
+          }))
+        ]
+      };
+    }
+
+    if (injury && !injury.resolvedOutsideApp) {
+      const injuryText = [injury.result, injury.permanentEffect, injury.notes].filter(Boolean).join(" - ");
+      if (injuryText) next = { ...next, injuries: [...next.injuries, injuryText] };
+      if (injury.result.toLowerCase() === "dead") next = { ...next, status: "dead" };
+      if (member.kind === "henchman_group" && injury.casualties) {
+        const groupSize = Math.max(0, next.groupSize - injury.casualties);
+        next = { ...next, groupSize, status: groupSize === 0 ? "dead" : next.status };
+      }
+    }
+
+    return next;
+  });
+
+  const goldDelta = draft.treasury.after - roster.treasuryGold;
+  const wyrdstoneDelta = draft.exploration.wyrdstoneShards - draft.treasury.wyrdstoneSold;
+  const historyLines = [
+    `After Battle: ${draft.battleResult.result ?? "result not recorded"}`,
+    `XP: ${draft.xp.map((entry) => `${entry.fighterName} +${entry.gainedXp}`).join(", ") || "none"}`,
+    `Injuries: ${draft.injuries.map((entry) => `${entry.fighterName} ${entry.result || "unrecorded"}`).join(", ") || "none"}`,
+    `Exploration: ${draft.exploration.wyrdstoneShards} wyrdstone found`,
+    `Trading: ${draft.transactions.length} transaction(s)`,
+    `Manual updates: ${draft.rosterUpdates.map((entry) => entry.description).filter(Boolean).join("; ") || "none"}`
+  ];
+
+  return {
+    ...roster,
+    treasuryGold: draft.treasury.after,
+    wyrdstoneShards: Math.max(0, roster.wyrdstoneShards + wyrdstoneDelta),
+    members,
+    campaignLog: [
+      {
+        id: id("log"),
+        rosterId: roster.id,
+        date: now,
+        type: "post_battle",
+        description: `${draft.battleResult.scenario || "Battle"} vs ${draft.battleResult.opponent || "unknown opponent"}`,
+        goldDelta,
+        wyrdstoneDelta,
+        rosterChanges: historyLines.join("\n")
+      },
+      ...roster.campaignLog
+    ],
+    updatedAt: now
+  };
+}
+
+function previewRosterUpdates(roster: Roster, draft: AfterBattleDraft): string[] {
+  const lines = [
+    ...draft.xp.map((entry) => `${entry.fighterName}: set XP to ${entry.finalXp}`),
+    ...draft.advances.filter((entry) => entry.result).map((entry) => `${entry.fighterName}: record ${entry.result} at ${entry.xpThreshold} XP`),
+    ...draft.injuries.filter((entry) => entry.result || entry.resolvedOutsideApp).map((entry) => `${entry.fighterName}: ${entry.resolvedOutsideApp ? "injury resolved outside app" : entry.result}`),
+    `Treasury: ${roster.treasuryGold} gc to ${draft.treasury.after} gc`,
+    `Wyrdstone: ${roster.wyrdstoneShards} to ${Math.max(0, roster.wyrdstoneShards + draft.exploration.wyrdstoneShards - draft.treasury.wyrdstoneSold)}`,
+    ...draft.rosterUpdates.map((entry) => entry.description).filter(Boolean)
+  ];
+  return lines.length ? lines : ["No roster updates recorded."];
+}
+
+function reviewBlockingMessages(draft: AfterBattleDraft, roster: Roster): string[] {
+  const messages: string[] = [];
+  for (const injury of draft.injuries) {
+    const member = roster.members.find((item) => item.id === injury.fighterId);
+    if (member?.kind !== "henchman_group" && !injury.resolvedOutsideApp && !injury.result.trim()) {
+      messages.push(`${injury.fighterName} needs a serious injury result.`);
+    }
+  }
+  for (const advance of draft.advances) {
+    if (!advance.result.trim()) messages.push(`${advance.fighterName} needs an advance result for ${advance.xpThreshold} XP.`);
+  }
+  return messages;
+}
+
+function canContinueAfterBattleStep(stepIndex: number, draft: AfterBattleDraft, roster: Roster) {
+  if (stepIndex === 2) {
+    return !reviewBlockingMessages({ ...draft, advances: [] }, roster).some((message) => message.includes("serious injury"));
+  }
+  if (stepIndex === 6) {
+    return draft.advances.every((advance) => advance.result.trim());
+  }
+  return true;
+}
+
+function advanceSummary(count: number) {
+  if (count === 0) return "No advance due";
+  if (count === 1) return "1 advance to allocate";
+  return `${count} advances to allocate`;
+}
+
+function parseDiceValues(value: string) {
+  return value
+    .split(/[,\s]+/)
+    .map((item) => Number(item))
+    .filter((item) => Number.isInteger(item) && item >= 1 && item <= 6);
+}
+
+function describeExplorationDice(values: number[]) {
+  if (values.length === 0) return "none recorded";
+  const counts = values.reduce<Record<number, number>>((acc, value) => {
+    acc[value] = (acc[value] ?? 0) + 1;
+    return acc;
+  }, {});
+  const combos = Object.entries(counts)
+    .filter(([, count]) => count >= 2)
+    .map(([value, count]) => `${count} x ${value}`);
+  return combos.length ? combos.join(", ") : "no doubles or triples";
+}
+
+function splitList(value: string) {
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function uniqueById<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
+function id(prefix: string) {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return `${prefix}-${crypto.randomUUID()}`;
+  return `${prefix}-${Math.random().toString(36).slice(2)}`;
 }
 
 function createRosterDraft(warbandTypeId: string): Roster {
