@@ -52,6 +52,7 @@ type RuleLookupRecord = {
   category: RuleLookupCategory;
   text: string;
   source?: string;
+  sourceUrl?: string;
   page?: string;
   tags?: string[];
   aliases?: string[];
@@ -767,10 +768,11 @@ function PlayModeView({
   }
 
   function openRule(record: RuleLookupRecord) {
-    const nextRecent = [record.id, ...recentRuleIds.filter((id) => id !== record.id)].slice(0, 6);
+    const resolvedRecord = rulesLookupRecords.find((item) => item.id === record.id) ?? record;
+    const nextRecent = [resolvedRecord.id, ...recentRuleIds.filter((id) => id !== resolvedRecord.id)].slice(0, 6);
     setRecentRuleIds(nextRecent);
     writeRecentRuleIds(nextRecent);
-    onLookup({ type: "rule", item: record });
+    onLookup({ type: "rule", item: resolvedRecord });
   }
 
   const playableMembers = roster.members.filter((member) => member.status !== "dead" && member.status !== "retired");
@@ -2258,27 +2260,32 @@ function SavePanel({
 
 function LookupPanel({ lookupItem, onClose }: { lookupItem: LookupItem; onClose: () => void }) {
   const item = lookupItem.item;
-  const title = item.name;
+  const overrideRecord = lookupRecordForLookupItem(lookupItem);
+  const title = overrideRecord?.name ?? item.name;
   const category =
-    lookupItem.type === "rule"
-      ? lookupItem.item.category.replaceAll("-", " ")
+    overrideRecord
+      ? overrideRecord.category.replaceAll("-", " ")
       : lookupItem.type === "equipment"
         ? lookupItem.item.category.replaceAll("_", " ")
         : lookupItem.type === "skill"
           ? skillCategoryName(lookupItem.item.categoryId)
-          : lookupItem.item.validation.selectableAs ?? "special rule";
+          : lookupItem.type === "specialRule"
+            ? lookupItem.item.validation.selectableAs ?? "special rule"
+            : lookupItem.item.category.replaceAll("-", " ");
   const summary =
-    lookupItem.type === "rule"
-      ? lookupItem.item.text || "Rule text not available yet. Add this rule to the rules data file."
+    overrideRecord
+      ? overrideRecord.text || "Rule text not available yet. Add this rule to the rules data file."
       : lookupItem.type === "equipment"
         ? lookupItem.item.rulesSummary
         : lookupItem.type === "skill"
           ? lookupItem.item.effectSummary
-          : lookupItem.item.effectSummary;
+          : lookupItem.type === "specialRule"
+            ? lookupItem.item.effectSummary
+            : lookupItem.item.text || "Rule text not available yet. Add this rule to the rules data file.";
   const restrictions = lookupItem.type !== "rule" && "restrictions" in item ? item.restrictions : undefined;
-  const sourceUrl = lookupItem.type !== "rule" && "sourceUrl" in item ? item.sourceUrl : undefined;
-  const pageRef = lookupItem.type === "rule" ? lookupItem.item.page : "pageRef" in item ? item.pageRef : undefined;
-  const sourceLabel = lookupItem.type === "rule" ? lookupItem.item.source : undefined;
+  const sourceUrl = overrideRecord?.sourceUrl ?? ("sourceUrl" in item ? item.sourceUrl : undefined);
+  const pageRef = overrideRecord?.page ?? ("pageRef" in item ? item.pageRef : undefined);
+  const sourceLabel = overrideRecord?.source;
 
   return (
     <aside className="lookup-panel" role="dialog" aria-modal="true" aria-label={`${title} lookup`}>
@@ -2295,11 +2302,11 @@ function LookupPanel({ lookupItem, onClose }: { lookupItem: LookupItem; onClose:
         </>
       )}
       {lookupItem.type === "equipment" && <p className="cost-line">{lookupItem.item.cost} gc</p>}
-      {lookupItem.type === "rule" && (
+      {overrideRecord && (
         <>
-          {(lookupItem.item.tags?.length || lookupItem.item.aliases?.length) && (
+          {(overrideRecord.tags?.length || overrideRecord.aliases?.length) && (
             <div className="lookup-tags">
-              {[...(lookupItem.item.tags ?? []), ...(lookupItem.item.aliases ?? [])].map((tag) => (
+              {[...(overrideRecord.tags ?? []), ...(overrideRecord.aliases ?? [])].map((tag) => (
                 <span className="pill" key={tag}>
                   {tag}
                 </span>
@@ -2384,11 +2391,18 @@ function buildRulesLookupRecords(): RuleLookupRecord[] {
       category: "misc",
       text: rule.summary || "Rule text not available yet. Add this rule to the rules data file.",
       source: rule.sourceDocumentId,
+      sourceUrl: rule.sourceUrl,
       page: rule.pageRef,
       tags: [rule.ruleCategory],
       aliases: [rule.id]
     }))
   ]);
+}
+
+function lookupRecordForLookupItem(lookupItem: LookupItem): RuleLookupRecord | undefined {
+  if (lookupItem.type === "rule") return lookupItem.item;
+  const prefix = lookupItem.type === "equipment" ? "equipment" : lookupItem.type === "skill" ? "skill" : "special";
+  return rulesLookupRecords.find((record) => record.id === `${prefix}-${lookupItem.item.id}`);
 }
 
 function ruleRecordForEquipment(item: EquipmentItem): RuleLookupRecord {
@@ -2398,6 +2412,7 @@ function ruleRecordForEquipment(item: EquipmentItem): RuleLookupRecord {
     category: "equipment",
     text: item.rulesSummary || "Rule text not available yet. Add this rule to the rules data file.",
     source: item.sourceDocumentId,
+    sourceUrl: item.sourceUrl,
     page: item.pageRef,
     tags: [item.category.replaceAll("_", " "), ...(item.specialRuleIds ?? [])],
     aliases: [item.id, item.rarity ?? ""].filter(Boolean)
@@ -2411,6 +2426,7 @@ function ruleRecordForSkill(skill: Skill): RuleLookupRecord {
     category: "skill",
     text: skill.effectSummary || "Rule text not available yet. Add this rule to the rules data file.",
     source: skill.sourceDocumentId,
+    sourceUrl: skill.sourceUrl,
     page: skill.pageRef,
     tags: [skill.categoryId, ...skill.relatedRuleIds],
     aliases: [skill.id]
@@ -2429,6 +2445,7 @@ function ruleRecordForSpecialRule(rule: SpecialRule): RuleLookupRecord {
     category,
     text: rule.effectSummary || "Rule text not available yet. Add this rule to the rules data file.",
     source: rule.sourceDocumentId,
+    sourceUrl: rule.sourceUrl,
     page: rule.pageRef,
     tags: [rule.appliesTo, ...rule.relatedRuleIds, rule.validation.selectableAs ?? ""].filter(Boolean),
     aliases: [rule.id]
