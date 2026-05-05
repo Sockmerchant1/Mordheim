@@ -83,6 +83,59 @@ import {
   tooManySkavenWarriors,
   validSkaven
 } from "./fixtures/skavenRosters";
+import {
+  invalidShadowSkill,
+  shadowNoviceWithRunestones,
+  shadowWalkerWithPowerfulBuild,
+  shadowWarriorWithIthilmarWeapon,
+  shadowWarriorsNoMaster,
+  shadowWarriorsTwoMasters,
+  shadowWeaverWithArmourAndSpell,
+  shadowWeaverWithSpell,
+  tooManyPowerfulBuilds,
+  tooManyShadowWalkers,
+  tooManyShadowWarriors,
+  tooManyShadowWeavers,
+  validShadowWarriors
+} from "./fixtures/shadowWarriorRosters";
+import {
+  greatCrestWithBoneHelmet,
+  invalidLizardmenSkill,
+  kroxigorWithoutHalberd,
+  lizardmenHeroWithTwoSacredMarkings,
+  lizardmenNoPriest,
+  lizardmenPriestWithSpell,
+  lizardmenTwoPriests,
+  lizardmenWithWarlock,
+  saurusBraveWithShortBow,
+  skinkBraveWithSword,
+  tooManyGreatCrests,
+  tooManyLizardmenWarriors,
+  tooManySaurusBravesForSkinks,
+  tooManySaurusBravesMaximum,
+  tooManyTotemWarriors,
+  validKroxigor,
+  validLizardmen
+} from "./fixtures/lizardmenRosters";
+import {
+  braveShedsAnimosity,
+  braveWithMagicGubbinz,
+  chieftainWithForestGoblinSpell,
+  forestGoblinWithAxe,
+  forestGoblinWithSpider,
+  forestGoblinsNoChieftain,
+  forestGoblinsTwoChieftains,
+  giganticSpiderWithWeapon,
+  invalidForestGoblinSkill,
+  shamanWithForestGoblinSpell,
+  tooManyForestGoblinBraves,
+  tooManyForestGoblinShamans,
+  tooManyForestGoblinWarriors,
+  tooManyGiganticSpiders,
+  tooManyRedToofBoyz,
+  tooManySluggas,
+  validForestGoblins
+} from "./fixtures/forestGoblinRosters";
 
 describe("rules engine - Witch Hunters", () => {
   it("calculates pending advance thresholds from XP crossings", () => {
@@ -534,6 +587,192 @@ describe("rules engine - Skaven", () => {
 
     expect(sorcererSpells.find((option) => option.item.id === "horned-rat-warpfire")?.allowed).toBe(true);
     expect(adeptSpells.find((option) => option.item.id === "horned-rat-warpfire")?.allowed).toBe(false);
+  });
+});
+
+describe("rules engine - Shadow Warriors", () => {
+  it("loads the Grade 1b Shadow Warriors warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+    expect(ids).toContain("shadow-warriors");
+  });
+
+  it("validates a basic starting Shadow Warriors roster", () => {
+    expect(errorCodes(validShadowWarriors())).toEqual([]);
+    expect(calculateRosterCost(validShadowWarriors(), rulesDb)).toBe(335);
+    expect(calculateWarbandRating(validShadowWarriors(), rulesDb)).toBe(79);
+  });
+
+  it("enforces Shadow Warrior fighter caps and warrior limit", () => {
+    expect(codes(shadowWarriorsNoMaster())).toContain("REQUIRED_LEADER");
+    expect(codes(shadowWarriorsTwoMasters())).toContain("REQUIRED_LEADER");
+    expect(codes(tooManyShadowWalkers())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyShadowWeavers())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyShadowWarriors())).toContain("MAX_WARRIORS");
+  });
+
+  it("enforces Shadow Warrior equipment lists", () => {
+    expect(codes(shadowNoviceWithRunestones())).toContain("INVALID_EQUIPMENT");
+    expect(codes(shadowWarriorWithIthilmarWeapon())).toContain("INVALID_EQUIPMENT");
+
+    const roster = validShadowWarriors();
+    const masterOptions = getAllowedEquipment(roster.members[0], roster, rulesDb);
+    const weaverOptions = getAllowedEquipment(roster.members[1], roster, rulesDb);
+    const warriorOptions = getAllowedEquipment(roster.members[3], roster, rulesDb);
+
+    expect(masterOptions.find((option) => option.item.id === "standard-of-nagarythe")?.allowed).toBe(true);
+    expect(weaverOptions.find((option) => option.item.id === "elven-runestones")?.allowed).toBe(true);
+    expect(warriorOptions.find((option) => option.item.id === "elf-bow")?.allowed).toBe(true);
+    expect(warriorOptions.find((option) => option.item.id === "elven-runestones")?.allowed).toBe(false);
+  });
+
+  it("enforces Shadow Warrior skills and Shadow Magic access", () => {
+    expect(codes(invalidShadowSkill())).toContain("INVALID_SKILL");
+    expect(errorCodes(shadowWalkerWithPowerfulBuild())).toEqual([]);
+    expect(codes(tooManyPowerfulBuilds())).toContain("INVALID_SKILL");
+    expect(errorCodes(shadowWeaverWithSpell())).toEqual([]);
+    expect(codes(shadowWeaverWithArmourAndSpell())).toContain("INVALID_SPECIAL_RULE");
+
+    const roster = validShadowWarriors();
+    const masterSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const weaverSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+    const powerfulRoster = shadowWalkerWithPowerfulBuild();
+    const powerfulWalkerSkills = getAllowedSkills(powerfulRoster.members[2], powerfulRoster, rulesDb);
+    const weaverSpells = getAllowedSpecialRules(roster.members[1], roster, rulesDb);
+    const masterSpells = getAllowedSpecialRules(roster.members[0], roster, rulesDb);
+
+    expect(masterSkills.find((option) => option.item.id === "powerful-build")?.allowed).toBe(true);
+    expect(weaverSkills.find((option) => option.item.id === "powerful-build")?.allowed).toBe(false);
+    expect(weaverSkills.find((option) => option.item.id === "master-of-runes")?.allowed).toBe(true);
+    expect(powerfulWalkerSkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(true);
+    expect(weaverSpells.find((option) => option.item.id === "shadow-pool-of-shadow")?.allowed).toBe(true);
+    expect(masterSpells.find((option) => option.item.id === "shadow-pool-of-shadow")?.allowed).toBe(false);
+  });
+});
+
+describe("rules engine - Lizardmen", () => {
+  it("loads the Grade 1b Lizardmen warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+    expect(ids).toContain("lizardmen");
+  });
+
+  it("validates a basic starting Lizardmen roster", () => {
+    expect(errorCodes(validLizardmen())).toEqual([]);
+    expect(calculateRosterCost(validLizardmen(), rulesDb)).toBe(309);
+    expect(calculateWarbandRating(validLizardmen(), rulesDb)).toBe(74);
+  });
+
+  it("enforces Lizardmen leader, fighter caps, ratios and warrior limit", () => {
+    expect(codes(lizardmenNoPriest())).toContain("REQUIRED_LEADER");
+    expect(codes(lizardmenTwoPriests())).toContain("REQUIRED_LEADER");
+    expect(codes(tooManyTotemWarriors())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyGreatCrests())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManySaurusBravesMaximum())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManySaurusBravesForSkinks())).toContain("FIGHTER_RATIO_LIMIT");
+    expect(codes(tooManyLizardmenWarriors())).toContain("MAX_WARRIORS");
+  });
+
+  it("enforces Lizardmen equipment lists and required/exclusive options", () => {
+    expect(codes(skinkBraveWithSword())).toContain("INVALID_EQUIPMENT");
+    expect(codes(saurusBraveWithShortBow())).toContain("INVALID_EQUIPMENT");
+    expect(codes(greatCrestWithBoneHelmet())).toContain("INVALID_EQUIPMENT");
+    expect(codes(kroxigorWithoutHalberd())).toContain("REQUIRED_EQUIPMENT_OPTION");
+    expect(errorCodes(validKroxigor())).toEqual([]);
+    expect(codes(lizardmenHeroWithTwoSacredMarkings())).toContain("EXCLUSIVE_EQUIPMENT_GROUP");
+
+    const roster = validLizardmen();
+    const priestOptions = getAllowedEquipment(roster.members[0], roster, rulesDb);
+    const crestOptions = getAllowedEquipment(roster.members[2], roster, rulesDb);
+    const skinkOptions = getAllowedEquipment(roster.members[3], roster, rulesDb);
+    const saurusOptions = getAllowedEquipment(roster.members[4], roster, rulesDb);
+
+    expect(priestOptions.find((option) => option.item.id === "bone-helmet")?.allowed).toBe(true);
+    expect(crestOptions.find((option) => option.item.id === "bone-helmet")?.allowed).toBe(false);
+    expect(skinkOptions.find((option) => option.item.id === "javelin")?.allowed).toBe(true);
+    expect(skinkOptions.find((option) => option.item.id === "sword")?.allowed).toBe(false);
+    expect(saurusOptions.find((option) => option.item.id === "short-bow")?.allowed).toBe(false);
+    expect(saurusOptions.find((option) => option.item.id === "lizardmen-light-armour")?.allowed).toBe(true);
+  });
+
+  it("enforces Lizardmen special skills, magic and hired sword restrictions", () => {
+    expect(codes(invalidLizardmenSkill())).toContain("INVALID_SKILL");
+    expect(errorCodes(lizardmenPriestWithSpell())).toEqual([]);
+    expect(codes(lizardmenWithWarlock())).toContain("HIRED_SWORD_NOT_AVAILABLE");
+
+    const roster = validLizardmen();
+    const priestSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const totemSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+    const crestSkills = getAllowedSkills(roster.members[2], roster, rulesDb);
+    const priestSpells = getAllowedSpecialRules(roster.members[0], roster, rulesDb);
+    const totemSpells = getAllowedSpecialRules(roster.members[1], roster, rulesDb);
+
+    expect(priestSkills.find((option) => option.item.id === "lizardmen-infiltration")?.allowed).toBe(true);
+    expect(priestSkills.find((option) => option.item.id === "bellowing-battle-roar")?.allowed).toBe(false);
+    expect(totemSkills.find((option) => option.item.id === "bellowing-battle-roar")?.allowed).toBe(true);
+    expect(totemSkills.find((option) => option.item.id === "great-hunter")?.allowed).toBe(false);
+    expect(crestSkills.find((option) => option.item.id === "great-hunter")?.allowed).toBe(true);
+    expect(priestSpells.find((option) => option.item.id === "lizardmen-chotecs-wrath")?.allowed).toBe(true);
+    expect(totemSpells.find((option) => option.item.id === "lizardmen-chotecs-wrath")?.allowed).toBe(false);
+  });
+});
+
+describe("rules engine - Forest Goblins", () => {
+  it("loads the Grade 1b Forest Goblins warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+    expect(ids).toContain("forest-goblins");
+  });
+
+  it("validates a basic starting Forest Goblins roster", () => {
+    expect(errorCodes(validForestGoblins())).toEqual([]);
+    expect(calculateRosterCost(validForestGoblins(), rulesDb)).toBe(240);
+    expect(calculateWarbandRating(validForestGoblins(), rulesDb)).toBe(64);
+  });
+
+  it("enforces Forest Goblin leader, fighter caps and warrior limit", () => {
+    expect(codes(forestGoblinsNoChieftain())).toContain("REQUIRED_LEADER");
+    expect(codes(forestGoblinsTwoChieftains())).toContain("REQUIRED_LEADER");
+    expect(codes(tooManyForestGoblinBraves())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyForestGoblinShamans())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyRedToofBoyz())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManySluggas())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyGiganticSpiders())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyForestGoblinWarriors())).toContain("MAX_WARRIORS");
+  });
+
+  it("enforces Forest Goblin equipment lists", () => {
+    expect(codes(forestGoblinWithAxe())).toContain("INVALID_EQUIPMENT");
+    expect(codes(braveWithMagicGubbinz())).toContain("INVALID_EQUIPMENT");
+    expect(codes(giganticSpiderWithWeapon())).toContain("INVALID_EQUIPMENT");
+    expect(errorCodes(forestGoblinWithSpider())).toEqual([]);
+    expect(calculateWarbandRating(forestGoblinWithSpider(), rulesDb)).toBe(84);
+
+    const roster = validForestGoblins();
+    const chieftainOptions = getAllowedEquipment(roster.members[0], roster, rulesDb);
+    const shamanOptions = getAllowedEquipment(roster.members[1], roster, rulesDb);
+    const henchmanOptions = getAllowedEquipment(roster.members[3], roster, rulesDb);
+
+    expect(chieftainOptions.find((option) => option.item.id === "boss-pole")?.allowed).toBe(true);
+    expect(chieftainOptions.find((option) => option.item.id === "giant-spider-mount")?.allowed).toBe(true);
+    expect(shamanOptions.find((option) => option.item.id === "magic-gubbinz")?.allowed).toBe(true);
+    expect(henchmanOptions.find((option) => option.item.id === "forest-goblin-throwing-weapons")?.allowed).toBe(true);
+    expect(henchmanOptions.find((option) => option.item.id === "axe")?.allowed).toBe(false);
+  });
+
+  it("enforces Forest Goblin skill and magic access", () => {
+    expect(codes(invalidForestGoblinSkill())).toContain("INVALID_SKILL");
+    expect(errorCodes(braveShedsAnimosity())).toEqual([]);
+    expect(errorCodes(shamanWithForestGoblinSpell())).toEqual([]);
+    expect(codes(chieftainWithForestGoblinSpell())).toContain("INVALID_SPECIAL_RULE");
+
+    const roster = validForestGoblins();
+    const chieftainSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const braveSkills = getAllowedSkills(roster.members[2], roster, rulesDb);
+    const shamanSpells = getAllowedSpecialRules(roster.members[1], roster, rulesDb);
+    const chieftainSpells = getAllowedSpecialRules(roster.members[0], roster, rulesDb);
+
+    expect(chieftainSkills.find((option) => option.item.id === "shed-animosity")?.allowed).toBe(false);
+    expect(braveSkills.find((option) => option.item.id === "shed-animosity")?.allowed).toBe(true);
+    expect(shamanSpells.find((option) => option.item.id === "forest-goblin-wind-of-gork")?.allowed).toBe(true);
+    expect(chieftainSpells.find((option) => option.item.id === "forest-goblin-wind-of-gork")?.allowed).toBe(false);
   });
 });
 

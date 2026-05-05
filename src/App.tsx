@@ -22,6 +22,11 @@ import { deleteRoster, listRosters, saveRoster } from "./api/rosters";
 import rulesLookupSeed from "./data/rulesLookup.json";
 import { rulesDb, warbandIndex, type WarbandIndexRecord } from "./data/rulesDb";
 import {
+  createRosterFromStarterTemplate,
+  starterRosterTemplates,
+  type StarterRosterTemplate
+} from "./data/starterRosters";
+import {
   DEFAULT_MORDHEIM_ADVANCE_THRESHOLDS,
   calculateRosterCost,
   calculateWarbandRating,
@@ -241,6 +246,17 @@ export default function App() {
     URL.revokeObjectURL(url);
   }
 
+  function exportRosterPdf(roster: Roster) {
+    const previousTitle = document.title;
+    document.title = `${slug(roster.name)}-warband-roster`;
+    window.setTimeout(() => {
+      window.print();
+      window.setTimeout(() => {
+        document.title = previousTitle;
+      }, 500);
+    }, 0);
+  }
+
   async function importRoster(file: File) {
     const imported = rosterSchema.parse(JSON.parse(await file.text()));
     await persistRoster({
@@ -254,7 +270,7 @@ export default function App() {
   const blockingErrors = validation.some((issue) => issue.severity === "error");
 
   return (
-    <div className="app-shell">
+    <div className={["app-shell", activeRoster ? `warband-${activeRoster.warbandTypeId}` : ""].filter(Boolean).join(" ")}>
       <header className="topbar">
         <div>
           <p className="eyebrow">Mordheim campaign helper</p>
@@ -325,12 +341,14 @@ export default function App() {
               onToggleDraftSave={setAllowDraftSave}
               onSave={() => persistRoster({ ...activeRoster, isDraft: blockingErrors }, "roster")}
               onExport={() => exportRoster(activeRoster)}
+              onExportPdf={() => exportRosterPdf(activeRoster)}
             />
           ) : mode === "play" ? (
             <PlayModeView
               roster={activeRoster}
               onEditRoster={() => setMode("roster")}
               onAfterBattle={() => setMode("afterBattle")}
+              onExportPdf={() => exportRosterPdf(activeRoster)}
               onLookup={setLookupItem}
             />
           ) : (
@@ -583,6 +601,11 @@ function CreateWizard({
           <SourceNote sourceUrl={warband.sourceUrl} label={`${warband.name} · Broheim grade ${warband.broheimGrade}`} />
         </section>
 
+        <StarterTemplatePanel
+          templates={starterRosterTemplates.filter((template) => template.warbandTypeId === warband.id)}
+          onApply={(template) => onRosterChange(createRosterFromStarterTemplate(template, rulesDb))}
+        />
+
         <RosterHeader roster={roster} />
 
         <section className="add-member-band">
@@ -651,6 +674,52 @@ function CreateWizard({
   );
 }
 
+function StarterTemplatePanel({
+  templates,
+  onApply
+}: {
+  templates: StarterRosterTemplate[];
+  onApply: (template: StarterRosterTemplate) => void;
+}) {
+  if (templates.length === 0) return null;
+
+  return (
+    <section className="starter-template-panel">
+      <div className="section-heading">
+        <div>
+          <h2>Starter Rosters</h2>
+          <p>Pick a legal example roster, then rename or edit anything you like.</p>
+        </div>
+      </div>
+      <div className="starter-template-grid">
+        {templates.map((template) => {
+          const previewRoster = createRosterFromStarterTemplate(template, rulesDb);
+          const cost = calculateRosterCost(previewRoster, rulesDb);
+          const warband = currentWarband(previewRoster);
+          return (
+            <article className="starter-template-card" key={template.id}>
+              <div>
+                <p className="eyebrow">Starter template</p>
+                <h3>{template.name}</h3>
+                <p>{template.summary}</p>
+                <p className="muted">{template.playStyle}</p>
+              </div>
+              <div className="template-metrics">
+                <span>{countRosterFighters(previewRoster.members)} fighters</span>
+                <span>{cost} gc</span>
+                <span>{Math.max(0, (warband?.startingGold ?? 0) - cost)} gc left</span>
+              </div>
+              <button className="primary" onClick={() => onApply(template)}>
+                Use this template
+              </button>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function RosterView({
   roster,
   validation,
@@ -662,7 +731,8 @@ function RosterView({
   onToggleIllegal,
   onToggleDraftSave,
   onSave,
-  onExport
+  onExport,
+  onExportPdf
 }: {
   roster: Roster;
   validation: ValidationIssue[];
@@ -675,10 +745,12 @@ function RosterView({
   onToggleDraftSave: (value: boolean) => void;
   onSave: () => void;
   onExport: () => void;
+  onExportPdf: () => void;
 }) {
   return (
     <div className="two-column">
       <section className="primary-flow print-sheet">
+        <PrintableRosterSheet roster={roster} />
         <RosterHeader roster={roster} />
         <div className="action-strip no-print">
           <label className="toggle">
@@ -689,10 +761,10 @@ function RosterView({
             <Save aria-hidden /> Save
           </button>
           <button onClick={onExport}>
-            <Download aria-hidden /> Export
+            <Download aria-hidden /> Export JSON
           </button>
-          <button onClick={() => window.print()}>
-            <Printer aria-hidden /> Print
+          <button onClick={onExportPdf}>
+            <Printer aria-hidden /> Export PDF
           </button>
         </div>
         <HirePanel roster={roster} onRosterChange={onRosterChange} />
@@ -722,11 +794,13 @@ function PlayModeView({
   roster,
   onEditRoster,
   onAfterBattle,
+  onExportPdf,
   onLookup
 }: {
   roster: Roster;
   onEditRoster: () => void;
   onAfterBattle: () => void;
+  onExportPdf: () => void;
   onLookup: (item: LookupItem) => void;
 }) {
   const [battleState, setBattleState] = useState<BattleState>(() => readBattleState(roster));
@@ -800,6 +874,7 @@ function PlayModeView({
 
   return (
     <section className={`play-mode ${compact ? "compact-play" : "comfortable-play"}`}>
+      <PrintableRosterSheet roster={roster} />
       <div className="play-summary">
         <div>
           <p className="eyebrow">Play Mode</p>
@@ -813,6 +888,9 @@ function PlayModeView({
           <Metric icon={<BookOpen aria-hidden />} label="Rout at" value={`${calculateRoutThreshold(totalFighters)} out`} />
         </div>
         <div className="play-actions">
+          <button onClick={onExportPdf}>
+            <Printer aria-hidden /> Export PDF
+          </button>
           <button onClick={() => setShowRulesSearch((value) => !value)}>
             <Search aria-hidden /> Rules
           </button>
@@ -967,6 +1045,7 @@ function PlayFighterCard({
             <option value="out_of_action">Out of action</option>
           </select>
         </label>
+        <p className="print-only print-status">Battle status: {battleStatusLabel(battleState.status)}</p>
       </header>
 
       <CompactProfile profile={member.currentProfile} />
@@ -1007,6 +1086,32 @@ function PlayFighterCard({
         <button aria-label="Increase current wounds" onClick={() => onBattleChange({ currentWounds: Math.min(maxWounds, battleState.currentWounds + 1) })}>
           +
         </button>
+      </div>
+
+      <div className="paper-trackers print-only" aria-hidden="true">
+        <div>
+          <strong>Battle status</strong>
+          <span className="paper-checkline">
+            <span className="paper-box" /> Hidden
+            <span className="paper-box" /> Knocked down
+            <span className="paper-box" /> Stunned
+            <span className="paper-box" /> Out
+          </span>
+        </div>
+        <div>
+          <strong>Wounds</strong>
+          <span className="paper-checkline">
+            {Array.from({ length: Math.max(1, maxWounds) }, (_, index) => (
+              <span className="paper-box" key={index} />
+            ))}
+          </span>
+        </div>
+        <div>
+          <strong>XP this battle</strong>
+          <span className="paper-line">Enemy out</span>
+          <span className="paper-line">Objective</span>
+          <span className="paper-line">Other</span>
+        </div>
       </div>
 
       <PlayChipSection title="Weapons" items={weapons.map(ruleRecordForEquipment)} onOpenRule={onOpenRule} />
@@ -1906,6 +2011,203 @@ function ReviewBlock({ title, lines }: { title: string; lines: string[] }) {
   );
 }
 
+function PrintableRosterSheet({ roster }: { roster: Roster }) {
+  const warband = currentWarband(roster)!;
+  const cost = calculateRosterCost(roster, rulesDb);
+  const rating = calculateWarbandRating(roster, rulesDb);
+  const activeMembers = roster.members.filter((member) => member.status !== "dead" && member.status !== "retired");
+  const sections = [
+    { title: "Heroes", members: activeMembers.filter((member) => member.kind === "hero") },
+    { title: "Henchmen", members: activeMembers.filter((member) => member.kind === "henchman_group") },
+    { title: "Hired Swords", members: activeMembers.filter((member) => member.kind === "hired_sword") }
+  ].filter((section) => section.members.length > 0);
+
+  return (
+    <section className="print-roster-sheet print-only" aria-label="Printable roster sheet">
+      <header className="print-roster-title">
+        <div>
+          <p>Mordheim Warband Roster</p>
+          <h1>{roster.name || "Unnamed Warband"}</h1>
+          <span>{warband.name} | {warband.sourceCode} | Broheim grade {warband.broheimGrade}</span>
+        </div>
+        <div className="print-summary-grid">
+          <PrintSummary label="Treasury" value={`${roster.treasuryGold} gc`} />
+          <PrintSummary label="Wyrdstone" value={roster.wyrdstoneShards.toString()} />
+          <PrintSummary label="Cost" value={`${cost} gc`} />
+          <PrintSummary label="Rating" value={rating.toString()} />
+          <PrintSummary label="Warriors" value={countRosterFighters(activeMembers).toString()} />
+          <PrintSummary label="Rout" value={`${calculateRoutThreshold(countRosterFighters(activeMembers))} out`} />
+        </div>
+      </header>
+
+      <section className="print-ledger-row">
+        <div>
+          <strong>Stored equipment</strong>
+          <p>{roster.storedEquipment.length ? roster.storedEquipment.map(equipmentName).join(", ") : "None"}</p>
+        </div>
+        <div>
+          <strong>Campaign notes</strong>
+          <p>{roster.campaignNotes || " "}</p>
+        </div>
+      </section>
+
+      {sections.map((section) => (
+        <section className="print-member-section" key={section.title}>
+          <h2>{section.title}</h2>
+          <div className="print-member-grid">
+            {section.members.map((member) => (
+              <PrintableMemberBlock roster={roster} member={member} key={member.id} />
+            ))}
+          </div>
+        </section>
+      ))}
+
+      <section className="print-after-battle">
+        <h2>Battle & After-Battle Notes</h2>
+        <div className="print-notes-grid">
+          <PrintBlankLines title="Battle result / opponent / scenario" lines={3} />
+          <PrintBlankLines title="Exploration / wyrdstone / income" lines={3} />
+          <PrintBlankLines title="Injuries / advances / purchases" lines={4} />
+        </div>
+      </section>
+    </section>
+  );
+}
+
+function PrintableMemberBlock({ roster, member }: { roster: Roster; member: RosterMember }) {
+  const fighterType = rulesDb.fighterTypes.find((item) => item.id === member.fighterTypeId);
+  if (!fighterType) return null;
+
+  const equipment = member.equipment
+    .map((itemId) => rulesDb.equipmentItems.find((item) => item.id === itemId))
+    .filter((item): item is EquipmentItem => Boolean(item));
+  const weapons = equipment.filter((item) => item.category === "close_combat" || item.category === "missile");
+  const armour = equipment.filter((item) => item.category === "armour");
+  const otherEquipment = equipment.filter((item) => item.category !== "close_combat" && item.category !== "missile" && item.category !== "armour");
+  const skills = member.skills
+    .map((skillId) => rulesDb.skills.find((skill) => skill.id === skillId)?.name)
+    .filter(Boolean) as string[];
+  const specialRules = unique([...fighterType.specialRuleIds, ...member.specialRules])
+    .map((ruleId) => rulesDb.specialRules.find((rule) => rule.id === ruleId))
+    .filter((rule): rule is SpecialRule => Boolean(rule));
+  const castableRules = specialRules.filter((rule) => rule.validation.selectableAs).map((rule) => rule.name);
+  const passiveRules = specialRules.filter((rule) => !rule.validation.selectableAs).map((rule) => rule.name);
+  const memberCost = calculateRosterCost({ ...roster, members: [member] }, rulesDb);
+  const startingXp = member.startingXp ?? fighterType.startingExperience;
+  const currentXp = member.currentXp ?? member.experience;
+
+  return (
+    <article className="print-member-card">
+      <header>
+        <div>
+          <h3>{member.displayName || fighterType.name}</h3>
+          <p>{fighterType.name} {member.kind === "henchman_group" ? `x${member.groupSize}` : member.kind === "hired_sword" ? "Hired Sword" : "Hero"}</p>
+        </div>
+        <div className="print-member-meta">
+          <span>{memberCost} gc</span>
+          <span>{member.status}</span>
+        </div>
+      </header>
+
+      <PrintProfile profile={member.currentProfile} />
+
+      <div className="print-track-grid">
+        <div>
+          <strong>XP</strong>
+          <span>Start {startingXp} | Current {currentXp}</span>
+          <PrintBoxes count={10} />
+        </div>
+        <div>
+          <strong>Wounds</strong>
+          <PrintBoxes count={Math.max(1, maxBattleWounds(member))} />
+        </div>
+        <div>
+          <strong>Status</strong>
+          <span className="print-status-boxes">
+            <PrintCheck label="Hidden" />
+            <PrintCheck label="Down" />
+            <PrintCheck label="Stun" />
+            <PrintCheck label="Out" />
+          </span>
+        </div>
+      </div>
+
+      <div className="print-member-fields">
+        <PrintField label="Weapons" value={namesOrNone(weapons.map((item) => item.name))} />
+        <PrintField label="Armour" value={namesOrNone(armour.map((item) => item.name))} />
+        <PrintField label="Equipment" value={namesOrNone(otherEquipment.map((item) => item.name))} />
+        <PrintField label="Skills" value={namesOrNone(skills)} />
+        <PrintField label="Spells / prayers" value={namesOrNone(castableRules)} />
+        <PrintField label="Special rules" value={namesOrNone(passiveRules)} />
+        <PrintField label="Injuries" value={namesOrNone(member.injuries)} />
+        <PrintField label="Notes" value={member.notes || " "} />
+      </div>
+    </article>
+  );
+}
+
+function PrintSummary({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function PrintProfile({ profile }: { profile: RosterMember["currentProfile"] }) {
+  const stats: Array<keyof RosterMember["currentProfile"]> = ["M", "WS", "BS", "S", "T", "W", "I", "A", "Ld"];
+  return (
+    <div className="print-profile">
+      {stats.map((stat) => (
+        <div key={stat}>
+          <span>{stat}</span>
+          <strong>{profile[stat]}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PrintField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <strong>{label}</strong>
+      <p>{value}</p>
+    </div>
+  );
+}
+
+function PrintBoxes({ count }: { count: number }) {
+  return (
+    <span className="print-boxes">
+      {Array.from({ length: Math.max(1, count) }, (_, index) => (
+        <span key={index} />
+      ))}
+    </span>
+  );
+}
+
+function PrintCheck({ label }: { label: string }) {
+  return (
+    <span className="print-check">
+      <span />
+      {label}
+    </span>
+  );
+}
+
+function PrintBlankLines({ title, lines }: { title: string; lines: number }) {
+  return (
+    <div>
+      <strong>{title}</strong>
+      {Array.from({ length: lines }, (_, index) => (
+        <span className="print-blank-line" key={index} />
+      ))}
+    </div>
+  );
+}
+
 function RosterHeader({ roster }: { roster: Roster }) {
   const warband = currentWarband(roster)!;
   const cost = calculateRosterCost(roster, rulesDb);
@@ -2757,6 +3059,17 @@ function ruleRecordForBattleStatus(status: BattleStatus): RuleLookupRecord | und
   return ruleId ? rulesLookupRecords.find((record) => record.id === ruleId) : undefined;
 }
 
+function battleStatusLabel(status: BattleStatus) {
+  const labels: Record<BattleStatus, string> = {
+    active: "Active",
+    hidden: "Hidden",
+    knocked_down: "Knocked down",
+    stunned: "Stunned",
+    out_of_action: "Out of action"
+  };
+  return labels[status];
+}
+
 function ruleMatchesQuery(record: RuleLookupRecord, normalizedQuery: string) {
   return [
     record.name,
@@ -3187,6 +3500,10 @@ function warbandName(warbandTypeId: string) {
 
 function equipmentName(itemId: string) {
   return rulesDb.equipmentItems.find((item) => item.id === itemId)?.name ?? itemId;
+}
+
+function namesOrNone(items: string[]) {
+  return items.length ? items.join(", ") : "None";
 }
 
 function skillCategoryName(categoryId: string) {

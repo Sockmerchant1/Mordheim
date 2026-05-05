@@ -5,8 +5,11 @@ import skillsSeed from "./skills.json";
 import sourceDocuments from "./sources.json";
 import specialRules from "./specialRules.json";
 import carnivalOfChaos from "./warbands/carnival-of-chaos.json";
+import forestGoblins from "./warbands/forest-goblins.json";
+import lizardmen from "./warbands/lizardmen.json";
 import mercenaries from "./warbands/mercenaries.json";
 import orcMob from "./warbands/orc-mob.json";
+import shadowWarriors from "./warbands/shadow-warriors.json";
 import sistersOfSigmar from "./warbands/sisters-of-sigmar.json";
 import skaven from "./warbands/skaven.json";
 import undead from "./warbands/undead.json";
@@ -21,7 +24,10 @@ const warbandSeeds = [
   warbandSeedSchema.parse(carnivalOfChaos),
   warbandSeedSchema.parse(skaven),
   warbandSeedSchema.parse(undead),
-  warbandSeedSchema.parse(orcMob)
+  warbandSeedSchema.parse(orcMob),
+  warbandSeedSchema.parse(shadowWarriors),
+  warbandSeedSchema.parse(lizardmen),
+  warbandSeedSchema.parse(forestGoblins)
 ];
 const warbandSeedCollections = [warbandSeedCollectionSchema.parse(mercenaries)];
 const parsedHiredSwords = hiredSwordSchema.array().parse(hiredSwords);

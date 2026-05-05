@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import { rulesDbSchema, warbandSeedCollectionSchema, warbandSeedSchema } from "../src/rules/schemas.ts";
+import { hiredSwordSchema, rulesDbSchema, warbandSeedCollectionSchema, warbandSeedSchema } from "../src/rules/schemas.ts";
 import {
   calculateRosterCost,
   calculateWarbandRating,
@@ -112,14 +112,94 @@ import {
   tooManyTrolls,
   validOrcMob
 } from "../tests/fixtures/orcRosters.ts";
+import {
+  invalidShadowSkill,
+  shadowNoviceWithRunestones,
+  shadowWalkerWithPowerfulBuild,
+  shadowWarriorWithIthilmarWeapon,
+  shadowWarriorsNoMaster,
+  shadowWarriorsTwoMasters,
+  shadowWeaverWithArmourAndSpell,
+  shadowWeaverWithSpell,
+  tooManyPowerfulBuilds,
+  tooManyShadowWalkers,
+  tooManyShadowWarriors,
+  tooManyShadowWeavers,
+  validShadowWarriors
+} from "../tests/fixtures/shadowWarriorRosters.ts";
+import {
+  greatCrestWithBoneHelmet,
+  invalidLizardmenSkill,
+  kroxigorWithoutHalberd,
+  lizardmenHeroWithTwoSacredMarkings,
+  lizardmenNoPriest,
+  lizardmenPriestWithSpell,
+  lizardmenTwoPriests,
+  lizardmenWithWarlock,
+  saurusBraveWithShortBow,
+  skinkBraveWithSword,
+  tooManyGreatCrests,
+  tooManyLizardmenWarriors,
+  tooManySaurusBravesForSkinks,
+  tooManySaurusBravesMaximum,
+  tooManyTotemWarriors,
+  validKroxigor,
+  validLizardmen
+} from "../tests/fixtures/lizardmenRosters.ts";
+import {
+  braveShedsAnimosity,
+  braveWithMagicGubbinz,
+  chieftainWithForestGoblinSpell,
+  forestGoblinWithAxe,
+  forestGoblinWithSpider,
+  forestGoblinsNoChieftain,
+  forestGoblinsTwoChieftains,
+  giganticSpiderWithWeapon,
+  invalidForestGoblinSkill,
+  shamanWithForestGoblinSpell,
+  tooManyForestGoblinBraves,
+  tooManyForestGoblinShamans,
+  tooManyForestGoblinWarriors,
+  tooManyGiganticSpiders,
+  tooManyRedToofBoyz,
+  tooManySluggas,
+  validForestGoblins
+} from "../tests/fixtures/forestGoblinRosters.ts";
+import {
+  createRosterFromStarterTemplate,
+  starterRosterTemplates
+} from "../src/data/starterRosters.ts";
 
 const rulesDb = await loadRulesDb();
+const rulesLookup = JSON.parse(await fs.readFile(new URL("../src/data/rulesLookup.json", import.meta.url), "utf8"));
+
+assert.ok(rulesLookup.some((rule) => rule.id === "equipment-helmet" && rule.text.includes("4+")));
+assert.ok(rulesLookup.some((rule) => rule.id === "special-sigmar-healing-hand" && rule.text.includes("2 inches")));
+assert.ok(rulesLookup.some((rule) => rule.id === "injury-leg-wound" && rule.text.includes("-1 Movement")));
+assert.ok(!rulesLookup.some((rule) => /Placeholder injury entry|Rule text not available yet/i.test(rule.text)));
 
 assert.deepEqual(getPendingAdvances(1, 4), [2, 4]);
 assert.deepEqual(getPendingAdvances(4, 6), [6]);
 assert.deepEqual(getPendingAdvances(6, 6), []);
 
 assert.ok(getAllowedWarbands(rulesDb, { officialOnly: true }).some((warband) => warband.id === "witch-hunters"));
+
+const templateWarbandIds = new Set(starterRosterTemplates.map((template) => template.warbandTypeId));
+for (const warband of rulesDb.warbandTypes.filter((item) => item.implementationStatus === "tested")) {
+  assert.ok(templateWarbandIds.has(warband.id), `Missing starter roster template for ${warband.id}`);
+}
+for (const template of starterRosterTemplates) {
+  const templateRoster = createRosterFromStarterTemplate(template, rulesDb);
+  const templateErrors = validateRoster(templateRoster, rulesDb).filter((issue) => issue.severity === "error");
+  assert.deepEqual(templateErrors.map((issue) => `${issue.code}: ${issue.message}`), [], `Starter template ${template.id} should be valid`);
+  const templateCost = calculateRosterCost(templateRoster, rulesDb);
+  const templateWarband = rulesDb.warbandTypes.find((warband) => warband.id === template.warbandTypeId);
+  assert.ok(templateWarband, `Starter template ${template.id} should reference a known warband`);
+  assert.ok(templateCost <= templateWarband.startingGold, `Starter template ${template.id} should not overspend`);
+  assert.equal(templateRoster.claimedCost, templateCost);
+  assert.equal(templateRoster.claimedWarbandRating, calculateWarbandRating(templateRoster, rulesDb));
+  assert.equal(templateRoster.treasuryGold, templateWarband.startingGold - templateCost);
+}
 
 assert.doesNotMatch(codes(validStartingWitchHunters()).join(","), /REQUIRED_LEADER/);
 assert.ok(codes(noCaptainWitchHunters()).includes("REQUIRED_LEADER"));
@@ -419,6 +499,162 @@ const bossSpells = getAllowedSpecialRules(orcRoster.members[0], orcRoster, rules
 assert.equal(shamanSpells.find((option) => option.item.id === "waaagh-zzap")?.allowed, true);
 assert.equal(bossSpells.find((option) => option.item.id === "waaagh-zzap")?.allowed, false);
 
+assert.ok(getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).some((warband) => warband.id === "shadow-warriors"));
+assert.deepEqual(errorCodes(validShadowWarriors()), []);
+assert.equal(calculateRosterCost(validShadowWarriors(), rulesDb), 335);
+assert.equal(calculateWarbandRating(validShadowWarriors(), rulesDb), 79);
+assert.ok(codes(shadowWarriorsNoMaster()).includes("REQUIRED_LEADER"));
+assert.ok(codes(shadowWarriorsTwoMasters()).includes("REQUIRED_LEADER"));
+assert.ok(codes(tooManyShadowWalkers()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyShadowWeavers()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyShadowWarriors()).includes("MAX_WARRIORS"));
+assert.ok(codes(shadowNoviceWithRunestones()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(shadowWarriorWithIthilmarWeapon()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(invalidShadowSkill()).includes("INVALID_SKILL"));
+assert.deepEqual(errorCodes(shadowWalkerWithPowerfulBuild()), []);
+assert.ok(codes(tooManyPowerfulBuilds()).includes("INVALID_SKILL"));
+assert.deepEqual(errorCodes(shadowWeaverWithSpell()), []);
+assert.ok(codes(shadowWeaverWithArmourAndSpell()).includes("INVALID_SPECIAL_RULE"));
+
+const shadowRoster = validShadowWarriors();
+const shadowMasterOptions = getAllowedEquipment(shadowRoster.members[0], shadowRoster, rulesDb);
+const shadowWeaverOptions = getAllowedEquipment(shadowRoster.members[1], shadowRoster, rulesDb);
+const shadowWarriorOptions = getAllowedEquipment(shadowRoster.members[3], shadowRoster, rulesDb);
+assert.equal(shadowMasterOptions.find((option) => option.item.id === "standard-of-nagarythe")?.allowed, true);
+assert.equal(shadowWeaverOptions.find((option) => option.item.id === "elven-runestones")?.allowed, true);
+assert.equal(shadowWarriorOptions.find((option) => option.item.id === "elf-bow")?.allowed, true);
+assert.equal(shadowWarriorOptions.find((option) => option.item.id === "elven-runestones")?.allowed, false);
+
+const shadowMasterSkills = getAllowedSkills(shadowRoster.members[0], shadowRoster, rulesDb);
+const shadowWeaverSkills = getAllowedSkills(shadowRoster.members[1], shadowRoster, rulesDb);
+const powerfulBuildRoster = shadowWalkerWithPowerfulBuild();
+const powerfulWalkerSkills = getAllowedSkills(powerfulBuildRoster.members[2], powerfulBuildRoster, rulesDb);
+assert.equal(shadowMasterSkills.find((option) => option.item.id === "powerful-build")?.allowed, true);
+assert.equal(shadowWeaverSkills.find((option) => option.item.id === "powerful-build")?.allowed, false);
+assert.equal(shadowWeaverSkills.find((option) => option.item.id === "master-of-runes")?.allowed, true);
+assert.equal(powerfulWalkerSkills.find((option) => option.item.id === "mighty-blow")?.allowed, true);
+assert.equal(rulesDb.specialRules.find((rule) => rule.id === "shadow-magic")?.sourceDocumentId, "mhr-shadow-warriors");
+assert.ok(rulesDb.specialRules.find((rule) => rule.id === "shadow-magic")?.relatedRuleIds.includes("shadow-shadowbind"));
+assert.equal(rulesDb.skills.find((skill) => skill.id === "powerful-build")?.sourceDocumentId, "mhr-shadow-warriors");
+const shadowWeaverSpells = getAllowedSpecialRules(shadowRoster.members[1], shadowRoster, rulesDb);
+const armouredWeaverSpells = getAllowedSpecialRules({ ...shadowRoster.members[1], equipment: ["dagger", "light-armour"] }, shadowRoster, rulesDb);
+const shadowMasterSpells = getAllowedSpecialRules(shadowRoster.members[0], shadowRoster, rulesDb);
+assert.equal(shadowWeaverSpells.find((option) => option.item.id === "shadow-pool-of-shadow")?.allowed, true);
+assert.equal(armouredWeaverSpells.find((option) => option.item.id === "shadow-pool-of-shadow")?.allowed, false);
+assert.equal(shadowMasterSpells.find((option) => option.item.id === "shadow-pool-of-shadow")?.allowed, false);
+assert.ok(rulesDb.hiredSwords.find((hiredSword) => hiredSword.id === "elf-ranger")?.allowedWarbandTypeIds.includes("shadow-warriors"));
+
+assert.ok(getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).some((warband) => warband.id === "lizardmen"));
+assert.deepEqual(errorCodes(validLizardmen()), []);
+assert.equal(calculateRosterCost(validLizardmen(), rulesDb), 309);
+assert.equal(calculateWarbandRating(validLizardmen(), rulesDb), 74);
+assert.ok(codes(lizardmenNoPriest()).includes("REQUIRED_LEADER"));
+assert.ok(codes(lizardmenTwoPriests()).includes("REQUIRED_LEADER"));
+assert.ok(codes(tooManyTotemWarriors()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyGreatCrests()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManySaurusBravesMaximum()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManySaurusBravesMaximum()).includes("HENCHMAN_GROUP_SIZE"));
+assert.ok(codes(tooManySaurusBravesForSkinks()).includes("FIGHTER_RATIO_LIMIT"));
+assert.ok(codes(tooManyLizardmenWarriors()).includes("MAX_WARRIORS"));
+assert.ok(codes(skinkBraveWithSword()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(saurusBraveWithShortBow()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(greatCrestWithBoneHelmet()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(kroxigorWithoutHalberd()).includes("REQUIRED_EQUIPMENT_OPTION"));
+assert.deepEqual(errorCodes(validKroxigor()), []);
+assert.ok(codes(lizardmenHeroWithTwoSacredMarkings()).includes("EXCLUSIVE_EQUIPMENT_GROUP"));
+assert.ok(codes(invalidLizardmenSkill()).includes("INVALID_SKILL"));
+assert.deepEqual(errorCodes(lizardmenPriestWithSpell()), []);
+assert.ok(codes(lizardmenWithWarlock()).includes("HIRED_SWORD_NOT_AVAILABLE"));
+
+const lizardmenRoster = validLizardmen();
+const priestOptions = getAllowedEquipment(lizardmenRoster.members[0], lizardmenRoster, rulesDb);
+const crestOptions = getAllowedEquipment(lizardmenRoster.members[2], lizardmenRoster, rulesDb);
+const skinkOptions = getAllowedEquipment(lizardmenRoster.members[3], lizardmenRoster, rulesDb);
+const saurusOptions = getAllowedEquipment(lizardmenRoster.members[4], lizardmenRoster, rulesDb);
+const kroxigorRoster = kroxigorWithoutHalberd();
+const kroxigorOptions = getAllowedEquipment(kroxigorRoster.members[2], kroxigorRoster, rulesDb);
+assert.equal(priestOptions.find((option) => option.item.id === "bone-helmet")?.allowed, true);
+assert.equal(crestOptions.find((option) => option.item.id === "bone-helmet")?.allowed, false);
+assert.equal(skinkOptions.find((option) => option.item.id === "javelin")?.allowed, true);
+assert.equal(skinkOptions.find((option) => option.item.id === "sword")?.allowed, false);
+assert.equal(saurusOptions.find((option) => option.item.id === "short-bow")?.allowed, false);
+assert.equal(saurusOptions.find((option) => option.item.id === "lizardmen-light-armour")?.allowed, true);
+assert.equal(kroxigorOptions.find((option) => option.item.id === "kroxigor-halberd")?.allowed, true);
+
+const lizardmenPriestSkills = getAllowedSkills(lizardmenRoster.members[0], lizardmenRoster, rulesDb);
+const totemSkills = getAllowedSkills(lizardmenRoster.members[1], lizardmenRoster, rulesDb);
+const crestSkills = getAllowedSkills(lizardmenRoster.members[2], lizardmenRoster, rulesDb);
+assert.equal(lizardmenPriestSkills.find((option) => option.item.id === "lizardmen-infiltration")?.allowed, true);
+assert.equal(lizardmenPriestSkills.find((option) => option.item.id === "bellowing-battle-roar")?.allowed, false);
+assert.equal(totemSkills.find((option) => option.item.id === "bellowing-battle-roar")?.allowed, true);
+assert.equal(totemSkills.find((option) => option.item.id === "great-hunter")?.allowed, false);
+assert.equal(crestSkills.find((option) => option.item.id === "great-hunter")?.allowed, true);
+
+const priestSpells = getAllowedSpecialRules(lizardmenRoster.members[0], lizardmenRoster, rulesDb);
+const totemSpells = getAllowedSpecialRules(lizardmenRoster.members[1], lizardmenRoster, rulesDb);
+assert.equal(priestSpells.find((option) => option.item.id === "lizardmen-chotecs-wrath")?.allowed, true);
+assert.equal(totemSpells.find((option) => option.item.id === "lizardmen-chotecs-wrath")?.allowed, false);
+assert.equal(rulesDb.specialRules.find((rule) => rule.id === "lizardmen-magic")?.sourceDocumentId, "tc11-lizardmen");
+assert.ok(rulesDb.specialRules.find((rule) => rule.id === "lizardmen-magic")?.relatedRuleIds.includes("lizardmen-chotecs-wrath"));
+assert.equal(rulesDb.skills.find((skill) => skill.id === "bellowing-battle-roar")?.sourceDocumentId, "tc11-lizardmen");
+assert.equal(rulesDb.equipmentItems.find((item) => item.id === "bolas")?.sourceDocumentId, "tc11-lizardmen");
+assert.ok(rulesDb.hiredSwords.find((hiredSword) => hiredSword.id === "warlock")?.blockedWarbandTypeIds.includes("lizardmen"));
+
+assert.ok(getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).some((warband) => warband.id === "forest-goblins"));
+assert.deepEqual(errorCodes(validForestGoblins()), []);
+assert.equal(calculateRosterCost(validForestGoblins(), rulesDb), 240);
+assert.equal(calculateWarbandRating(validForestGoblins(), rulesDb), 64);
+assert.ok(codes(forestGoblinsNoChieftain()).includes("REQUIRED_LEADER"));
+assert.ok(codes(forestGoblinsTwoChieftains()).includes("REQUIRED_LEADER"));
+assert.ok(codes(tooManyForestGoblinBraves()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyForestGoblinShamans()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyRedToofBoyz()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyRedToofBoyz()).includes("HENCHMAN_GROUP_SIZE"));
+assert.ok(codes(tooManySluggas()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyGiganticSpiders()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyForestGoblinWarriors()).includes("MAX_WARRIORS"));
+assert.ok(codes(forestGoblinWithAxe()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(braveWithMagicGubbinz()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(giganticSpiderWithWeapon()).includes("INVALID_EQUIPMENT"));
+assert.deepEqual(errorCodes(forestGoblinWithSpider()), []);
+assert.equal(calculateRosterCost(forestGoblinWithSpider(), rulesDb), 440);
+assert.equal(calculateWarbandRating(forestGoblinWithSpider(), rulesDb), 84);
+assert.ok(codes(invalidForestGoblinSkill()).includes("INVALID_SKILL"));
+assert.deepEqual(errorCodes(braveShedsAnimosity()), []);
+assert.deepEqual(errorCodes(shamanWithForestGoblinSpell()), []);
+assert.ok(codes(chieftainWithForestGoblinSpell()).includes("INVALID_SPECIAL_RULE"));
+
+const forestGoblinRoster = validForestGoblins();
+const forestChieftainOptions = getAllowedEquipment(forestGoblinRoster.members[0], forestGoblinRoster, rulesDb);
+const forestShamanOptions = getAllowedEquipment(forestGoblinRoster.members[1], forestGoblinRoster, rulesDb);
+const forestBraveOptions = getAllowedEquipment(forestGoblinRoster.members[2], forestGoblinRoster, rulesDb);
+const forestHenchmanOptions = getAllowedEquipment(forestGoblinRoster.members[3], forestGoblinRoster, rulesDb);
+const forestSpiderOptions = getAllowedEquipment(forestGoblinWithSpider().members[6], forestGoblinWithSpider(), rulesDb);
+assert.equal(forestChieftainOptions.find((option) => option.item.id === "boss-pole")?.allowed, true);
+assert.equal(forestChieftainOptions.find((option) => option.item.id === "giant-spider-mount")?.allowed, true);
+assert.equal(forestShamanOptions.find((option) => option.item.id === "magic-gubbinz")?.allowed, true);
+assert.equal(forestBraveOptions.find((option) => option.item.id === "magic-gubbinz")?.allowed, false);
+assert.equal(forestHenchmanOptions.find((option) => option.item.id === "forest-goblin-throwing-weapons")?.allowed, true);
+assert.equal(forestHenchmanOptions.find((option) => option.item.id === "axe")?.allowed, false);
+assert.equal(forestSpiderOptions.find((option) => option.item.id === "dagger")?.allowed, false);
+
+const forestChieftainSkills = getAllowedSkills(forestGoblinRoster.members[0], forestGoblinRoster, rulesDb);
+const forestBraveSkills = getAllowedSkills(forestGoblinRoster.members[2], forestGoblinRoster, rulesDb);
+const forestShamanSkills = getAllowedSkills(forestGoblinRoster.members[1], forestGoblinRoster, rulesDb);
+assert.equal(forestChieftainSkills.find((option) => option.item.id === "shed-animosity")?.allowed, false);
+assert.equal(forestBraveSkills.find((option) => option.item.id === "shed-animosity")?.allowed, true);
+assert.equal(forestShamanSkills.find((option) => option.item.id === "sorcery")?.allowed, true);
+assert.equal(forestShamanSkills.find((option) => option.item.id === "mighty-blow")?.allowed, false);
+
+const forestShamanSpells = getAllowedSpecialRules(forestGoblinRoster.members[1], forestGoblinRoster, rulesDb);
+const forestChieftainSpells = getAllowedSpecialRules(forestGoblinRoster.members[0], forestGoblinRoster, rulesDb);
+assert.equal(forestShamanSpells.find((option) => option.item.id === "forest-goblin-wind-of-gork")?.allowed, true);
+assert.equal(forestChieftainSpells.find((option) => option.item.id === "forest-goblin-wind-of-gork")?.allowed, false);
+assert.equal(rulesDb.specialRules.find((rule) => rule.id === "forest-goblin-magic")?.sourceDocumentId, "nc-forest-goblins");
+assert.ok(rulesDb.specialRules.find((rule) => rule.id === "forest-goblin-magic")?.relatedRuleIds.includes("forest-goblin-wind-of-gork"));
+assert.equal(rulesDb.skills.find((skill) => skill.id === "shed-animosity")?.sourceDocumentId, "nc-forest-goblins");
+assert.equal(rulesDb.equipmentItems.find((item) => item.id === "boss-pole")?.sourceDocumentId, "nc-forest-goblins");
+
 console.log("Rules engine verification passed.");
 
 function codes(roster) {
@@ -432,7 +668,7 @@ function errorCodes(roster) {
 }
 
 async function loadRulesDb() {
-  const [sourceDocuments, equipmentItems, skillSeed, specialRules, hiredSwords, ruleReferences, witchHunters, mercenaries, sisters, carnival, skaven, undead, orcMob] = await Promise.all([
+  const [sourceDocuments, equipmentItems, skillSeed, specialRules, hiredSwords, ruleReferences, witchHunters, mercenaries, sisters, carnival, skaven, undead, orcMob, shadowWarriors, lizardmen, forestGoblins] = await Promise.all([
     readJson("../src/data/sources.json"),
     readJson("../src/data/equipment.json"),
     readJson("../src/data/skills.json"),
@@ -445,7 +681,10 @@ async function loadRulesDb() {
     readJson("../src/data/warbands/carnival-of-chaos.json"),
     readJson("../src/data/warbands/skaven.json"),
     readJson("../src/data/warbands/undead.json"),
-    readJson("../src/data/warbands/orc-mob.json")
+    readJson("../src/data/warbands/orc-mob.json"),
+    readJson("../src/data/warbands/shadow-warriors.json"),
+    readJson("../src/data/warbands/lizardmen.json"),
+    readJson("../src/data/warbands/forest-goblins.json")
   ]);
   const warbandSeed = warbandSeedSchema.parse(witchHunters);
   const sistersSeed = warbandSeedSchema.parse(sisters);
@@ -453,17 +692,54 @@ async function loadRulesDb() {
   const skavenSeed = warbandSeedSchema.parse(skaven);
   const undeadSeed = warbandSeedSchema.parse(undead);
   const orcMobSeed = warbandSeedSchema.parse(orcMob);
+  const shadowWarriorsSeed = warbandSeedSchema.parse(shadowWarriors);
+  const lizardmenSeed = warbandSeedSchema.parse(lizardmen);
+  const forestGoblinsSeed = warbandSeedSchema.parse(forestGoblins);
   const mercenarySeed = warbandSeedCollectionSchema.parse(mercenaries);
+  const parsedHiredSwords = hiredSwordSchema.array().parse(hiredSwords);
+  const hiredSwordFighterTypes = parsedHiredSwords
+    .filter((hiredSword) => hiredSword.profile)
+    .map((hiredSword) => ({
+      id: `hired-sword-${hiredSword.id}`,
+      warbandTypeId: "hired-swords",
+      name: hiredSword.name,
+      category: "hired_sword",
+      minCount: 0,
+      maxCount: 1,
+      groupMinSize: null,
+      groupMaxSize: null,
+      hireCost: hiredSword.hireFee,
+      startingExperience: hiredSword.startingExperience,
+      profile: hiredSword.profile,
+      equipmentListIds: [],
+      skillCategoryIds: hiredSword.skillCategoryIds,
+      specialRuleIds: hiredSword.specialRuleIds,
+      canGainExperience: true,
+      isLargeCreature: hiredSword.isLargeCreature,
+      ratingOverride: hiredSword.ratingOverride ?? null,
+      notes: [hiredSword.effectSummary, hiredSword.availabilitySummary, hiredSword.notes].filter(Boolean).join(" "),
+      validation: {
+        requiredOneOfEquipmentItemIds: [],
+        warbandMaxWarriorsBonus: 0,
+        maxCountPerFighterTypeIds: []
+      },
+      source: {
+        sourceDocumentId: hiredSword.sourceDocumentId,
+        sourceUrl: hiredSword.sourceUrl,
+        pageRef: hiredSword.pageRef,
+        label: hiredSword.name
+      }
+    }));
   return rulesDbSchema.parse({
     sourceDocuments,
-    warbandTypes: [warbandSeed.warbandType, sistersSeed.warbandType, carnivalSeed.warbandType, skavenSeed.warbandType, undeadSeed.warbandType, orcMobSeed.warbandType, ...mercenarySeed.warbandTypes],
-    fighterTypes: [...warbandSeed.fighterTypes, ...sistersSeed.fighterTypes, ...carnivalSeed.fighterTypes, ...skavenSeed.fighterTypes, ...undeadSeed.fighterTypes, ...orcMobSeed.fighterTypes, ...mercenarySeed.fighterTypes],
+    warbandTypes: [warbandSeed.warbandType, sistersSeed.warbandType, carnivalSeed.warbandType, skavenSeed.warbandType, undeadSeed.warbandType, orcMobSeed.warbandType, shadowWarriorsSeed.warbandType, lizardmenSeed.warbandType, forestGoblinsSeed.warbandType, ...mercenarySeed.warbandTypes],
+    fighterTypes: [...warbandSeed.fighterTypes, ...sistersSeed.fighterTypes, ...carnivalSeed.fighterTypes, ...skavenSeed.fighterTypes, ...undeadSeed.fighterTypes, ...orcMobSeed.fighterTypes, ...shadowWarriorsSeed.fighterTypes, ...lizardmenSeed.fighterTypes, ...forestGoblinsSeed.fighterTypes, ...mercenarySeed.fighterTypes, ...hiredSwordFighterTypes],
     equipmentItems,
-    equipmentLists: [...warbandSeed.equipmentLists, ...sistersSeed.equipmentLists, ...carnivalSeed.equipmentLists, ...skavenSeed.equipmentLists, ...undeadSeed.equipmentLists, ...orcMobSeed.equipmentLists, ...mercenarySeed.equipmentLists],
+    equipmentLists: [...warbandSeed.equipmentLists, ...sistersSeed.equipmentLists, ...carnivalSeed.equipmentLists, ...skavenSeed.equipmentLists, ...undeadSeed.equipmentLists, ...orcMobSeed.equipmentLists, ...shadowWarriorsSeed.equipmentLists, ...lizardmenSeed.equipmentLists, ...forestGoblinsSeed.equipmentLists, ...mercenarySeed.equipmentLists],
     skillCategories: skillSeed.categories,
     skills: skillSeed.skills,
     specialRules,
-    hiredSwords,
+    hiredSwords: parsedHiredSwords,
     ruleReferences
   });
 }

@@ -253,7 +253,7 @@
       "isOfficial": true,
       "sourceCode": "NC",
       "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Forest%20Goblins.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "gunnery-school-of-nuln",
@@ -308,7 +308,7 @@
       "isOfficial": true,
       "sourceCode": "TC11",
       "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Lizardmen.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "miragleans",
@@ -418,7 +418,7 @@
       "isOfficial": true,
       "sourceCode": "A02",
       "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Shadow%20Warriors.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "skaven-of-clan-pestilens",
@@ -1133,7 +1133,7 @@
       "isOfficial": false,
       "sourceCode": "LUS",
       "sourceUrl": "https://broheim.net/downloads/warbands/supplement/lustria/Lizardmen.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "lords-of-the-marsh",

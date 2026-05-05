@@ -39,6 +39,21 @@
       "id": "orc-special",
       "name": "Orc Special",
       "skillIds": ["ard-ead", "waaagh-charge", "ere-we-go", "da-cunnin-plan", "well-ard", "eadbasher"]
+    },
+    {
+      "id": "shadow-warrior-special",
+      "name": "Shadow Warrior Special",
+      "skillIds": ["shadow-infiltration", "see-in-shadows", "hide-in-shadows", "sniper", "powerful-build", "master-of-runes"]
+    },
+    {
+      "id": "lizardmen-special",
+      "name": "Lizardmen Special",
+      "skillIds": ["lizardmen-infiltration", "great-hunter", "bellowing-battle-roar", "toughened-hide"]
+    },
+    {
+      "id": "forest-goblin-special",
+      "name": "Forest Goblin Special",
+      "skillIds": ["shed-animosity"]
     }
   ],
   "skills": [
@@ -379,6 +394,157 @@
       "sourceUrl": "https://broheim.net/downloads/warbands/official/Orc%20Mob.pdf",
       "pageRef": "Orc Mob p. 13",
       "relatedRuleIds": ["battle-knocked-down", "battle-stunned"]
+    },
+    {
+      "id": "shadow-infiltration",
+      "name": "Infiltration",
+      "categoryId": "shadow-warrior-special",
+      "effectSummary": "The warrior deploys after the opposing warband, out of enemy sight and more than 12 inches from enemy models.",
+      "restrictions": "Shadow Warrior heroes with access to the Shadow Warrior Special skill list.",
+      "sourceDocumentId": "mhr-shadow-warriors",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Shadow%20Warriors.pdf",
+      "pageRef": "Shadow Warriors p. 63",
+      "relatedRuleIds": []
+    },
+    {
+      "id": "see-in-shadows",
+      "name": "See in Shadows",
+      "categoryId": "shadow-warrior-special",
+      "effectSummary": "If the warrior has enough movement to reach an unseen opponent, he may always roll to charge that model instead of using the normal 4 inch limit.",
+      "restrictions": "Shadow Warrior heroes with access to the Shadow Warrior Special skill list.",
+      "sourceDocumentId": "mhr-shadow-warriors",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Shadow%20Warriors.pdf",
+      "pageRef": "Shadow Warriors p. 63",
+      "relatedRuleIds": []
+    },
+    {
+      "id": "hide-in-shadows",
+      "name": "Hide in Shadows",
+      "categoryId": "shadow-warrior-special",
+      "effectSummary": "Enemies attempting to detect this warrior while Hidden halve their Initiative before measuring spotting distance.",
+      "restrictions": "Shadow Warrior heroes with access to the Shadow Warrior Special skill list.",
+      "sourceDocumentId": "mhr-shadow-warriors",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Shadow%20Warriors.pdf",
+      "pageRef": "Shadow Warriors p. 63",
+      "relatedRuleIds": ["battle-hidden"]
+    },
+    {
+      "id": "sniper",
+      "name": "Sniper",
+      "categoryId": "shadow-warrior-special",
+      "effectSummary": "If Hidden, the warrior may shoot or cast spells and remain Hidden unless the target survives and passes the listed spotting test.",
+      "restrictions": "Shadow Warrior heroes with access to the Shadow Warrior Special skill list.",
+      "sourceDocumentId": "mhr-shadow-warriors",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Shadow%20Warriors.pdf",
+      "pageRef": "Shadow Warriors p. 63",
+      "relatedRuleIds": ["battle-hidden"]
+    },
+    {
+      "id": "powerful-build",
+      "name": "Powerful Build",
+      "categoryId": "shadow-warrior-special",
+      "effectSummary": "The warrior may choose from the Strength skill table from now on.",
+      "restrictions": "Shadow Master or Shadow Walker only; no more than two warriors in the warband may have this skill.",
+      "sourceDocumentId": "mhr-shadow-warriors",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Shadow%20Warriors.pdf",
+      "pageRef": "Shadow Warriors p. 63",
+      "relatedRuleIds": [],
+      "validation": {
+        "allowedFighterTypeIds": ["shadow-master", "shadow-walker"],
+        "requiredSpecialRuleIds": [],
+        "grantsSkillCategoryIds": ["strength"],
+        "maxCountInWarband": 2
+      }
+    },
+    {
+      "id": "master-of-runes",
+      "name": "Master of Runes",
+      "categoryId": "shadow-warrior-special",
+      "effectSummary": "When using Elven Runestones, the Shadow Weaver gains +1 to the dispel roll and may inscribe one ally's weapons or armour to re-roll one failed armour save or Parry roll once per battle.",
+      "restrictions": "Shadow Weaver only.",
+      "sourceDocumentId": "mhr-shadow-warriors",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Shadow%20Warriors.pdf",
+      "pageRef": "Shadow Warriors p. 63",
+      "relatedRuleIds": ["elven-runestones-rule"],
+      "validation": {
+        "allowedFighterTypeIds": ["shadow-weaver"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "lizardmen-infiltration",
+      "name": "Infiltration",
+      "categoryId": "lizardmen-special",
+      "effectSummary": "The warrior deploys after the opposing warband, out of enemy sight and more than 12 inches from enemy models.",
+      "restrictions": "Skink Priest or Skink Great Crest only.",
+      "sourceDocumentId": "tc11-lizardmen",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Lizardmen.pdf",
+      "pageRef": "Lizardmen p. 26",
+      "relatedRuleIds": [],
+      "validation": {
+        "allowedFighterTypeIds": ["skink-priest", "skink-great-crest"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "great-hunter",
+      "name": "Great Hunter",
+      "categoryId": "lizardmen-special",
+      "effectSummary": "Adds +1 to Injury rolls caused by the Skink Great Crest's shooting attacks.",
+      "restrictions": "Skink Great Crest only.",
+      "sourceDocumentId": "tc11-lizardmen",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Lizardmen.pdf",
+      "pageRef": "Lizardmen p. 26",
+      "relatedRuleIds": [],
+      "validation": {
+        "allowedFighterTypeIds": ["skink-great-crest"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "bellowing-battle-roar",
+      "name": "Bellowing Battle Roar",
+      "categoryId": "lizardmen-special",
+      "effectSummary": "If the Saurus Totem Warrior is not hidden, engaged, knocked down, stunned or out of action, friendly Skinks within 6 inches may use his Leadership for tests.",
+      "restrictions": "Saurus Totem Warrior only.",
+      "sourceDocumentId": "tc11-lizardmen",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Lizardmen.pdf",
+      "pageRef": "Lizardmen p. 26",
+      "relatedRuleIds": ["battle-hidden", "battle-knocked-down", "battle-stunned"],
+      "validation": {
+        "allowedFighterTypeIds": ["saurus-totem-warrior"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "toughened-hide",
+      "name": "Toughened Hide",
+      "categoryId": "lizardmen-special",
+      "effectSummary": "Improves the Saurus Totem Warrior's Scaly Skin armour save by +1.",
+      "restrictions": "Saurus Totem Warrior only.",
+      "sourceDocumentId": "tc11-lizardmen",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Lizardmen.pdf",
+      "pageRef": "Lizardmen p. 26",
+      "relatedRuleIds": ["scaly-skin-saurus"],
+      "validation": {
+        "allowedFighterTypeIds": ["saurus-totem-warrior"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "shed-animosity",
+      "name": "Shed Animosity",
+      "categoryId": "forest-goblin-special",
+      "effectSummary": "Campaign advance option: a Forest Goblin Brave may remove Animosity instead of choosing a normal skill.",
+      "restrictions": "Forest Goblin Brave only; record the advance and ignore that Brave's Animosity in play.",
+      "sourceDocumentId": "nc-forest-goblins",
+      "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Forest%20Goblins.pdf",
+      "pageRef": "Forest Goblins p. 1",
+      "relatedRuleIds": ["forest-goblin-animosity"],
+      "validation": {
+        "allowedFighterTypeIds": ["forest-goblin-brave"],
+        "requiredSpecialRuleIds": []
+      }
     }
   ]
 }

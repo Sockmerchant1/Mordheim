@@ -1,0 +1,238 @@
+{
+  "warbandType": {
+    "id": "lizardmen",
+    "name": "Lizardmen",
+    "race": "Lizardmen",
+    "broheimGrade": "1b",
+    "sourceCode": "TC11",
+    "sourceDocumentId": "tc11-lizardmen",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Lizardmen.pdf",
+    "implementationStatus": "tested",
+    "startingGold": 500,
+    "minWarriors": 3,
+    "maxWarriors": 20,
+    "maxHeroes": 4,
+    "leaderFighterTypeId": "skink-priest",
+    "notes": "Grade 1b Lizardmen warband. Includes Skink/Saurus equipment, the Saurus Brave to Skink Brave ratio limit, Kroxigor required halberd, Sacred Marking exclusivity, Lizardmen Magic and Lizardmen special skills."
+  },
+  "fighterTypes": [
+    {
+      "id": "skink-priest",
+      "warbandTypeId": "lizardmen",
+      "name": "Skink Priest",
+      "category": "hero",
+      "minCount": 1,
+      "maxCount": 1,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 60,
+      "startingExperience": 20,
+      "profile": { "M": 6, "WS": 3, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 5, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["lizardmen-skink-priest-equipment"],
+      "skillCategoryIds": ["academic", "speed", "lizardmen-special"],
+      "specialRuleIds": ["leader", "spellcaster", "lizardmen-magic", "scaly-skin-skink", "cold-blooded", "aquatic", "jungle-born"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Required leader and spellcaster using Lizardmen Magic.",
+      "source": {
+        "sourceDocumentId": "tc11-lizardmen",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Lizardmen.pdf",
+        "pageRef": "Lizardmen p. 24",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "saurus-totem-warrior",
+      "warbandTypeId": "lizardmen",
+      "name": "Saurus Totem Warrior",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 1,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 60,
+      "startingExperience": 11,
+      "profile": { "M": 4, "WS": 3, "BS": 0, "S": 4, "T": 4, "W": 1, "I": 1, "A": 2, "Ld": 8 },
+      "equipmentListIds": ["lizardmen-saurus-hero-equipment"],
+      "skillCategoryIds": ["combat", "strength", "lizardmen-special"],
+      "specialRuleIds": ["scaly-skin-saurus", "cold-blooded", "lizardmen-bite-attack"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to one may be hired. Attacks include the warrior's normal attack plus Bite Attack.",
+      "source": {
+        "sourceDocumentId": "tc11-lizardmen",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Lizardmen.pdf",
+        "pageRef": "Lizardmen p. 24",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "skink-great-crest",
+      "warbandTypeId": "lizardmen",
+      "name": "Skink Great Crest",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 30,
+      "startingExperience": 8,
+      "profile": { "M": 6, "WS": 2, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 4, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["lizardmen-skink-hero-equipment"],
+      "skillCategoryIds": ["shooting", "speed", "lizardmen-special"],
+      "specialRuleIds": ["scaly-skin-skink", "cold-blooded", "aquatic", "jungle-born"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to two may be hired.",
+      "source": {
+        "sourceDocumentId": "tc11-lizardmen",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Lizardmen.pdf",
+        "pageRef": "Lizardmen p. 24",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "skink-brave",
+      "warbandTypeId": "lizardmen",
+      "name": "Skink Brave",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": null,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 20,
+      "startingExperience": 0,
+      "profile": { "M": 6, "WS": 2, "BS": 3, "S": 3, "T": 2, "W": 1, "I": 4, "A": 1, "Ld": 6 },
+      "equipmentListIds": ["lizardmen-skink-henchman-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["scaly-skin-skink", "cold-blooded", "aquatic", "jungle-born"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Bought in groups of 1-5.",
+      "source": {
+        "sourceDocumentId": "tc11-lizardmen",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Lizardmen.pdf",
+        "pageRef": "Lizardmen p. 25",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "saurus-brave",
+      "warbandTypeId": "lizardmen",
+      "name": "Saurus Brave",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": 4,
+      "groupMinSize": 1,
+      "groupMaxSize": 4,
+      "hireCost": 40,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 0, "S": 4, "T": 4, "W": 1, "I": 1, "A": 2, "Ld": 7 },
+      "equipmentListIds": ["lizardmen-saurus-henchman-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["scaly-skin-saurus", "cold-blooded", "lizardmen-bite-attack", "saurus-rarity"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Saurus Braves may not outnumber Skink Braves. Attacks include the warrior's normal attack plus Bite Attack.",
+      "validation": {
+        "maxCountPerFighterTypeIds": [
+          {
+            "fighterTypeIds": ["skink-brave"],
+            "multiplier": 1,
+            "description": "A Lizardmen warband may not include more Saurus Braves than Skink Braves."
+          }
+        ]
+      },
+      "source": {
+        "sourceDocumentId": "tc11-lizardmen",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Lizardmen.pdf",
+        "pageRef": "Lizardmen p. 25",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "kroxigor",
+      "warbandTypeId": "lizardmen",
+      "name": "Kroxigor",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": 1,
+      "groupMinSize": 1,
+      "groupMaxSize": 1,
+      "hireCost": 200,
+      "startingExperience": 0,
+      "profile": { "M": 6, "WS": 3, "BS": 0, "S": 5, "T": 4, "W": 3, "I": 1, "A": 3, "Ld": 8 },
+      "equipmentListIds": ["lizardmen-kroxigor-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["scaly-skin-kroxigor", "cold-blooded", "aquatic", "fear", "large-target", "kroxigor-animal"],
+      "canGainExperience": false,
+      "isLargeCreature": true,
+      "ratingOverride": null,
+      "notes": "Up to one may be hired. The hire cost includes its required halberd.",
+      "validation": {
+        "requiredOneOfEquipmentItemIds": ["kroxigor-halberd"]
+      },
+      "source": {
+        "sourceDocumentId": "tc11-lizardmen",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Lizardmen.pdf",
+        "pageRef": "Lizardmen p. 25",
+        "label": "Henchmen"
+      }
+    }
+  ],
+  "equipmentLists": [
+    {
+      "id": "lizardmen-skink-priest-equipment",
+      "name": "Skink Priest Equipment List",
+      "warbandTypeId": "lizardmen",
+      "allowedEquipmentItemIds": ["dagger", "stone-axe", "axe", "sword", "spear", "short-bow", "bolas", "javelin", "throwing-knives", "lizardmen-blowpipe", "shield", "buckler", "bone-helmet", "skink-dark-venom", "skink-black-lotus", "sacred-marking-poison-glands", "sacred-marking-mark-of-the-old-ones"],
+      "appliesToFighterTypeIds": ["skink-priest"],
+      "notes": "Skink hero equipment plus Skink Priest-only sacred marking and helmet options."
+    },
+    {
+      "id": "lizardmen-skink-hero-equipment",
+      "name": "Skink Hero Equipment List",
+      "warbandTypeId": "lizardmen",
+      "allowedEquipmentItemIds": ["dagger", "stone-axe", "axe", "sword", "spear", "short-bow", "bolas", "javelin", "throwing-knives", "lizardmen-blowpipe", "shield", "buckler", "skink-dark-venom", "skink-black-lotus", "sacred-marking-poison-glands", "sacred-marking-mark-of-the-old-ones"],
+      "appliesToFighterTypeIds": ["skink-great-crest"],
+      "notes": "Skink hero equipment. Bone Helmets are reserved to Skink Priests in this data set."
+    },
+    {
+      "id": "lizardmen-skink-henchman-equipment",
+      "name": "Skink Henchman Equipment List",
+      "warbandTypeId": "lizardmen",
+      "allowedEquipmentItemIds": ["dagger", "stone-axe", "axe", "spear", "short-bow", "bolas", "javelin", "throwing-knives", "lizardmen-blowpipe", "shield", "buckler", "reptile-venom"],
+      "appliesToFighterTypeIds": ["skink-brave"],
+      "notes": "Skink Brave equipment list."
+    },
+    {
+      "id": "lizardmen-saurus-hero-equipment",
+      "name": "Saurus Hero Equipment List",
+      "warbandTypeId": "lizardmen",
+      "allowedEquipmentItemIds": ["dagger", "stone-axe", "axe", "sword", "double-handed-weapon", "spear", "halberd", "bone-helmet", "lizardmen-light-armour", "shield", "sacred-marking-oversized-jaws", "sacred-marking-mark-of-the-old-ones"],
+      "appliesToFighterTypeIds": ["saurus-totem-warrior"],
+      "notes": "Saurus Totem Warrior equipment including Saurus-only sacred markings."
+    },
+    {
+      "id": "lizardmen-saurus-henchman-equipment",
+      "name": "Saurus Henchman Equipment List",
+      "warbandTypeId": "lizardmen",
+      "allowedEquipmentItemIds": ["dagger", "stone-axe", "axe", "sword", "double-handed-weapon", "spear", "halberd", "bone-helmet", "lizardmen-light-armour", "shield"],
+      "appliesToFighterTypeIds": ["saurus-brave"],
+      "notes": "Saurus Brave equipment list."
+    },
+    {
+      "id": "lizardmen-kroxigor-equipment",
+      "name": "Kroxigor Equipment",
+      "warbandTypeId": "lizardmen",
+      "allowedEquipmentItemIds": ["kroxigor-halberd"],
+      "appliesToFighterTypeIds": ["kroxigor"],
+      "notes": "The Kroxigor begins with a required halberd whose cost is included in its hire cost."
+    }
+  ]
+}

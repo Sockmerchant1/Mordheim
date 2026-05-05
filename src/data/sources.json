@@ -56,6 +56,30 @@
     "notes": "Official Broheim-hosted Orc Mob warband PDF from Mordheim Annual material."
   },
   {
+    "id": "mhr-shadow-warriors",
+    "title": "Shadow Warriors",
+    "url": "https://broheim.net/downloads/warbands/unofficial/Shadow%20Warriors.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1b",
+    "notes": "Broheim-hosted Shadow Warriors warband PDF, listed as Grade 1b. The app stores concise rules summaries and page references."
+  },
+  {
+    "id": "tc11-lizardmen",
+    "title": "Lizardmen",
+    "url": "https://broheim.net/downloads/warbands/unofficial/Lizardmen.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1b",
+    "notes": "Broheim-hosted Lizardmen warband PDF from Town Cryer #11 / Lustria material. The app stores concise rules summaries and page references."
+  },
+  {
+    "id": "nc-forest-goblins",
+    "title": "Forest Goblins",
+    "url": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Forest%20Goblins.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1b",
+    "notes": "Broheim-hosted Forest Goblins warband PDF from the Nemesis Crown supplement. The app stores concise rules summaries and page references."
+  },
+  {
     "id": "eif-empire-in-flames",
     "title": "Empire in Flames",
     "url": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",

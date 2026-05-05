@@ -2,7 +2,7 @@
 
 An unofficial local-first Mordheim roster and campaign helper. The app separates canonical rules data from player roster state so rosters reference structured records for fighter types, equipment, skills, special rules, source documents and campaign log entries.
 
-The first fully seeded warbands are **Witch Hunters**, the official **Mercenaries** variants, **Sisters of Sigmar**, **Carnival of Chaos**, **Skaven**, **Undead**, and **Orc Mob**. The attached workbook was used as a roster layout and data-entry reference only; Broheim-hosted rule documents are treated as the source references.
+The first fully seeded warbands are **Witch Hunters**, the official **Mercenaries** variants, **Sisters of Sigmar**, **Carnival of Chaos**, **Skaven**, **Undead**, **Orc Mob**, **Shadow Warriors**, **Lizardmen**, and **Forest Goblins**. The attached workbook was used as a roster layout and data-entry reference only; Broheim-hosted rule documents are treated as the source references.
 
 ## Stack
 
@@ -17,7 +17,7 @@ The first fully seeded warbands are **Witch Hunters**, the official **Mercenarie
 
 This app is ready to deploy to Netlify as a static Vite site. Netlify uses `netlify.toml`, runs `npm run build`, and publishes `dist`.
 
-On Netlify, roster data is saved in each player's browser storage. No paid database or server is required, but players should use JSON export/import to back up or move rosters between devices.
+On Netlify, roster data is saved in each player's browser storage. No paid database or server is required, but players should use JSON export/import to back up or move rosters between devices. Players can also use Export PDF from Play Mode or the roster editor, then choose "Save as PDF" in the browser print dialog.
 
 See `NETLIFY_DEPLOY.md` for step-by-step setup and the GitHub upload checklist.
 
@@ -74,8 +74,10 @@ Rules live in JSON seed files under `src/data`; campaign roster state is saved s
 ## App Modes
 
 - **Roster Editor**: the existing long-term roster builder and campaign editor.
-- **Play Mode**: opened by the Roster button for quick table use, temporary fighter status, wound tracking and rules lookup.
+- **Play Mode**: opened by the Roster button for quick table use, temporary fighter status, wound tracking, rules lookup and printable PDF roster sheets.
 - **After Battle**: a guided post-game draft for result, XP, serious injuries, exploration, income, trading, advances, roster updates and final review.
+
+The Create Warband screen also includes legal starter roster templates for implemented warbands. Templates live in `src/data/starterRosters.ts`, use canonical fighter/equipment ids, and are verified by the Node rules check.
 
 The After Battle flow compares pre-battle XP with final XP using the central advancement threshold helper in `src/rules/engine.ts`, queues one advance slot per crossed threshold, and writes one campaign history entry when updates are applied.
 
@@ -103,6 +105,9 @@ Hired swords are seeded from local data and can be hired from the Roster Editor.
 - Skaven
 - Undead
 - Orc Mob
+- Shadow Warriors
+- Lizardmen
+- Forest Goblins
 
 ## Adding A Warband
 
@@ -112,7 +117,8 @@ Hired swords are seeded from local data and can be hired from the Roster Editor.
 4. Reuse existing equipment, skills and special rules where possible.
 5. Add concise summaries and page references; do not copy full rulebook sections.
 6. Import the seed in `src/data/rulesDb.ts`.
-7. Add fixtures and tests in `tests/fixtures` and `tests/rules-engine.test.ts`.
+7. Add a starter roster template in `src/data/starterRosters.ts`.
+8. Add fixtures and tests in `tests/fixtures` and `tests/rules-engine.test.ts`.
 
 Run:
 

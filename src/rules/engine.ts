@@ -90,9 +90,14 @@ export function getAllowedSkills(
       return blocked(skill, "This fighter type cannot gain experience.", source);
     }
 
+    const grantedSkillCategoryIds = member.skills
+      .map((skillId) => rulesDb.skills.find((entry) => entry.id === skillId))
+      .flatMap((entry) => entry?.validation.grantsSkillCategoryIds ?? []);
+
     const explicitAccess =
       member.specialRules.includes(`skill:${skill.id}`) ||
-      member.specialRules.includes(`skill-category:${skill.categoryId}`);
+      member.specialRules.includes(`skill-category:${skill.categoryId}`) ||
+      grantedSkillCategoryIds.includes(skill.categoryId);
     if (!fighterType.skillCategoryIds.includes(skill.categoryId) && !explicitAccess) {
       return blocked(skill, `${fighterType.name} does not have ${skill.categoryId} skill access.`, source);
     }
@@ -114,6 +119,12 @@ export function getAllowedSkills(
     }
     if (skill.id === "sorcery" && !member.specialRules.includes("spellcaster")) {
       return blocked(skill, "Sorcery is spellcaster-only.", source);
+    }
+    if (
+      typeof skill.validation.maxCountInWarband === "number" &&
+      countSkillInRoster(roster, skill.id, member.id) >= skill.validation.maxCountInWarband
+    ) {
+      return blocked(skill, `${skill.name} is limited to ${skill.validation.maxCountInWarband} member(s) in the warband.`, source);
     }
 
     return allowed(skill, "Allowed by fighter type skill access.", source);
@@ -399,6 +410,13 @@ function specialRuleOptionFor(
   if (missingRequiredRule) {
     return blocked(rule, `${rule.name} requires ${missingRequiredRule}.`, source);
   }
+  if (
+    activeRuleIds.has("cannot-cast-spells-in-armour") &&
+    (rule.validation.selectableAs === "spell" || rule.validation.selectableAs === "ritual") &&
+    hasArmourEquipment(member, rulesDb)
+  ) {
+    return blocked(rule, "This fighter cannot cast spells while wearing armour.", source);
+  }
 
   return allowed(rule, `Allowed by ${rule.validation.selectableAs} access.`, source);
 }
@@ -492,6 +510,18 @@ function validateWeaponAndArmourLimits(member: RosterMember, rulesDb: RulesDb, i
         }
       }
     }
+    const exclusiveGroups = new Map<string, EquipmentItem[]>();
+    for (const item of items) {
+      const groupId = item.validation.exclusiveEquipmentGroupId;
+      if (!groupId) continue;
+      exclusiveGroups.set(groupId, [...(exclusiveGroups.get(groupId) ?? []), item]);
+    }
+    for (const groupItems of exclusiveGroups.values()) {
+      if (groupItems.length > 1) {
+        const [firstItem] = groupItems;
+        issues.push(issue("error", "EXCLUSIVE_EQUIPMENT_GROUP", `Choose only one of: ${groupItems.map((item) => item.name).join(", ")}.`, "These items are marked as mutually exclusive in rules metadata.", member.id, "equipment", sourceForEquipment(firstItem), "Remove the extra mutually exclusive item."));
+      }
+    }
     if (counts.closeCombat > 2 && !tailFightingAllowsExtraWeapon) {
       issues.push(issue("error", "TOO_MANY_CLOSE_COMBAT_WEAPONS", `This fighter${label} has too many close combat weapons.`, "A warrior may carry up to two close combat weapons in addition to the free dagger.", member.id, "equipment", source, "Remove a close combat weapon."));
     }
@@ -519,13 +549,13 @@ function validateWeaponAndArmourLimits(member: RosterMember, rulesDb: RulesDb, i
 }
 
 function validateSkills(member: RosterMember, roster: Roster, rulesDb: RulesDb, issues: ValidationIssue[]) {
-  const allowedSkillOptions = getAllowedSkills({ ...member, skills: [] }, roster, rulesDb);
   for (const skillId of member.skills) {
     const skill = rulesDb.skills.find((entry) => entry.id === skillId);
     if (!skill) {
       issues.push(issue("error", "UNKNOWN_SKILL", `Unknown skill id: ${skillId}.`, "The roster references a skill that is not present in rules data.", member.id, "skills"));
       continue;
     }
+    const allowedSkillOptions = getAllowedSkills({ ...member, skills: member.skills.filter((entry) => entry !== skillId) }, roster, rulesDb);
     const option = allowedSkillOptions.find((entry) => entry.item.id === skillId);
     if (!option?.allowed) {
       issues.push(issue("error", "INVALID_SKILL", `${skill.name} is not legal for this fighter.`, option?.reason ?? "The fighter type does not have this skill access.", member.id, "skills", sourceForSkill(skill), "Choose a skill from an allowed category."));
@@ -672,6 +702,27 @@ function countFighterType(roster: Roster, fighterTypeId: string, rulesDb: RulesD
       if (fighterType?.category === "henchman") return count + member.groupSize;
       return count + 1;
     }, 0);
+}
+
+function countSkillInRoster(roster: Roster, skillId: string, excludingMemberId?: string): number {
+  return roster.members.filter((member) =>
+    member.status !== "dead" &&
+    member.status !== "retired" &&
+    member.id !== excludingMemberId &&
+    member.skills.includes(skillId)
+  ).length;
+}
+
+function hasArmourEquipment(member: RosterMember, rulesDb: RulesDb): boolean {
+  return member.equipment
+    .map((itemId) => findEquipment(rulesDb, itemId))
+    .some((item) =>
+      item?.category === "armour" ||
+      item?.validation.isBodyArmour ||
+      item?.validation.isShield ||
+      item?.validation.isHelmet ||
+      item?.validation.isBuckler
+    );
 }
 
 function perModelEquipmentIsUniform(equipmentSets: string[][]): boolean {

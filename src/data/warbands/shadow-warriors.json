@@ -1,0 +1,176 @@
+{
+  "warbandType": {
+    "id": "shadow-warriors",
+    "name": "Shadow Warriors",
+    "race": "High Elf",
+    "broheimGrade": "1b",
+    "sourceCode": "A02",
+    "sourceDocumentId": "mhr-shadow-warriors",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Shadow%20Warriors.pdf",
+    "implementationStatus": "tested",
+    "startingGold": 500,
+    "minWarriors": 3,
+    "maxWarriors": 12,
+    "maxHeroes": 5,
+    "leaderFighterTypeId": "shadow-master",
+    "notes": "Grade 1b Shadow Warrior warband. Includes Shadow Magic, Shadow Warrior special skills, elf equipment and the listed hired-sword restrictions."
+  },
+  "fighterTypes": [
+    {
+      "id": "shadow-master",
+      "warbandTypeId": "shadow-warriors",
+      "name": "Shadow Master",
+      "category": "hero",
+      "minCount": 1,
+      "maxCount": 1,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 70,
+      "startingExperience": 20,
+      "profile": { "M": 5, "WS": 5, "BS": 5, "S": 3, "T": 3, "W": 1, "I": 6, "A": 1, "Ld": 9 },
+      "equipmentListIds": ["shadow-warrior-hero-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "academic", "speed", "shadow-warrior-special"],
+      "specialRuleIds": ["leader", "hate-dark-elves", "excellent-sight", "distaste-for-poison", "unforgiving", "tolerant"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Required leader; no more, no less.",
+      "source": {
+        "sourceDocumentId": "mhr-shadow-warriors",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Shadow%20Warriors.pdf",
+        "pageRef": "Shadow Warriors p. 62",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "shadow-walker",
+      "warbandTypeId": "shadow-warriors",
+      "name": "Shadow Walker",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 3,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 45,
+      "startingExperience": 12,
+      "profile": { "M": 5, "WS": 5, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 6, "A": 1, "Ld": 8 },
+      "equipmentListIds": ["shadow-warrior-hero-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "speed", "shadow-warrior-special"],
+      "specialRuleIds": ["hate-dark-elves", "excellent-sight", "distaste-for-poison"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to three may be hired.",
+      "source": {
+        "sourceDocumentId": "mhr-shadow-warriors",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Shadow%20Warriors.pdf",
+        "pageRef": "Shadow Warriors p. 62",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "shadow-weaver",
+      "warbandTypeId": "shadow-warriors",
+      "name": "Shadow Weaver",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 1,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 55,
+      "startingExperience": 12,
+      "profile": { "M": 5, "WS": 4, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 6, "A": 1, "Ld": 8 },
+      "equipmentListIds": ["shadow-weaver-equipment"],
+      "skillCategoryIds": ["combat", "academic", "speed", "shadow-warrior-special"],
+      "specialRuleIds": ["spellcaster", "shadow-magic", "cannot-cast-spells-in-armour", "hate-dark-elves", "excellent-sight", "distaste-for-poison"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Wizard using Shadow Magic. May wear armour from the list, but cannot cast spells while wearing armour.",
+      "source": {
+        "sourceDocumentId": "mhr-shadow-warriors",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Shadow%20Warriors.pdf",
+        "pageRef": "Shadow Warriors p. 62",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "shadow-warrior",
+      "warbandTypeId": "shadow-warriors",
+      "name": "Shadow Warrior",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": null,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 35,
+      "startingExperience": 0,
+      "profile": { "M": 5, "WS": 4, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 6, "A": 1, "Ld": 8 },
+      "equipmentListIds": ["shadow-warrior-henchman-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["hate-dark-elves", "excellent-sight", "distaste-for-poison"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Bought in groups of 1-5.",
+      "source": {
+        "sourceDocumentId": "mhr-shadow-warriors",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Shadow%20Warriors.pdf",
+        "pageRef": "Shadow Warriors p. 63",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "shadow-novice",
+      "warbandTypeId": "shadow-warriors",
+      "name": "Shadow Warrior Novice",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": null,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 25,
+      "startingExperience": 0,
+      "profile": { "M": 5, "WS": 3, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 5, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["shadow-warrior-henchman-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["hate-dark-elves", "excellent-sight", "distaste-for-poison"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Bought in groups of 1-5.",
+      "source": {
+        "sourceDocumentId": "mhr-shadow-warriors",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Shadow%20Warriors.pdf",
+        "pageRef": "Shadow Warriors p. 63",
+        "label": "Henchmen"
+      }
+    }
+  ],
+  "equipmentLists": [
+    {
+      "id": "shadow-warrior-hero-equipment",
+      "name": "Shadow Warrior Hero Equipment List",
+      "warbandTypeId": "shadow-warriors",
+      "allowedEquipmentItemIds": ["dagger", "sword", "spear", "double-handed-weapon", "ithilmar-dagger", "ithilmar-sword", "ithilmar-spear", "ithilmar-double-handed-weapon", "bow", "long-bow", "elf-bow", "light-armour", "shield", "helmet", "ithilmar-armour", "standard-of-nagarythe", "war-horn-of-nagarythe", "elven-cloak", "elven-wine"],
+      "appliesToFighterTypeIds": ["shadow-master", "shadow-walker"],
+      "notes": "Shadow Warrior equipment list with heroes-only starting items."
+    },
+    {
+      "id": "shadow-weaver-equipment",
+      "name": "Shadow Weaver Equipment List",
+      "warbandTypeId": "shadow-warriors",
+      "allowedEquipmentItemIds": ["dagger", "sword", "spear", "double-handed-weapon", "ithilmar-dagger", "ithilmar-sword", "ithilmar-spear", "ithilmar-double-handed-weapon", "bow", "long-bow", "elf-bow", "light-armour", "shield", "helmet", "ithilmar-armour", "standard-of-nagarythe", "war-horn-of-nagarythe", "elven-cloak", "elven-wine", "elven-runestones"],
+      "appliesToFighterTypeIds": ["shadow-weaver"],
+      "notes": "Shadow Weaver equipment list. Armour is available, but selectable spells are blocked while armour is equipped."
+    },
+    {
+      "id": "shadow-warrior-henchman-equipment",
+      "name": "Shadow Warrior Henchman Equipment List",
+      "warbandTypeId": "shadow-warriors",
+      "allowedEquipmentItemIds": ["dagger", "sword", "spear", "double-handed-weapon", "bow", "long-bow", "elf-bow", "light-armour", "shield", "helmet", "elven-cloak"],
+      "appliesToFighterTypeIds": ["shadow-warrior", "shadow-novice"],
+      "notes": "Shadow Warrior equipment list without heroes-only starting items."
+    }
+  ]
+}
