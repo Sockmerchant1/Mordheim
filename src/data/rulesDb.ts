@@ -12,6 +12,7 @@ import orcMob from "./warbands/orc-mob.json";
 import shadowWarriors from "./warbands/shadow-warriors.json";
 import sistersOfSigmar from "./warbands/sisters-of-sigmar.json";
 import skaven from "./warbands/skaven.json";
+import skavenPestilens from "./warbands/skaven-pestilens.json";
 import undead from "./warbands/undead.json";
 import witchHunters from "./warbands/witch-hunters.json";
 import warbandIndexSeed from "./warbandIndex.json";
@@ -27,7 +28,8 @@ const warbandSeeds = [
   warbandSeedSchema.parse(orcMob),
   warbandSeedSchema.parse(shadowWarriors),
   warbandSeedSchema.parse(lizardmen),
-  warbandSeedSchema.parse(forestGoblins)
+  warbandSeedSchema.parse(forestGoblins),
+  warbandSeedSchema.parse(skavenPestilens)
 ];
 const warbandSeedCollections = [warbandSeedCollectionSchema.parse(mercenaries)];
 const parsedHiredSwords = hiredSwordSchema.array().parse(hiredSwords);

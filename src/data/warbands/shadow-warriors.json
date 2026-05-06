@@ -152,7 +152,7 @@
       "id": "shadow-warrior-hero-equipment",
       "name": "Shadow Warrior Hero Equipment List",
       "warbandTypeId": "shadow-warriors",
-      "allowedEquipmentItemIds": ["dagger", "sword", "spear", "double-handed-weapon", "ithilmar-dagger", "ithilmar-sword", "ithilmar-spear", "ithilmar-double-handed-weapon", "bow", "long-bow", "elf-bow", "light-armour", "shield", "helmet", "ithilmar-armour", "standard-of-nagarythe", "war-horn-of-nagarythe", "elven-cloak", "elven-wine"],
+      "allowedEquipmentItemIds": ["dagger", "sword", "spear", "double-handed-weapon", "ithilmar-dagger", "ithilmar-sword", "ithilmar-spear", "ithilmar-double-handed-weapon", "bow", "long-bow", "elf-bow", "light-armour", "shield", "helmet", "ithilmar-armour", "standard-of-nagarythe", "war-horn-of-nagarythe", "elven-cloak", "elven-wine", "elven-steed"],
       "appliesToFighterTypeIds": ["shadow-master", "shadow-walker"],
       "notes": "Shadow Warrior equipment list with heroes-only starting items."
     },
@@ -160,7 +160,7 @@
       "id": "shadow-weaver-equipment",
       "name": "Shadow Weaver Equipment List",
       "warbandTypeId": "shadow-warriors",
-      "allowedEquipmentItemIds": ["dagger", "sword", "spear", "double-handed-weapon", "ithilmar-dagger", "ithilmar-sword", "ithilmar-spear", "ithilmar-double-handed-weapon", "bow", "long-bow", "elf-bow", "light-armour", "shield", "helmet", "ithilmar-armour", "standard-of-nagarythe", "war-horn-of-nagarythe", "elven-cloak", "elven-wine", "elven-runestones"],
+      "allowedEquipmentItemIds": ["dagger", "sword", "spear", "double-handed-weapon", "ithilmar-dagger", "ithilmar-sword", "ithilmar-spear", "ithilmar-double-handed-weapon", "bow", "long-bow", "elf-bow", "light-armour", "shield", "helmet", "ithilmar-armour", "standard-of-nagarythe", "war-horn-of-nagarythe", "elven-cloak", "elven-wine", "elven-runestones", "elven-steed"],
       "appliesToFighterTypeIds": ["shadow-weaver"],
       "notes": "Shadow Weaver equipment list. Armour is available, but selectable spells are blocked while armour is equipped."
     },

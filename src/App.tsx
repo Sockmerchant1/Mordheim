@@ -47,7 +47,8 @@ import type {
   RosterMember,
   Skill,
   SpecialRule,
-  ValidationIssue
+  ValidationIssue,
+  WarbandType
 } from "./rules/types";
 
 type Mode = "list" | "create" | "roster" | "play" | "afterBattle";
@@ -62,6 +63,11 @@ type RuleLookupRecord = {
   page?: string;
   tags?: string[];
   aliases?: string[];
+  tables?: Array<{
+    caption?: string;
+    columns: string[];
+    rows: string[][];
+  }>;
 };
 type LookupItem =
   | { type: "equipment"; item: EquipmentItem }
@@ -356,6 +362,7 @@ export default function App() {
               roster={activeRoster}
               onBackToPlay={() => setMode("play")}
               onEditRoster={() => setMode("roster")}
+              onLookup={setLookupItem}
               onApply={(updatedRoster) => persistRoster(updatedRoster, "play")}
             />
           )}
@@ -435,13 +442,16 @@ function WarbandList({
         ) : (
           rosters.map((roster) => (
             <article className="roster-row" key={roster.id}>
-              <div>
+              <div className="roster-identity">
+                <WarbandBadge warbandTypeId={roster.warbandTypeId} />
+                <div>
                 <h3>{roster.name}</h3>
                 <p>
                   {warbandName(roster.warbandTypeId)} · {calculateWarbandRating(roster, rulesDb)} rating ·{" "}
                   {calculateRosterCost(roster, rulesDb)} gc
                 </p>
               </div>
+                </div>
               <div className="icon-row">
                 <button onClick={() => onSelect(roster.id)}>Play</button>
                 <button aria-label={`Duplicate ${roster.name}`} onClick={() => onDuplicate(roster)}>
@@ -876,10 +886,13 @@ function PlayModeView({
     <section className={`play-mode ${compact ? "compact-play" : "comfortable-play"}`}>
       <PrintableRosterSheet roster={roster} />
       <div className="play-summary">
-        <div>
-          <p className="eyebrow">Play Mode</p>
-          <h2>{roster.name}</h2>
-          <p>{warband?.name ?? roster.warbandTypeId}</p>
+        <div className="roster-title-lockup">
+          <WarbandBadge warbandTypeId={roster.warbandTypeId} size="large" />
+          <div>
+            <p className="eyebrow">Play Mode</p>
+            <h2>{roster.name}</h2>
+            <p>{warband?.name ?? roster.warbandTypeId}</p>
+          </div>
         </div>
         <div className="play-metrics">
           <Metric icon={<Shield aria-hidden />} label="Rating" value={calculateWarbandRating(roster, rulesDb).toString()} />
@@ -1337,15 +1350,17 @@ function AfterBattleView({
   roster,
   onBackToPlay,
   onEditRoster,
+  onLookup,
   onApply
 }: {
   roster: Roster;
   onBackToPlay: () => void;
   onEditRoster: () => void;
+  onLookup: (item: LookupItem) => void;
   onApply: (roster: Roster) => void;
 }) {
   const [stepIndex, setStepIndex] = useState(0);
-  const [draft, setDraft] = useState<AfterBattleDraft>(() => readAfterBattleDraft(roster) ?? createAfterBattleDraft(roster, readBattleState(roster)));
+  const [draft, setDraft] = useState<AfterBattleDraft>(() => prepareAfterBattleDraft(roster));
   const steps = [
     "Battle result",
     "Experience",
@@ -1359,7 +1374,7 @@ function AfterBattleView({
   ];
 
   useEffect(() => {
-    setDraft(readAfterBattleDraft(roster) ?? createAfterBattleDraft(roster, readBattleState(roster)));
+    setDraft(prepareAfterBattleDraft(roster));
     setStepIndex(0);
   }, [roster.id]);
 
@@ -1402,8 +1417,8 @@ function AfterBattleView({
       <div className="after-step-body">
         {stepIndex === 0 && <BattleResultStep draft={draft} onChange={updateDraft} />}
         {stepIndex === 1 && <ExperienceStep draft={draft} onChange={updateDraft} />}
-        {stepIndex === 2 && <SeriousInjuriesStep draft={draft} roster={roster} onChange={updateDraft} />}
-        {stepIndex === 3 && <ExplorationStep draft={draft} onChange={updateDraft} />}
+        {stepIndex === 2 && <SeriousInjuriesStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
+        {stepIndex === 3 && <ExplorationStep draft={draft} onChange={updateDraft} onLookup={onLookup} />}
         {stepIndex === 4 && <IncomeStep draft={draft} onChange={updateDraft} />}
         {stepIndex === 5 && <TradingStep draft={draft} roster={roster} onChange={updateDraft} />}
         {stepIndex === 6 && <AdvancesStep draft={draft} onChange={updateDraft} />}
@@ -1568,11 +1583,13 @@ function ExperienceStep({
 function SeriousInjuriesStep({
   draft,
   roster,
-  onChange
+  onChange,
+  onLookup
 }: {
   draft: AfterBattleDraft;
   roster: Roster;
   onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
+  onLookup: (item: LookupItem) => void;
 }) {
   function updateInjury(fighterId: string, patch: Partial<AfterBattleInjuryEntry>) {
     onChange((current) => ({
@@ -1583,7 +1600,15 @@ function SeriousInjuriesStep({
 
   return (
     <section className="after-card">
-      <h3>Serious injuries</h3>
+      <div className="section-heading">
+        <div>
+          <h3>Serious injuries</h3>
+          <p>Fighters marked Out of Action in Play Mode appear here automatically.</p>
+        </div>
+        <button onClick={() => openLookupRecord("table-serious-injuries", onLookup)}>
+          <BookOpen aria-hidden /> Injury table
+        </button>
+      </div>
       {draft.injuries.length === 0 ? (
         <div className="empty-state">No fighters were marked Out of Action in Play Mode.</div>
       ) : (
@@ -1596,6 +1621,22 @@ function SeriousInjuriesStep({
                   <strong>{entry.fighterName}</strong>
                   <span className="pill">{member?.kind === "henchman_group" ? "Henchman group" : "Hero"}</span>
                 </header>
+                <div className="button-row">
+                  {member?.kind === "henchman_group" ? (
+                    <>
+                      <button onClick={() => updateInjury(entry.fighterId, rollHenchmanInjury(entry))}>
+                        Randomise D6 casualty
+                      </button>
+                      <button onClick={() => openLookupRecord("table-henchmen-injuries", onLookup)}>
+                        <BookOpen aria-hidden /> Henchmen table
+                      </button>
+                    </>
+                  ) : (
+                    <button onClick={() => updateInjury(entry.fighterId, rollHeroSeriousInjury(entry))}>
+                      Randomise D66 injury
+                    </button>
+                  )}
+                </div>
                 {member?.kind === "henchman_group" && (
                   <NumberField label="Casualties / group size reduction" value={entry.casualties ?? 0} onChange={(value) => updateInjury(entry.fighterId, { casualties: Math.max(0, value) })} />
                 )}
@@ -1635,12 +1676,15 @@ function SeriousInjuriesStep({
 
 function ExplorationStep({
   draft,
-  onChange
+  onChange,
+  onLookup
 }: {
   draft: AfterBattleDraft;
   onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
+  onLookup: (item: LookupItem) => void;
 }) {
   const [diceInput, setDiceInput] = useState(() => draft.exploration.diceValues.join(", "));
+  const [diceCount, setDiceCount] = useState(Math.max(1, draft.exploration.diceValues.length || 1));
 
   useEffect(() => {
     setDiceInput(draft.exploration.diceValues.join(", "));
@@ -1650,9 +1694,23 @@ function ExplorationStep({
     onChange((current) => ({ ...current, exploration: { ...current.exploration, ...patch } }));
   }
 
+  function randomiseExplorationDice(count: number) {
+    const diceValues = rollD6s(count);
+    setDiceInput(diceValues.join(", "));
+    updateExploration({ diceValues });
+  }
+
   return (
     <section className="after-card">
-      <h3>Exploration</h3>
+      <div className="section-heading">
+        <div>
+          <h3>Exploration</h3>
+          <p>Enter the dice you rolled, or randomise them here.</p>
+        </div>
+        <button onClick={() => openLookupRecord("table-exploration", onLookup)}>
+          <BookOpen aria-hidden /> Exploration table
+        </button>
+      </div>
       <div className="form-grid">
         <label>
           <span>Dice rolled</span>
@@ -1667,12 +1725,30 @@ function ExplorationStep({
         </label>
         <NumberField label="Wyrdstone shards found" value={draft.exploration.wyrdstoneShards} onChange={(value) => updateExploration({ wyrdstoneShards: Math.max(0, value) })} />
         <label>
+          <span>Dice to randomise</span>
+          <select value={diceCount} onChange={(event) => setDiceCount(Number(event.target.value))}>
+            {[1, 2, 3, 4, 5, 6].map((count) => (
+              <option value={count} key={count}>{count}</option>
+            ))}
+          </select>
+        </label>
+        <label>
           <span>Special results</span>
           <input
             value={(draft.exploration.specialResults ?? []).join(", ")}
             onChange={(event) => updateExploration({ specialResults: splitList(event.target.value) })}
           />
         </label>
+      </div>
+      <div className="button-row">
+        <button onClick={() => randomiseExplorationDice(diceCount)}>Randomise exploration dice</button>
+        <button onClick={() => {
+          const diceValues = [...draft.exploration.diceValues, rollD6()];
+          setDiceInput(diceValues.join(", "));
+          updateExploration({ diceValues });
+        }}>
+          Add random D6
+        </button>
       </div>
       <p className="muted">Notable combinations: {describeExplorationDice(draft.exploration.diceValues)}</p>
       <label>
@@ -2217,11 +2293,14 @@ function RosterHeader({ roster }: { roster: Roster }) {
 
   return (
     <section className="roster-header">
-      <div>
+      <div className="roster-title-lockup">
+        <WarbandBadge warbandTypeId={roster.warbandTypeId} size="large" />
+        <div>
         <p className="eyebrow">Warband name</p>
         <h2>{roster.name || "Unnamed Warband"}</h2>
         <SourceNote sourceUrl={warband.sourceUrl} label={`${warband.name} · ${warband.sourceCode}`} />
       </div>
+        </div>
       <div className="metric-grid">
         <Metric icon={<Coins aria-hidden />} label="Treasury" value={`${displayedTreasury} gc`} tone={remainingGold < 0 ? "bad" : "good"} />
         <Metric icon={<Swords aria-hidden />} label="Cost" value={`${cost} gc`} />
@@ -2874,6 +2953,9 @@ function LookupPanel({ lookupItem, onClose }: { lookupItem: LookupItem; onClose:
       <p className="eyebrow">{category}</p>
       <h2>{title}</h2>
       <p>{summary}</p>
+      {overrideRecord?.tables?.map((table) => (
+        <RuleLookupTable table={table} key={table.caption ?? table.columns.join("-")} />
+      ))}
       {restrictions && (
         <>
           <h3>Restrictions</h3>
@@ -2909,6 +2991,32 @@ function LookupPanel({ lookupItem, onClose }: { lookupItem: LookupItem; onClose:
   );
 }
 
+function RuleLookupTable({ table }: { table: NonNullable<RuleLookupRecord["tables"]>[number] }) {
+  return (
+    <div className="lookup-table-wrap">
+      {table.caption && <h3>{table.caption}</h3>}
+      <table className="lookup-table">
+        <thead>
+          <tr>
+            {table.columns.map((column) => (
+              <th key={column}>{column}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, rowIndex) => (
+            <tr key={`${rowIndex}-${row.join("|")}`}>
+              {table.columns.map((column, columnIndex) => (
+                <td key={`${column}-${columnIndex}`}>{row[columnIndex] ?? ""}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function Metric({ icon, label, value, tone }: { icon: ReactNode; label: string; value: string; tone?: "good" | "bad" }) {
   return (
     <div className={`metric ${tone ?? ""}`}>
@@ -2927,20 +3035,174 @@ function SourceNote({ sourceUrl, label }: { sourceUrl: string; label: string }) 
   );
 }
 
+function WarbandBadge({ warbandTypeId, size = "normal" }: { warbandTypeId: string; size?: "normal" | "large" }) {
+  const warband = rulesDb.warbandTypes.find((item) => item.id === warbandTypeId);
+  const meta = warbandBadgeMeta(warbandTypeId, warband);
+  return (
+    <span
+      className={`warband-badge badge-${warbandTypeId} ${size === "large" ? "large" : ""}`}
+      aria-label={`${meta.title} badge`}
+      title={`${meta.title} badge`}
+    >
+      <WarbandBadgeSymbol warbandTypeId={warbandTypeId} fallback={meta.mark} />
+    </span>
+  );
+}
+
+function WarbandBadgeSymbol({ warbandTypeId, fallback }: { warbandTypeId: string; fallback: string }) {
+  const common = { vectorEffect: "non-scaling-stroke" as const };
+  switch (warbandTypeId) {
+    case "witch-hunters":
+      return (
+        <svg viewBox="0 0 64 64" aria-hidden>
+          <path {...common} d="M32 8v48M17 19h30M21 47l22-22M43 47 21 25" />
+          <path {...common} d="M32 7l6 8-6 8-6-8z" />
+        </svg>
+      );
+    case "sisters-of-sigmar":
+      return (
+        <svg viewBox="0 0 64 64" aria-hidden>
+          <path {...common} d="M24 14h16l-3 16h-10zM32 30v23M21 39h22" />
+          <path {...common} d="M16 18l4 4M48 18l-4 4M12 32h8M44 32h8" />
+        </svg>
+      );
+    case "skaven":
+      return (
+        <svg viewBox="0 0 64 64" aria-hidden>
+          <path {...common} d="M18 39c2-14 12-24 28-25-7 6-8 13-2 22 3 5 0 12-8 14-8 2-16-2-18-11z" />
+          <path {...common} d="M29 29l-8-13M36 29l11-10M31 41h2" />
+        </svg>
+      );
+    case "undead":
+      return (
+        <svg viewBox="0 0 64 64" aria-hidden>
+          <path {...common} d="M20 27c0-10 6-17 12-17s12 7 12 17c0 8-4 13-12 13s-12-5-12-13z" />
+          <path {...common} d="M24 47h16M27 40v10M32 41v12M37 40v10M27 28h.5M37 28h.5M29 35h6" />
+        </svg>
+      );
+    case "carnival-of-chaos":
+      return (
+        <svg viewBox="0 0 64 64" aria-hidden>
+          <path {...common} d="M17 22c9-9 21-9 30 0-1 17-6 27-15 30-9-3-14-13-15-30z" />
+          <path {...common} d="M23 31c4-3 8-3 11 0M41 31c-3-3-7-3-11 0M28 41c3 2 6 2 9 0M20 16l-5-7M44 16l5-7" />
+        </svg>
+      );
+    case "orc-mob":
+      return (
+        <svg viewBox="0 0 64 64" aria-hidden>
+          <path {...common} d="M17 34c4-13 26-13 30 0-3 12-10 18-15 18s-12-6-15-18z" />
+          <path {...common} d="M21 36l-8-6M43 36l8-6M25 41l4 7M39 41l-4 7M26 31h.5M38 31h.5" />
+        </svg>
+      );
+    case "forest-goblins":
+      return (
+        <svg viewBox="0 0 64 64" aria-hidden>
+          <path {...common} d="M32 21c7 0 12 5 12 12s-5 14-12 14-12-7-12-14 5-12 12-12z" />
+          <path {...common} d="M23 27 12 19M41 27l11-8M22 36 9 39M42 36l13 3M27 21l-3-10M37 21l3-10" />
+        </svg>
+      );
+    case "shadow-warriors":
+      return (
+        <svg viewBox="0 0 64 64" aria-hidden>
+          <path {...common} d="M42 12c-10 3-18 12-18 23 0 8 5 14 13 17-15-1-25-10-25-23 0-11 9-19 30-17z" />
+          <path {...common} d="M31 35h20M43 27l8 8-8 8" />
+        </svg>
+      );
+    case "lizardmen":
+      return (
+        <svg viewBox="0 0 64 64" aria-hidden>
+          <path {...common} d="M16 37c12-19 25-23 36-14-6 2-10 5-11 10 4 5 2 11-5 15-8-5-15-8-20-11z" />
+          <path {...common} d="M22 38l-8 11M32 42l-1 12M41 36l10 7M37 25l7-11" />
+        </svg>
+      );
+    case "reiklanders":
+    case "middenheimers":
+    case "marienburgers":
+      return (
+        <svg viewBox="0 0 64 64" aria-hidden>
+          <path {...common} d="M32 9l18 8v15c0 12-7 20-18 24-11-4-18-12-18-24V17z" />
+          <path {...common} d="M32 17v31M21 30h22" />
+        </svg>
+      );
+    default:
+      return <span>{fallback}</span>;
+  }
+}
+
+function warbandBadgeMeta(warbandTypeId: string, warband?: WarbandType): { mark: string; title: string } {
+  const known: Record<string, { mark: string; title: string }> = {
+    "witch-hunters": { mark: "WH", title: "Witch Hunters" },
+    "sisters-of-sigmar": { mark: "SS", title: "Sisters of Sigmar" },
+    skaven: { mark: "SK", title: "Skaven" },
+    undead: { mark: "UN", title: "Undead" },
+    "carnival-of-chaos": { mark: "CC", title: "Carnival of Chaos" },
+    "orc-mob": { mark: "OM", title: "Orc Mob" },
+    "shadow-warriors": { mark: "SW", title: "Shadow Warriors" },
+    lizardmen: { mark: "LM", title: "Lizardmen" },
+    "forest-goblins": { mark: "FG", title: "Forest Goblins" },
+    reiklanders: { mark: "RK", title: "Reiklanders" },
+    middenheimers: { mark: "MH", title: "Middenheimers" },
+    marienburgers: { mark: "MB", title: "Marienburgers" }
+  };
+  if (known[warbandTypeId]) return known[warbandTypeId];
+
+  const title = warband?.name ?? warbandTypeId;
+  const mark = title
+    .split(/[\s-]+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "WB";
+  return { mark, title };
+}
+
 const SERIOUS_INJURY_RESULTS = [
   "Dead",
-  "Multiple injuries",
-  "Miss next game",
+  "Multiple Injuries",
+  "Leg Wound",
+  "Arm Wound",
+  "Madness",
+  "Smashed Leg",
+  "Chest Wound",
+  "Blinded In One Eye",
+  "Old Battle Wound",
+  "Nervous Condition",
+  "Hand Injury",
+  "Deep Wound",
+  "Robbed",
+  "Full Recovery",
+  "Bitter Enmity",
   "Captured",
   "Hardened",
-  "Bitter enmity / hatred",
-  "Nervous condition",
-  "Leg wound / movement reduction",
-  "Arm wound / combat reduction",
-  "Eye injury / ballistic skill reduction",
-  "Old battle wound",
-  "Full recovery",
+  "Horrible Scars",
+  "Sold To The Pits",
+  "Survives Against The Odds",
+  "Miss Next Game",
   "Other / custom"
+];
+
+const SERIOUS_INJURY_TABLE = [
+  { min: 11, max: 15, result: "Dead" },
+  { min: 16, max: 21, result: "Multiple Injuries" },
+  { min: 22, max: 22, result: "Leg Wound" },
+  { min: 23, max: 23, result: "Arm Wound" },
+  { min: 24, max: 24, result: "Madness" },
+  { min: 25, max: 25, result: "Smashed Leg" },
+  { min: 26, max: 26, result: "Chest Wound" },
+  { min: 31, max: 31, result: "Blinded In One Eye" },
+  { min: 32, max: 32, result: "Old Battle Wound" },
+  { min: 33, max: 33, result: "Nervous Condition" },
+  { min: 34, max: 34, result: "Hand Injury" },
+  { min: 35, max: 35, result: "Deep Wound" },
+  { min: 36, max: 36, result: "Robbed" },
+  { min: 41, max: 55, result: "Full Recovery" },
+  { min: 56, max: 56, result: "Bitter Enmity" },
+  { min: 61, max: 61, result: "Captured" },
+  { min: 62, max: 63, result: "Hardened" },
+  { min: 64, max: 64, result: "Horrible Scars" },
+  { min: 65, max: 65, result: "Sold To The Pits" },
+  { min: 66, max: 66, result: "Survives Against The Odds" }
 ];
 
 const ADVANCE_RESULTS = [
@@ -2982,6 +3244,11 @@ function lookupRecordForLookupItem(lookupItem: LookupItem): RuleLookupRecord | u
   if (lookupItem.type === "rule") return lookupItem.item;
   const prefix = lookupItem.type === "equipment" ? "equipment" : lookupItem.type === "skill" ? "skill" : "special";
   return rulesLookupRecords.find((record) => record.id === `${prefix}-${lookupItem.item.id}`);
+}
+
+function openLookupRecord(recordId: string, onLookup: (item: LookupItem) => void) {
+  const record = rulesLookupRecords.find((item) => item.id === recordId);
+  if (record) onLookup({ type: "rule", item: record });
 }
 
 function ruleRecordForEquipment(item: EquipmentItem): RuleLookupRecord {
@@ -3175,42 +3442,94 @@ function calculateRoutThreshold(totalFighters: number) {
   return Math.max(1, Math.ceil(totalFighters / 4));
 }
 
+function prepareAfterBattleDraft(roster: Roster): AfterBattleDraft {
+  const battleState = readBattleState(roster);
+  const stored = readAfterBattleDraft(roster);
+  return stored ? mergeAfterBattleDraftWithBattleState(stored, roster, battleState) : createAfterBattleDraft(roster, battleState);
+}
+
+function mergeAfterBattleDraftWithBattleState(draft: AfterBattleDraft, roster: Roster, battleState: BattleState): AfterBattleDraft {
+  const snapshot = ensureBattleState(roster, battleState);
+  const previousSnapshot = draft.battleStateSnapshot ?? createBattleState(roster);
+  const activeMembers = roster.members.filter((member) => member.status !== "dead" && member.status !== "retired");
+  const injuryIds = new Set(draft.injuries.map((entry) => entry.fighterId));
+  const injuries = [
+    ...draft.injuries,
+    ...activeMembers
+      .filter((member) => snapshot.members[member.id]?.status === "out_of_action" && !injuryIds.has(member.id))
+      .map(afterBattleInjuryEntryForMember)
+  ];
+  const xpIds = new Set(draft.xp.map((entry) => entry.fighterId));
+  const missingXp = activeMembers.flatMap((member) => {
+    if (xpIds.has(member.id)) return [];
+    const fighterType = rulesDb.fighterTypes.find((item) => item.id === member.fighterTypeId);
+    if (!fighterType?.canGainExperience) return [];
+    return [afterBattleXpEntryForMember(member, fighterType, snapshot)];
+  });
+  const xp = [...draft.xp.map((entry) => {
+    const memberState = snapshot.members[entry.fighterId];
+    const previousState = previousSnapshot.members[entry.fighterId];
+    if (!memberState) return recalculateXpEntry(entry);
+    return recalculateXpEntry({
+      ...entry,
+      enemyOoa: !previousState || entry.enemyOoa === previousState.enemyOoaXp ? memberState.enemyOoaXp : entry.enemyOoa,
+      objective: !previousState || entry.objective === previousState.objectiveXp ? memberState.objectiveXp : entry.objective,
+      other: !previousState || entry.other === previousState.otherXp ? memberState.otherXp : entry.other
+    });
+  }), ...missingXp];
+
+  return syncDraftAdvances({
+    ...draft,
+    battleStateSnapshot: snapshot,
+    xp,
+    injuries
+  });
+}
+
+function afterBattleXpEntryForMember(member: RosterMember, fighterType: FighterType, battleState: BattleState): AfterBattleXpEntry {
+  const startingXp = member.startingXp ?? fighterType.startingExperience;
+  const previousXp = member.currentXp ?? member.experience;
+  const memberBattleState = battleState.members[member.id] ?? defaultBattleMemberState(member);
+  return recalculateXpEntry({
+    fighterId: member.id,
+    fighterName: member.displayName || fighterType.name,
+    startingXp,
+    previousXp,
+    survived: 0,
+    leaderBonus: 0,
+    enemyOoa: memberBattleState.enemyOoaXp,
+    objective: memberBattleState.objectiveXp,
+    underdog: 0,
+    other: memberBattleState.otherXp,
+    gainedXp: 0,
+    finalXp: previousXp,
+    notes: "",
+    pendingAdvanceThresholds: []
+  });
+}
+
+function afterBattleInjuryEntryForMember(member: RosterMember): AfterBattleInjuryEntry {
+  return {
+    fighterId: member.id,
+    fighterName: member.displayName,
+    result: "",
+    permanentEffect: "",
+    notes: "",
+    casualties: member.kind === "henchman_group" ? 0 : undefined
+  };
+}
+
 function createAfterBattleDraft(roster: Roster, battleState: BattleState): AfterBattleDraft {
   const now = new Date().toISOString();
   const activeMembers = roster.members.filter((member) => member.status !== "dead" && member.status !== "retired");
   const xp = activeMembers.flatMap((member) => {
     const fighterType = rulesDb.fighterTypes.find((item) => item.id === member.fighterTypeId);
     if (!fighterType?.canGainExperience) return [];
-    const startingXp = member.startingXp ?? fighterType.startingExperience;
-    const previousXp = member.currentXp ?? member.experience;
-    const memberBattleState = battleState.members[member.id] ?? defaultBattleMemberState(member);
-    return [recalculateXpEntry({
-      fighterId: member.id,
-      fighterName: member.displayName || fighterType.name,
-      startingXp,
-      previousXp,
-      survived: 0,
-      leaderBonus: 0,
-      enemyOoa: memberBattleState.enemyOoaXp,
-      objective: memberBattleState.objectiveXp,
-      underdog: 0,
-      other: memberBattleState.otherXp,
-      gainedXp: 0,
-      finalXp: previousXp,
-      notes: "",
-      pendingAdvanceThresholds: []
-    })];
+    return [afterBattleXpEntryForMember(member, fighterType, battleState)];
   });
   const injuries = activeMembers
     .filter((member) => battleState.members[member.id]?.status === "out_of_action")
-    .map((member) => ({
-      fighterId: member.id,
-      fighterName: member.displayName,
-      result: "",
-      permanentEffect: "",
-      notes: "",
-      casualties: member.kind === "henchman_group" ? 0 : undefined
-    }));
+    .map(afterBattleInjuryEntryForMember);
 
   return syncDraftAdvances({
     id: id("after-battle"),
@@ -3430,6 +3749,43 @@ function advanceSummary(count: number) {
   if (count === 0) return "No advance due";
   if (count === 1) return "1 advance to allocate";
   return `${count} advances to allocate`;
+}
+
+function rollD6() {
+  return Math.floor(Math.random() * 6) + 1;
+}
+
+function rollD6s(count: number) {
+  return Array.from({ length: Math.max(1, Math.min(6, count)) }, rollD6);
+}
+
+function rollD66() {
+  return rollD6() * 10 + rollD6();
+}
+
+function seriousInjuryResultForRoll(roll: number) {
+  return SERIOUS_INJURY_TABLE.find((entry) => roll >= entry.min && roll <= entry.max)?.result ?? "Other / custom";
+}
+
+function rollHeroSeriousInjury(entry: AfterBattleInjuryEntry): Partial<AfterBattleInjuryEntry> {
+  const roll = rollD66();
+  const result = seriousInjuryResultForRoll(roll);
+  const rollNote = `Rolled D66 ${roll}.`;
+  return {
+    result,
+    notes: [rollNote, entry.notes].filter(Boolean).join(" ")
+  };
+}
+
+function rollHenchmanInjury(entry: AfterBattleInjuryEntry): Partial<AfterBattleInjuryEntry> {
+  const roll = rollD6();
+  const dead = roll <= 2;
+  const rollNote = `Rolled D6 ${roll}: ${dead ? "dead; remove one model from the group" : "recovers for the next battle"}.`;
+  return {
+    result: dead ? "Dead" : "Full Recovery",
+    casualties: dead ? Math.max(1, entry.casualties ?? 0) : entry.casualties ?? 0,
+    notes: [rollNote, entry.notes].filter(Boolean).join(" ")
+  };
 }
 
 function parseDiceValues(value: string) {

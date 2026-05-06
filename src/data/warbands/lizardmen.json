@@ -190,7 +190,7 @@
       "id": "lizardmen-skink-priest-equipment",
       "name": "Skink Priest Equipment List",
       "warbandTypeId": "lizardmen",
-      "allowedEquipmentItemIds": ["dagger", "stone-axe", "axe", "sword", "spear", "short-bow", "bolas", "javelin", "throwing-knives", "lizardmen-blowpipe", "shield", "buckler", "bone-helmet", "skink-dark-venom", "skink-black-lotus", "sacred-marking-poison-glands", "sacred-marking-mark-of-the-old-ones"],
+      "allowedEquipmentItemIds": ["dagger", "stone-axe", "axe", "sword", "spear", "short-bow", "bolas", "javelin", "throwing-knives", "lizardmen-blowpipe", "shield", "buckler", "bone-helmet", "skink-dark-venom", "skink-black-lotus", "sacred-marking-poison-glands", "sacred-marking-mark-of-the-old-ones", "cold-one"],
       "appliesToFighterTypeIds": ["skink-priest"],
       "notes": "Skink hero equipment plus Skink Priest-only sacred marking and helmet options."
     },
@@ -198,7 +198,7 @@
       "id": "lizardmen-skink-hero-equipment",
       "name": "Skink Hero Equipment List",
       "warbandTypeId": "lizardmen",
-      "allowedEquipmentItemIds": ["dagger", "stone-axe", "axe", "sword", "spear", "short-bow", "bolas", "javelin", "throwing-knives", "lizardmen-blowpipe", "shield", "buckler", "skink-dark-venom", "skink-black-lotus", "sacred-marking-poison-glands", "sacred-marking-mark-of-the-old-ones"],
+      "allowedEquipmentItemIds": ["dagger", "stone-axe", "axe", "sword", "spear", "short-bow", "bolas", "javelin", "throwing-knives", "lizardmen-blowpipe", "shield", "buckler", "skink-dark-venom", "skink-black-lotus", "sacred-marking-poison-glands", "sacred-marking-mark-of-the-old-ones", "cold-one"],
       "appliesToFighterTypeIds": ["skink-great-crest"],
       "notes": "Skink hero equipment. Bone Helmets are reserved to Skink Priests in this data set."
     },
@@ -214,7 +214,7 @@
       "id": "lizardmen-saurus-hero-equipment",
       "name": "Saurus Hero Equipment List",
       "warbandTypeId": "lizardmen",
-      "allowedEquipmentItemIds": ["dagger", "stone-axe", "axe", "sword", "double-handed-weapon", "spear", "halberd", "bone-helmet", "lizardmen-light-armour", "shield", "sacred-marking-oversized-jaws", "sacred-marking-mark-of-the-old-ones"],
+      "allowedEquipmentItemIds": ["dagger", "stone-axe", "axe", "sword", "double-handed-weapon", "spear", "halberd", "bone-helmet", "lizardmen-light-armour", "shield", "sacred-marking-oversized-jaws", "sacred-marking-mark-of-the-old-ones", "cold-one"],
       "appliesToFighterTypeIds": ["saurus-totem-warrior"],
       "notes": "Saurus Totem Warrior equipment including Saurus-only sacred markings."
     },

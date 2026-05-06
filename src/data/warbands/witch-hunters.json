@@ -193,7 +193,10 @@
         "heavy-armour",
         "shield",
         "buckler",
-        "helmet"
+        "helmet",
+        "riding-horse",
+        "warhorse",
+        "barding"
       ],
       "appliesToFighterTypeIds": ["witch-hunter-captain", "warrior-priest", "witch-hunter"],
       "notes": "Witch Hunter heroes use this list."

@@ -129,6 +129,21 @@ export const starterRosterTemplates: StarterRosterTemplate[] = [
     ]
   },
   {
+    id: "pestilens-balanced",
+    warbandTypeId: "skaven-of-clan-pestilens",
+    name: "The Rusted Bell",
+    summary: "A Clan Pestilens start with Priest, Sorcerer, a Censer-bearing Monk, Novices and rats.",
+    playStyle: "Durable heroes, cheap bodies and one dangerous plague weapon.",
+    members: [
+      { fighterTypeId: "plague-priest", displayName: "Father Skratch", equipment: ["dagger", "club"] },
+      { fighterTypeId: "pestilens-sorcerer", displayName: "Vilek", equipment: ["dagger", "sling"] },
+      { fighterTypeId: "plague-monk", displayName: "Rotclaw", equipment: ["dagger", "censer"] },
+      { fighterTypeId: "monk-initiate", displayName: "Puskit", equipment: ["dagger", "sling"] },
+      { fighterTypeId: "plague-novice", displayName: "Novice Brood", groupSize: 3, equipment: ["dagger", "sling"] },
+      { fighterTypeId: "pestilens-giant-rat", displayName: "Pox Rats", groupSize: 3, equipment: [] }
+    ]
+  },
+  {
     id: "undead-balanced",
     warbandTypeId: "undead",
     name: "Drakenhof Night Watch",

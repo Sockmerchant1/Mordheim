@@ -939,12 +939,12 @@
   {
     "id": "magic-of-the-horned-rat",
     "name": "Magic of the Horned Rat",
-    "effectSummary": "The Eshin Sorcerer uses the Magic of the Horned Rat spell list and may learn spells as described by the source rules.",
-    "appliesTo": "Eshin Sorcerer.",
+    "effectSummary": "The Eshin Sorcerer and Pestilens Sorcerer use the Magic of the Horned Rat spell list and may learn spells as described by the source rules.",
+    "appliesTo": "Eshin Sorcerer and Pestilens Sorcerer.",
     "sourceDocumentId": "mhr-skaven",
     "sourceUrl": "https://broheim.net/downloads/warbands/official/Skaven.pdf",
     "pageRef": "Skaven p. 31",
-    "restrictions": "Eshin Sorcerer only.",
+    "restrictions": "Eshin Sorcerer or Pestilens Sorcerer only.",
     "relatedRuleIds": ["spellcaster", "horned-rat-warpfire", "horned-rat-children-of-the-horned-rat", "horned-rat-gnawdoom", "horned-rat-black-fury", "horned-rat-eye-of-the-warp", "horned-rat-sorcerers-curse"]
   },
   {
@@ -957,7 +957,7 @@
     "pageRef": "Magic of the Horned Rat",
     "restrictions": "Eshin Sorcerer spell result 1.",
     "relatedRuleIds": ["magic-of-the-horned-rat"],
-    "validation": { "selectableAs": "spell", "allowedFighterTypeIds": ["eshin-sorcerer"], "requiredSpecialRuleIds": ["magic-of-the-horned-rat"] }
+    "validation": { "selectableAs": "spell", "allowedFighterTypeIds": ["eshin-sorcerer", "pestilens-sorcerer"], "requiredSpecialRuleIds": ["magic-of-the-horned-rat"] }
   },
   {
     "id": "horned-rat-children-of-the-horned-rat",
@@ -969,7 +969,7 @@
     "pageRef": "Magic of the Horned Rat",
     "restrictions": "Eshin Sorcerer spell result 2.",
     "relatedRuleIds": ["magic-of-the-horned-rat", "skaven-pack-size"],
-    "validation": { "selectableAs": "spell", "allowedFighterTypeIds": ["eshin-sorcerer"], "requiredSpecialRuleIds": ["magic-of-the-horned-rat"] }
+    "validation": { "selectableAs": "spell", "allowedFighterTypeIds": ["eshin-sorcerer", "pestilens-sorcerer"], "requiredSpecialRuleIds": ["magic-of-the-horned-rat"] }
   },
   {
     "id": "horned-rat-gnawdoom",
@@ -981,7 +981,7 @@
     "pageRef": "Magic of the Horned Rat",
     "restrictions": "Eshin Sorcerer spell result 3.",
     "relatedRuleIds": ["magic-of-the-horned-rat"],
-    "validation": { "selectableAs": "spell", "allowedFighterTypeIds": ["eshin-sorcerer"], "requiredSpecialRuleIds": ["magic-of-the-horned-rat"] }
+    "validation": { "selectableAs": "spell", "allowedFighterTypeIds": ["eshin-sorcerer", "pestilens-sorcerer"], "requiredSpecialRuleIds": ["magic-of-the-horned-rat"] }
   },
   {
     "id": "horned-rat-black-fury",
@@ -993,7 +993,7 @@
     "pageRef": "Magic of the Horned Rat",
     "restrictions": "Eshin Sorcerer spell result 4.",
     "relatedRuleIds": ["magic-of-the-horned-rat"],
-    "validation": { "selectableAs": "spell", "allowedFighterTypeIds": ["eshin-sorcerer"], "requiredSpecialRuleIds": ["magic-of-the-horned-rat"] }
+    "validation": { "selectableAs": "spell", "allowedFighterTypeIds": ["eshin-sorcerer", "pestilens-sorcerer"], "requiredSpecialRuleIds": ["magic-of-the-horned-rat"] }
   },
   {
     "id": "horned-rat-eye-of-the-warp",
@@ -1005,7 +1005,7 @@
     "pageRef": "Magic of the Horned Rat",
     "restrictions": "Eshin Sorcerer spell result 5.",
     "relatedRuleIds": ["magic-of-the-horned-rat"],
-    "validation": { "selectableAs": "spell", "allowedFighterTypeIds": ["eshin-sorcerer"], "requiredSpecialRuleIds": ["magic-of-the-horned-rat"] }
+    "validation": { "selectableAs": "spell", "allowedFighterTypeIds": ["eshin-sorcerer", "pestilens-sorcerer"], "requiredSpecialRuleIds": ["magic-of-the-horned-rat"] }
   },
   {
     "id": "horned-rat-sorcerers-curse",
@@ -1017,7 +1017,95 @@
     "pageRef": "Magic of the Horned Rat",
     "restrictions": "Eshin Sorcerer spell result 6.",
     "relatedRuleIds": ["magic-of-the-horned-rat"],
-    "validation": { "selectableAs": "spell", "allowedFighterTypeIds": ["eshin-sorcerer"], "requiredSpecialRuleIds": ["magic-of-the-horned-rat"] }
+    "validation": { "selectableAs": "spell", "allowedFighterTypeIds": ["eshin-sorcerer", "pestilens-sorcerer"], "requiredSpecialRuleIds": ["magic-of-the-horned-rat"] }
+  },
+  {
+    "id": "plague-priest-leader",
+    "name": "Leader",
+    "effectSummary": "Friendly warriors within 6 inches of the Plague Priest may use his Leadership instead of their own.",
+    "appliesTo": "Plague Priest.",
+    "sourceDocumentId": "tc29-skaven-pestilens",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pestilens%2C%20Errata%27d.pdf",
+    "pageRef": "Town Cryer #29 / Plague Priest",
+    "restrictions": "Skaven of Clan Pestilens leader only.",
+    "relatedRuleIds": ["leader"]
+  },
+  {
+    "id": "disease-dagger-armour-save",
+    "name": "+1 Enemy Armour Save",
+    "effectSummary": "A model wounded by a Disease Dagger gains +1 to its armour save, or a 6+ armour save if it had none.",
+    "appliesTo": "Disease Dagger.",
+    "sourceDocumentId": "tc29-skaven-pestilens",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/close-combat",
+    "pageRef": "Disease Dagger",
+    "restrictions": "Use when resolving wounds from a Disease Dagger.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "disease-dagger-infecting",
+    "name": "Infecting",
+    "effectSummary": "On a natural 6 to hit, the target must take a Toughness test. If the D6 result is higher than its Toughness, it suffers an additional automatic wound. Undead and Possessed are immune.",
+    "appliesTo": "Disease Dagger.",
+    "sourceDocumentId": "tc29-skaven-pestilens",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/close-combat",
+    "pageRef": "Disease Dagger",
+    "restrictions": "The extra wound is in addition to the normal dagger hit.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "censer-two-handed",
+    "name": "Two-handed",
+    "effectSummary": "A model using a Censer may not use a shield, buckler or additional weapon in hand-to-hand combat. A shield still gives its bonus against shooting.",
+    "appliesTo": "Censer.",
+    "sourceDocumentId": "tc29-skaven-pestilens",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/close-combat",
+    "pageRef": "Censer",
+    "restrictions": "Use when fighting with a Censer.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "censer-concussion",
+    "name": "Concussion",
+    "effectSummary": "When the Censer rolls on the injury table, a 2-4 result counts as Stunned.",
+    "appliesTo": "Censer.",
+    "sourceDocumentId": "tc29-skaven-pestilens",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/close-combat",
+    "pageRef": "Censer",
+    "restrictions": "Use when resolving injuries caused by the Censer.",
+    "relatedRuleIds": ["battle-stunned"]
+  },
+  {
+    "id": "censer-heavy",
+    "name": "Heavy",
+    "effectSummary": "The Censer grants +2 Strength in close combat, as shown in its weapon profile.",
+    "appliesTo": "Censer.",
+    "sourceDocumentId": "tc29-skaven-pestilens",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/close-combat",
+    "pageRef": "Censer",
+    "restrictions": "This Strength bonus is limited by the Exhausting rule.",
+    "relatedRuleIds": ["censer-exhausting"]
+  },
+  {
+    "id": "censer-exhausting",
+    "name": "Exhausting",
+    "effectSummary": "The Censer's +2 Strength bonus applies only in the first turn of each hand-to-hand combat.",
+    "appliesTo": "Censer.",
+    "sourceDocumentId": "tc29-skaven-pestilens",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/close-combat",
+    "pageRef": "Censer",
+    "restrictions": "Later rounds use the wielder's normal Strength unless another rule changes it.",
+    "relatedRuleIds": ["censer-heavy"]
+  },
+  {
+    "id": "censer-fumes",
+    "name": "Fumes",
+    "effectSummary": "After all attacks are resolved, roll a D6 for every model in base contact with the Censer bearer. On a 1, that model suffers a wound. Plague Monks and Censer Bearers are immune.",
+    "appliesTo": "Censer.",
+    "sourceDocumentId": "tc29-skaven-pestilens",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/close-combat",
+    "pageRef": "Censer",
+    "restrictions": "Resolve after attacks from the combat have been worked out.",
+    "relatedRuleIds": []
   },
   {
     "id": "skaven-pack-size",
@@ -1926,6 +2014,105 @@
     "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Forest%20Goblins.pdf",
     "pageRef": "Forest Goblins p. 2",
     "restrictions": "Mounted spider handling remains manual.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "mounted-warrior-rules",
+    "name": "Mounted Warrior",
+    "effectSummary": "Mounted Heroes are treated as one model with their mount. Use the rider's Leadership, Toughness and Wounds. The model gets a 6+ armour save, or +1 better armour save if the rider wears armour, cannot ride indoors, and loses half Movement when mounting or dismounting.",
+    "appliesTo": "Optional mounted combat mounts.",
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/optional-rules/mounted-combat/mounted-warriors",
+    "pageRef": "Mounted Warriors",
+    "restrictions": "Optional mounted combat rules; Heroes only unless a scenario or house rule says otherwise.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "mount-campaign-risk",
+    "name": "Mount Casualty",
+    "effectSummary": "If a mounted warrior is taken out of action, roll D6 after the battle. On 1-2 the mount is killed and removed from the roster.",
+    "appliesTo": "Mounted warriors taken out of action.",
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/optional-rules/mounted-combat/mounted-warriors",
+    "pageRef": "Mounts and campaigns",
+    "restrictions": "Optional mounted combat rules.",
+    "relatedRuleIds": ["mounted-warrior-rules"]
+  },
+  {
+    "id": "battle-schooled",
+    "name": "Battle Schooled",
+    "effectSummary": "The rider may re-roll one failed loss of control test while riding this mount.",
+    "appliesTo": "Warhorses, Elven Steeds and similar trained mounts.",
+    "sourceDocumentId": "mordheim-annual-2002",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/animal-bestiary",
+    "pageRef": "Animal Bestiary / Blazing Saddles",
+    "restrictions": "Optional Blazing Saddles mounted combat rules.",
+    "relatedRuleIds": ["mounted-warrior-rules"]
+  },
+  {
+    "id": "mount-non-combatant",
+    "name": "Non-combatant",
+    "effectSummary": "This mount does not make attacks and may not be used to charge into combat unless another rule says otherwise.",
+    "appliesTo": "Riding Horses and Mules.",
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/animal-bestiary",
+    "pageRef": "Animal Bestiary",
+    "restrictions": "Optional mounted combat rules.",
+    "relatedRuleIds": ["mounted-warrior-rules"]
+  },
+  {
+    "id": "war-boar-ferocious-charge",
+    "name": "Ferocious Charge",
+    "effectSummary": "When the War Boar charges, the boar's own attack is made at +2 Strength. This bonus applies to the boar, not the rider.",
+    "appliesTo": "War Boar.",
+    "sourceDocumentId": "mordheim-annual-2002",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/animal-bestiary",
+    "pageRef": "War Boar",
+    "restrictions": "Optional Blazing Saddles mounted combat rules.",
+    "relatedRuleIds": ["mounted-warrior-rules"]
+  },
+  {
+    "id": "war-boar-thick-skinned",
+    "name": "Thick Skinned",
+    "effectSummary": "A War Boar gives the rider an additional +1 armour save bonus, making the total mounted bonus +2.",
+    "appliesTo": "War Boar.",
+    "sourceDocumentId": "mordheim-annual-2002",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/animal-bestiary",
+    "pageRef": "War Boar",
+    "restrictions": "Optional Blazing Saddles mounted combat rules.",
+    "relatedRuleIds": ["mounted-warrior-rules"]
+  },
+  {
+    "id": "cold-one-scaly",
+    "name": "Scaly",
+    "effectSummary": "A Cold One gives the rider an additional +1 armour save bonus, making the total mounted bonus +2.",
+    "appliesTo": "Cold One.",
+    "sourceDocumentId": "mordheim-annual-2002",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/animal-bestiary",
+    "pageRef": "Cold One",
+    "restrictions": "Optional Blazing Saddles mounted combat rules.",
+    "relatedRuleIds": ["mounted-warrior-rules"]
+  },
+  {
+    "id": "fear",
+    "name": "Fear",
+    "effectSummary": "Enemies must pass a Leadership test to charge this model. If charged by this model or fighting it after failing a Fear test, affected enemies only hit on 6s in that first combat round.",
+    "appliesTo": "Models and mounts that cause Fear.",
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/rules/leadership-psychology",
+    "pageRef": "Fear",
+    "restrictions": "Use when a model or equipment entry grants Fear.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "stupidity",
+    "name": "Stupidity",
+    "effectSummary": "At the start of the model's turn, take a Leadership test. If failed, the model cannot cast spells or fight until its next turn; if not in combat, roll D6: 1-3 moves half speed straight ahead, 4-6 does nothing.",
+    "appliesTo": "Models and mounts subject to Stupidity.",
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/rules/leadership-psychology",
+    "pageRef": "Stupidity",
+    "restrictions": "Use when a model or equipment entry grants Stupidity.",
     "relatedRuleIds": []
   },
   {

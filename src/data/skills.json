@@ -36,6 +36,11 @@
       "skillIds": ["black-hunger", "tail-fighting", "wall-runner", "infiltration", "art-of-silent-death"]
     },
     {
+      "id": "clan-pestilens-special",
+      "name": "Clan Pestilens Special",
+      "skillIds": ["pestilens-black-hunger", "censer-bearer", "rotten-body", "contagious", "ignore-pain"]
+    },
+    {
       "id": "orc-special",
       "name": "Orc Special",
       "skillIds": ["ard-ead", "waaagh-charge", "ere-we-go", "da-cunnin-plan", "well-ard", "eadbasher"]
@@ -324,6 +329,79 @@
       "sourceUrl": "https://broheim.net/downloads/warbands/official/Skaven.pdf",
       "pageRef": "Skaven p. 30",
       "relatedRuleIds": ["fighting-claws-pair"]
+    },
+    {
+      "id": "pestilens-black-hunger",
+      "name": "Black Hunger",
+      "categoryId": "clan-pestilens-special",
+      "effectSummary": "At the beginning of his turn, the hero may gain +1 Attack and +D3 inches to total movement for that turn, then suffers D3 Strength 3 hits with no armour save at the end of the turn.",
+      "restrictions": "Clan Pestilens heroes with access to the Clan Pestilens Special skill list.",
+      "sourceDocumentId": "tc29-skaven-pestilens",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pestilens%2C%20Errata%27d.pdf",
+      "pageRef": "Town Cryer #29 / Clan Pestilens Special Skills",
+      "relatedRuleIds": []
+    },
+    {
+      "id": "censer-bearer",
+      "name": "Censer Bearer",
+      "categoryId": "clan-pestilens-special",
+      "effectSummary": "The hero becomes subject to Frenzy and may only use a Censer as his close combat weapon.",
+      "restrictions": "Requires Black Hunger. Clan Pestilens heroes with access to the Clan Pestilens Special skill list.",
+      "sourceDocumentId": "tc29-skaven-pestilens",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pestilens%2C%20Errata%27d.pdf",
+      "pageRef": "Town Cryer #29 / Clan Pestilens Special Skills",
+      "relatedRuleIds": ["frenzy", "censer"],
+      "validation": {
+        "allowedFighterTypeIds": ["plague-priest", "pestilens-sorcerer", "plague-monk", "monk-initiate"],
+        "requiredSpecialRuleIds": [],
+        "requiredSkillIds": ["pestilens-black-hunger"],
+        "grantsSkillCategoryIds": []
+      }
+    },
+    {
+      "id": "rotten-body",
+      "name": "Rotten Body",
+      "categoryId": "clan-pestilens-special",
+      "effectSummary": "The hero is immune to poison and diseases. If taken out of action by a failed Censer fumes test, he recovers automatically after the battle instead of rolling for injuries.",
+      "restrictions": "Clan Pestilens heroes with access to the Clan Pestilens Special skill list.",
+      "sourceDocumentId": "tc29-skaven-pestilens",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pestilens%2C%20Errata%27d.pdf",
+      "pageRef": "Town Cryer #29 / Clan Pestilens Special Skills",
+      "relatedRuleIds": ["censer-fumes"]
+    },
+    {
+      "id": "contagious",
+      "name": "Contagious",
+      "categoryId": "clan-pestilens-special",
+      "effectSummary": "A model that puts this hero out of action in close combat must take a Toughness test. If the D6 result is higher than its Toughness, it suffers an automatic wound; a 6 always wounds. Undead and Possessed are immune.",
+      "restrictions": "Requires Rotten Body. Clan Pestilens heroes with access to the Clan Pestilens Special skill list.",
+      "sourceDocumentId": "tc29-skaven-pestilens",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pestilens%2C%20Errata%27d.pdf",
+      "pageRef": "Town Cryer #29 / Clan Pestilens Special Skills",
+      "relatedRuleIds": ["battle-out-of-action"],
+      "validation": {
+        "allowedFighterTypeIds": ["plague-priest", "pestilens-sorcerer", "plague-monk", "monk-initiate"],
+        "requiredSpecialRuleIds": [],
+        "requiredSkillIds": ["rotten-body"],
+        "grantsSkillCategoryIds": []
+      }
+    },
+    {
+      "id": "ignore-pain",
+      "name": "Ignore Pain",
+      "categoryId": "clan-pestilens-special",
+      "effectSummary": "The hero treats Stunned injury results as Knocked Down instead.",
+      "restrictions": "Requires the Resilient Strength skill. Clan Pestilens heroes with access to the Clan Pestilens Special skill list.",
+      "sourceDocumentId": "tc29-skaven-pestilens",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pestilens%2C%20Errata%27d.pdf",
+      "pageRef": "Town Cryer #29 / Clan Pestilens Special Skills",
+      "relatedRuleIds": ["resilient", "battle-stunned", "battle-knocked-down"],
+      "validation": {
+        "allowedFighterTypeIds": ["plague-priest", "pestilens-sorcerer", "plague-monk", "monk-initiate"],
+        "requiredSpecialRuleIds": [],
+        "requiredSkillIds": ["resilient"],
+        "grantsSkillCategoryIds": []
+      }
     },
     {
       "id": "ard-ead",

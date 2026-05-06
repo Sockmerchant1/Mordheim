@@ -152,7 +152,7 @@
       "id": "sisters-heroine-equipment",
       "name": "Sisters of Sigmar Heroine Equipment List",
       "warbandTypeId": "sisters-of-sigmar",
-      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "sigmarite-warhammer", "flail", "steel-whip", "double-handed-weapon", "sling", "light-armour", "heavy-armour", "shield", "buckler", "helmet", "holy-tome", "blessed-water", "holy-relic"],
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "sigmarite-warhammer", "flail", "steel-whip", "double-handed-weapon", "sling", "light-armour", "heavy-armour", "shield", "buckler", "helmet", "holy-tome", "blessed-water", "holy-relic", "riding-horse", "warhorse", "barding"],
       "appliesToFighterTypeIds": ["sigmarite-matriarch", "sister-superior"],
       "notes": "Includes heroine-only miscellaneous equipment."
     },
@@ -160,7 +160,7 @@
       "id": "sisters-augur-equipment",
       "name": "Sisters of Sigmar Augur Equipment List",
       "warbandTypeId": "sisters-of-sigmar",
-      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "sigmarite-warhammer", "flail", "steel-whip", "double-handed-weapon", "sling", "holy-tome", "blessed-water", "holy-relic"],
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "sigmarite-warhammer", "flail", "steel-whip", "double-handed-weapon", "sling", "holy-tome", "blessed-water", "holy-relic", "riding-horse", "warhorse", "barding"],
       "appliesToFighterTypeIds": ["augur"],
       "notes": "Augurs may choose Sisters weapons and heroine-only miscellaneous equipment, but never armour."
     },

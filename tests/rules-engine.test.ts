@@ -84,6 +84,24 @@ import {
   validSkaven
 } from "./fixtures/skavenRosters";
 import {
+  invalidPestilensSkill,
+  pestilensCenserBearerWithBlackHunger,
+  pestilensCenserBearerWithoutBlackHunger,
+  pestilensNoPriest,
+  pestilensRatWithWeapon,
+  pestilensSorcererWithSpell,
+  pestilensTwoPriests,
+  pestilensWithRatOgre,
+  plagueNoviceWithCenser,
+  plaguePriestWithHornedRatSpell,
+  tooManyMonkInitiates,
+  tooManyPestilensRatOgres,
+  tooManyPestilensSorcerers,
+  tooManyPestilensWarriors,
+  tooManyPlagueMonks,
+  validSkavenPestilens
+} from "./fixtures/pestilensRosters";
+import {
   invalidShadowSkill,
   shadowNoviceWithRunestones,
   shadowWalkerWithPowerfulBuild,
@@ -587,6 +605,74 @@ describe("rules engine - Skaven", () => {
 
     expect(sorcererSpells.find((option) => option.item.id === "horned-rat-warpfire")?.allowed).toBe(true);
     expect(adeptSpells.find((option) => option.item.id === "horned-rat-warpfire")?.allowed).toBe(false);
+  });
+});
+
+describe("rules engine - Skaven of Clan Pestilens", () => {
+  it("loads the Grade 1b Clan Pestilens warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+    expect(ids).toContain("skaven-of-clan-pestilens");
+  });
+
+  it("validates a basic starting Clan Pestilens roster", () => {
+    expect(errorCodes(validSkavenPestilens())).toEqual([]);
+    expect(calculateRosterCost(validSkavenPestilens(), rulesDb)).toBe(353);
+    expect(calculateWarbandRating(validSkavenPestilens(), rulesDb)).toBe(86);
+  });
+
+  it("requires exactly one Plague Priest and enforces fighter caps", () => {
+    expect(codes(pestilensNoPriest())).toContain("REQUIRED_LEADER");
+    expect(codes(pestilensTwoPriests())).toContain("REQUIRED_LEADER");
+    expect(codes(tooManyPestilensWarriors())).toContain("MAX_WARRIORS");
+    expect(codes(tooManyPestilensSorcerers())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyPlagueMonks())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyMonkInitiates())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyPestilensRatOgres())).toContain("FIGHTER_MAX_COUNT");
+  });
+
+  it("enforces Clan Pestilens equipment lists", () => {
+    expect(codes(plagueNoviceWithCenser())).toContain("INVALID_EQUIPMENT");
+    expect(codes(pestilensRatWithWeapon())).toContain("INVALID_EQUIPMENT");
+
+    const roster = validSkavenPestilens();
+    const priestOptions = getAllowedEquipment({ ...roster.members[0], equipment: [] }, roster, rulesDb);
+    const noviceOptions = getAllowedEquipment(roster.members[4], roster, rulesDb);
+
+    expect(priestOptions.find((option) => option.item.id === "censer")?.allowed).toBe(true);
+    expect(priestOptions.find((option) => option.item.id === "disease-dagger")?.allowed).toBe(true);
+    expect(priestOptions.find((option) => option.item.id === "weeping-blades")?.allowed).toBe(false);
+    expect(noviceOptions.find((option) => option.item.id === "censer")?.allowed).toBe(false);
+  });
+
+  it("enforces Clan Pestilens skill prerequisites", () => {
+    expect(codes(invalidPestilensSkill())).toContain("INVALID_SKILL");
+    expect(codes(pestilensCenserBearerWithoutBlackHunger())).toContain("INVALID_SKILL");
+    expect(errorCodes(pestilensCenserBearerWithBlackHunger())).toEqual([]);
+
+    const roster = validSkavenPestilens();
+    const monkSkills = getAllowedSkills(roster.members[2], roster, rulesDb);
+    const monkWithBlackHungerSkills = getAllowedSkills({ ...roster.members[2], skills: ["pestilens-black-hunger"] }, roster, rulesDb);
+
+    expect(monkSkills.find((option) => option.item.id === "pestilens-black-hunger")?.allowed).toBe(true);
+    expect(monkSkills.find((option) => option.item.id === "censer-bearer")?.allowed).toBe(false);
+    expect(monkWithBlackHungerSkills.find((option) => option.item.id === "censer-bearer")?.allowed).toBe(true);
+  });
+
+  it("allows the Pestilens Sorcerer to select Horned Rat spells", () => {
+    expect(errorCodes(pestilensSorcererWithSpell())).toEqual([]);
+    expect(codes(plaguePriestWithHornedRatSpell())).toContain("INVALID_SPECIAL_RULE");
+
+    const roster = validSkavenPestilens();
+    const sorcererSpells = getAllowedSpecialRules(roster.members[1], roster, rulesDb);
+    const priestSpells = getAllowedSpecialRules(roster.members[0], roster, rulesDb);
+
+    expect(sorcererSpells.find((option) => option.item.id === "horned-rat-warpfire")?.allowed).toBe(true);
+    expect(priestSpells.find((option) => option.item.id === "horned-rat-warpfire")?.allowed).toBe(false);
+  });
+
+  it("applies Rat Ogre large creature rating metadata", () => {
+    expect(errorCodes(pestilensWithRatOgre())).toEqual([]);
+    expect(calculateWarbandRating(pestilensWithRatOgre(), rulesDb)).toBe(55);
   });
 });
 

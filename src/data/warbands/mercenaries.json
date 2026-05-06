@@ -418,7 +418,7 @@
       "id": "reikland-mercenary-equipment",
       "name": "Mercenary Equipment List",
       "warbandTypeId": "reiklanders",
-      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "morning-star", "double-handed-weapon", "spear", "halberd", "crossbow", "pistol", "brace-of-pistols", "duelling-pistol", "brace-of-duelling-pistols", "bow", "light-armour", "heavy-armour", "shield", "buckler", "helmet"],
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "morning-star", "double-handed-weapon", "spear", "halberd", "crossbow", "pistol", "brace-of-pistols", "duelling-pistol", "brace-of-duelling-pistols", "bow", "light-armour", "heavy-armour", "shield", "buckler", "helmet", "riding-horse", "warhorse", "barding"],
       "appliesToFighterTypeIds": ["reikland-mercenary-captain", "reikland-champion", "reikland-youngblood", "reikland-warrior", "reikland-swordsman"],
       "notes": "Used by Mercenary heroes, Warriors and Swordsmen."
     },
@@ -434,7 +434,7 @@
       "id": "middenheim-mercenary-equipment",
       "name": "Mercenary Equipment List",
       "warbandTypeId": "middenheimers",
-      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "morning-star", "double-handed-weapon", "spear", "halberd", "crossbow", "pistol", "brace-of-pistols", "duelling-pistol", "brace-of-duelling-pistols", "bow", "light-armour", "heavy-armour", "shield", "buckler", "helmet"],
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "morning-star", "double-handed-weapon", "spear", "halberd", "crossbow", "pistol", "brace-of-pistols", "duelling-pistol", "brace-of-duelling-pistols", "bow", "light-armour", "heavy-armour", "shield", "buckler", "helmet", "riding-horse", "warhorse", "barding"],
       "appliesToFighterTypeIds": ["middenheim-mercenary-captain", "middenheim-champion", "middenheim-youngblood", "middenheim-warrior", "middenheim-swordsman"],
       "notes": "Used by Mercenary heroes, Warriors and Swordsmen."
     },
@@ -450,7 +450,7 @@
       "id": "marienburg-mercenary-equipment",
       "name": "Mercenary Equipment List",
       "warbandTypeId": "marienburgers",
-      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "morning-star", "double-handed-weapon", "spear", "halberd", "crossbow", "pistol", "brace-of-pistols", "duelling-pistol", "brace-of-duelling-pistols", "bow", "light-armour", "heavy-armour", "shield", "buckler", "helmet"],
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "morning-star", "double-handed-weapon", "spear", "halberd", "crossbow", "pistol", "brace-of-pistols", "duelling-pistol", "brace-of-duelling-pistols", "bow", "light-armour", "heavy-armour", "shield", "buckler", "helmet", "riding-horse", "warhorse", "barding"],
       "appliesToFighterTypeIds": ["marienburg-mercenary-captain", "marienburg-champion", "marienburg-youngblood", "marienburg-warrior", "marienburg-swordsman"],
       "notes": "Used by Mercenary heroes, Warriors and Swordsmen."
     },

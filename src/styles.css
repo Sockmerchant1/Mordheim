@@ -397,6 +397,120 @@ h3 {
   padding: 1rem;
 }
 
+.roster-identity,
+.roster-title-lockup {
+  align-items: center;
+  display: flex;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.warband-badge {
+  --badge-bg: var(--accent);
+  --badge-edge: var(--accent-strong);
+  align-items: center;
+  aspect-ratio: 1;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.18), transparent 38%),
+    linear-gradient(180deg, var(--badge-bg), var(--badge-edge));
+  border: 2px solid rgba(255, 244, 223, 0.85);
+  border-radius: 50% 50% 45% 45%;
+  box-shadow: 0 0 0 1px rgba(48, 34, 24, 0.28), 0 6px 12px rgba(36, 29, 25, 0.2);
+  color: #fff7e8;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.82rem;
+  font-weight: 900;
+  height: 42px;
+  justify-content: center;
+  letter-spacing: 0;
+  line-height: 1;
+  position: relative;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.warband-badge svg {
+  fill: none;
+  height: 72%;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4;
+  width: 72%;
+}
+
+.warband-badge > span {
+  align-items: center;
+  display: inline-flex;
+  height: 100%;
+  justify-content: center;
+  width: 100%;
+}
+
+.warband-badge::after {
+  background: rgba(255, 244, 223, 0.75);
+  bottom: 5px;
+  content: "";
+  height: 2px;
+  left: 11px;
+  position: absolute;
+  right: 11px;
+}
+
+.warband-badge.large {
+  font-size: 1.05rem;
+  height: 56px;
+}
+
+.badge-witch-hunters {
+  --badge-bg: #a2392d;
+  --badge-edge: #5d1d17;
+}
+
+.badge-sisters-of-sigmar {
+  --badge-bg: #b7832d;
+  --badge-edge: #664316;
+}
+
+.badge-skaven {
+  --badge-bg: #657a2d;
+  --badge-edge: #344416;
+}
+
+.badge-undead {
+  --badge-bg: #78617f;
+  --badge-edge: #3e3045;
+}
+
+.badge-carnival-of-chaos {
+  --badge-bg: #8a4875;
+  --badge-edge: #4a2441;
+}
+
+.badge-orc-mob,
+.badge-forest-goblins {
+  --badge-bg: #57743a;
+  --badge-edge: #2d431e;
+}
+
+.badge-shadow-warriors {
+  --badge-bg: #596779;
+  --badge-edge: #29313d;
+}
+
+.badge-lizardmen {
+  --badge-bg: #2e7e82;
+  --badge-edge: #174a4d;
+}
+
+.badge-reiklanders,
+.badge-middenheimers,
+.badge-marienburgers {
+  --badge-bg: #865a36;
+  --badge-edge: #52331d;
+}
+
 .roster-row h3 {
   margin: 0 0 0.25rem;
 }
@@ -941,6 +1055,39 @@ button.blocked,
   display: inline-block;
   font-weight: 800;
   padding: 0.35rem 0.65rem;
+}
+
+.lookup-table-wrap {
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+.lookup-table-wrap h3 {
+  margin: 0 0 0.45rem;
+}
+
+.lookup-table {
+  background: rgba(255, 250, 240, 0.72);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.lookup-table th,
+.lookup-table td {
+  font-size: 0.9rem;
+  padding: 0.55rem 0.6rem;
+}
+
+.lookup-table th {
+  background: var(--charcoal-2);
+  color: #fff4df;
+}
+
+.lookup-table td:first-child {
+  color: var(--accent-strong);
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .lookup-tags {

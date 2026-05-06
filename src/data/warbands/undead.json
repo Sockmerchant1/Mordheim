@@ -178,7 +178,7 @@
       "id": "undead-equipment",
       "name": "Undead Equipment List",
       "warbandTypeId": "undead",
-      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "double-handed-weapon", "spear", "halberd", "bow", "short-bow", "light-armour", "heavy-armour", "shield", "helmet"],
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "double-handed-weapon", "spear", "halberd", "bow", "short-bow", "light-armour", "heavy-armour", "shield", "helmet", "nightmare"],
       "appliesToFighterTypeIds": ["vampire", "necromancer", "dreg"],
       "notes": "Used by Vampires, Necromancers and Dregs."
     },

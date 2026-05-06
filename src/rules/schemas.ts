@@ -77,7 +77,9 @@ export const equipmentValidationSchema = z.object({
   disallowsOtherWeapons: z.boolean().default(false),
   disallowsOtherEquipment: z.boolean().default(false),
   requiredEquipmentItemIds: z.array(z.string()).default([]),
+  allowedFighterTypeIds: z.array(z.string()).default([]),
   exclusiveEquipmentGroupId: z.string().optional(),
+  ratingModifier: z.number().default(0),
   costGroupId: z.string().optional(),
   costGroupSubsequentMultiplier: z.number().default(1)
 });
@@ -95,6 +97,8 @@ const defaultEquipmentValidation = {
   disallowsOtherWeapons: false,
   disallowsOtherEquipment: false,
   requiredEquipmentItemIds: [],
+  allowedFighterTypeIds: [],
+  ratingModifier: 0,
   costGroupSubsequentMultiplier: 1
 };
 
@@ -141,9 +145,10 @@ export const skillSchema = z.object({
   validation: z.object({
     allowedFighterTypeIds: z.array(z.string()).default([]),
     requiredSpecialRuleIds: z.array(z.string()).default([]),
+    requiredSkillIds: z.array(z.string()).default([]),
     grantsSkillCategoryIds: z.array(z.string()).default([]),
     maxCountInWarband: z.number().optional()
-  }).default({ allowedFighterTypeIds: [], requiredSpecialRuleIds: [], grantsSkillCategoryIds: [] })
+  }).default({ allowedFighterTypeIds: [], requiredSpecialRuleIds: [], requiredSkillIds: [], grantsSkillCategoryIds: [] })
 });
 
 export const specialRuleSchema = z.object({

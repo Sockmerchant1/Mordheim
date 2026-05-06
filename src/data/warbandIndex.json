@@ -429,7 +429,7 @@
       "isOfficial": true,
       "sourceCode": "TC29",
       "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pestilens%2C%20Errata%27d.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "tileans",

@@ -159,6 +159,34 @@
     "validation": { "closeCombatSlots": 2, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "disallowsOtherWeapons": true }
   },
   {
+    "id": "disease-dagger",
+    "name": "Disease Dagger",
+    "category": "close_combat",
+    "cost": 15,
+    "rarity": "Rare 8, Skaven of Clan Pestilens only",
+    "rulesSummary": "Clan Pestilens dagger. It gives the enemy the normal dagger armour-save bonus and can inflict an extra wound on a natural 6 to hit if the target fails a Toughness test.",
+    "specialRuleIds": ["disease-dagger-armour-save", "disease-dagger-infecting"],
+    "sourceDocumentId": "tc29-skaven-pestilens",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/close-combat",
+    "pageRef": "Disease Dagger / Town Cryer #29",
+    "restrictions": "Skaven of Clan Pestilens heroes equipment list only.",
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+  },
+  {
+    "id": "censer",
+    "name": "Censer",
+    "category": "close_combat",
+    "cost": 40,
+    "rarity": "Rare 8, Skaven of Clan Pestilens only",
+    "rulesSummary": "Clan Pestilens two-handed flail. It has +2 Strength in the first round of each combat, Concussion, and plague fumes that can wound models in base contact after attacks are resolved.",
+    "specialRuleIds": ["censer-two-handed", "censer-concussion", "censer-heavy", "censer-exhausting", "censer-fumes"],
+    "sourceDocumentId": "tc29-skaven-pestilens",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/close-combat",
+    "pageRef": "Censer / Town Cryer #29",
+    "restrictions": "Skaven of Clan Pestilens heroes equipment list only.",
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+  },
+  {
     "id": "flail",
     "name": "Flail",
     "category": "close_combat",
@@ -1081,13 +1109,135 @@
     "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [] }
   },
   {
+    "id": "riding-horse",
+    "name": "Riding/Draft Horse",
+    "category": "mount",
+    "cost": 40,
+    "rarity": "Rare 8, Humans only",
+    "rulesSummary": "Optional mounted rules. Human Hero mount with profile M8 WS1 BS0 S3 T3 W1 I3 A0 Ld5. It gives the standard mounted armour-save bonus but does not attack in close combat.",
+    "specialRuleIds": ["mounted-warrior-rules", "mount-campaign-risk", "mount-non-combatant"],
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/animal-bestiary",
+    "pageRef": "Animal Bestiary / Riding-Draft Horse",
+    "restrictions": "Optional mounted combat rules. Human Heroes only.",
+    "validation": {
+      "nonRepeatable": true,
+      "allowedFighterTypeIds": ["witch-hunter-captain", "warrior-priest", "witch-hunter", "sigmarite-matriarch", "sister-superior", "augur", "reikland-mercenary-captain", "reikland-champion", "reikland-youngblood", "middenheim-mercenary-captain", "middenheim-champion", "middenheim-youngblood", "marienburg-mercenary-captain", "marienburg-champion", "marienburg-youngblood"],
+      "ratingModifier": 3
+    }
+  },
+  {
+    "id": "warhorse",
+    "name": "Warhorse",
+    "category": "mount",
+    "cost": 80,
+    "rarity": "Rare 11, Humans only",
+    "rulesSummary": "Optional mounted rules. Human Hero combat mount with profile M8 WS3 BS0 S3 T3 W1 I3 A1 Ld5. Battle Schooled lets the rider re-roll one failed loss of control test.",
+    "specialRuleIds": ["mounted-warrior-rules", "mount-campaign-risk", "battle-schooled"],
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/animal-bestiary",
+    "pageRef": "Animal Bestiary / Warhorse",
+    "restrictions": "Optional mounted combat rules. Human Heroes only.",
+    "validation": {
+      "nonRepeatable": true,
+      "allowedFighterTypeIds": ["witch-hunter-captain", "warrior-priest", "witch-hunter", "sigmarite-matriarch", "sister-superior", "augur", "reikland-mercenary-captain", "reikland-champion", "reikland-youngblood", "middenheim-mercenary-captain", "middenheim-champion", "middenheim-youngblood", "marienburg-mercenary-captain", "marienburg-champion", "marienburg-youngblood"],
+      "ratingModifier": 5
+    }
+  },
+  {
+    "id": "barding",
+    "name": "Barding",
+    "category": "armour",
+    "cost": 80,
+    "rarity": "Rare 8, Warhorses only",
+    "rulesSummary": "Optional mounted rules. Warhorse armour adds a further +1 armour save bonus to the mounted model, reduces the mount's Movement by 1, and makes the warhorse die only on a serious injury roll of 1 if the rider goes out of action.",
+    "specialRuleIds": ["mounted-warrior-rules"],
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/armour",
+    "pageRef": "Barding",
+    "restrictions": "Warhorse only.",
+    "validation": {
+      "nonRepeatable": true,
+      "requiredEquipmentItemIds": ["warhorse"],
+      "allowedFighterTypeIds": ["witch-hunter-captain", "warrior-priest", "witch-hunter", "sigmarite-matriarch", "sister-superior", "augur", "reikland-mercenary-captain", "reikland-champion", "reikland-youngblood", "middenheim-mercenary-captain", "middenheim-champion", "middenheim-youngblood", "marienburg-mercenary-captain", "marienburg-champion", "marienburg-youngblood"]
+    }
+  },
+  {
+    "id": "nightmare",
+    "name": "Nightmare",
+    "category": "mount",
+    "cost": 95,
+    "rarity": "Rare 11, Vampires and Necromancers only",
+    "rulesSummary": "Optional Blazing Saddles mount. Undead mount with profile M8 WS2 BS0 S3 T3 W1 I2 A1 Ld5. It may not run, is immune to poison and psychology, and uses the mounted warrior rules.",
+    "specialRuleIds": ["mounted-warrior-rules", "mount-campaign-risk", "may-not-run", "immune-to-poison", "undead-immune-to-psychology"],
+    "sourceDocumentId": "mordheim-annual-2002",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/animal-bestiary",
+    "pageRef": "Animal Bestiary / Nightmare",
+    "restrictions": "Optional mounted combat rules. Vampires and Necromancers only.",
+    "validation": {
+      "nonRepeatable": true,
+      "allowedFighterTypeIds": ["vampire", "necromancer"]
+    }
+  },
+  {
+    "id": "war-boar",
+    "name": "War Boar",
+    "category": "mount",
+    "cost": 90,
+    "rarity": "Rare 11, Orcs only",
+    "rulesSummary": "Optional Blazing Saddles mount. Orc mount with profile M7 WS3 BS0 S3 T4 W1 I3 A1 Ld3. Its own attack gains +2 Strength on the charge and it gives the rider an additional +1 armour save bonus.",
+    "specialRuleIds": ["mounted-warrior-rules", "mount-campaign-risk", "war-boar-ferocious-charge", "war-boar-thick-skinned"],
+    "sourceDocumentId": "mordheim-annual-2002",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/animal-bestiary",
+    "pageRef": "Animal Bestiary / War Boar",
+    "restrictions": "Optional mounted combat rules. Orc Heroes only.",
+    "validation": {
+      "nonRepeatable": true,
+      "allowedFighterTypeIds": ["orc-boss", "orc-shaman", "orc-big-un"]
+    }
+  },
+  {
+    "id": "cold-one",
+    "name": "Cold One",
+    "category": "mount",
+    "cost": 100,
+    "rarity": "Rare 11, Lizardmen only",
+    "rulesSummary": "Optional Blazing Saddles mount. Lizardmen mount with profile M7 WS3 BS0 S4 T4 W1 I3 A1 Ld3. It causes Fear, is subject to Stupidity, and gives the rider an additional +1 armour save bonus.",
+    "specialRuleIds": ["mounted-warrior-rules", "mount-campaign-risk", "fear", "stupidity", "cold-one-scaly"],
+    "sourceDocumentId": "mordheim-annual-2002",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/animal-bestiary",
+    "pageRef": "Animal Bestiary / Cold One",
+    "restrictions": "Optional mounted combat rules. Lizardmen Heroes only.",
+    "validation": {
+      "nonRepeatable": true,
+      "allowedFighterTypeIds": ["skink-priest", "saurus-totem-warrior", "skink-great-crest"]
+    }
+  },
+  {
+    "id": "elven-steed",
+    "name": "Elven Steed",
+    "category": "mount",
+    "cost": 90,
+    "rarity": "Rare 10, Elves only",
+    "rulesSummary": "Optional Blazing Saddles mount. Elf mount with profile M9 WS3 BS0 S3 T3 W1 I4 A1 Ld5. Battle Schooled lets the rider re-roll one failed loss of control test.",
+    "specialRuleIds": ["mounted-warrior-rules", "mount-campaign-risk", "battle-schooled"],
+    "sourceDocumentId": "mordheim-annual-2002",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/animal-bestiary",
+    "pageRef": "Animal Bestiary / Elven Steed",
+    "restrictions": "Optional mounted combat rules. Shadow Warrior Heroes only in the current seeded warbands.",
+    "validation": {
+      "nonRepeatable": true,
+      "allowedFighterTypeIds": ["shadow-master", "shadow-walker", "shadow-weaver"]
+    }
+  },
+  {
     "id": "giant-spider-mount",
     "name": "Giant Spider",
     "category": "mount",
     "cost": 100,
     "rarity": "Rare 11, Forest Goblins only",
     "rulesSummary": "Forest Goblin spider mount. Profile M7 WS3 BS0 S3(4) T3 W1 I4 A1 Ld4 with poisoned attacks and Wall Walk.",
-    "specialRuleIds": ["giant-spider-poisoned-attack", "giant-spider-wall-walk"],
+    "specialRuleIds": ["mounted-warrior-rules", "mount-campaign-risk", "giant-spider-poisoned-attack", "giant-spider-wall-walk"],
     "sourceDocumentId": "nc-forest-goblins",
     "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Forest%20Goblins.pdf",
     "pageRef": "Forest Goblins p. 2",

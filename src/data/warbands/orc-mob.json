@@ -222,7 +222,7 @@
       "id": "orc-equipment",
       "name": "Orc Equipment List",
       "warbandTypeId": "orc-mob",
-      "allowedEquipmentItemIds": ["dagger", "axe", "club", "morning-star", "sword", "double-handed-weapon", "spear", "halberd", "crossbow", "bow", "light-armour", "shield", "helmet"],
+      "allowedEquipmentItemIds": ["dagger", "axe", "club", "morning-star", "sword", "double-handed-weapon", "spear", "halberd", "crossbow", "bow", "light-armour", "shield", "helmet", "war-boar"],
       "appliesToFighterTypeIds": ["orc-boss", "orc-shaman", "orc-big-un", "orc-boy"],
       "notes": "Orc equipment list from the official PDF."
     },
@@ -230,7 +230,7 @@
       "id": "orc-shaman-equipment",
       "name": "Orc Shaman Equipment List",
       "warbandTypeId": "orc-mob",
-      "allowedEquipmentItemIds": ["dagger", "axe", "club", "morning-star", "sword", "double-handed-weapon", "spear", "halberd", "crossbow", "bow"],
+      "allowedEquipmentItemIds": ["dagger", "axe", "club", "morning-star", "sword", "double-handed-weapon", "spear", "halberd", "crossbow", "bow", "war-boar"],
       "appliesToFighterTypeIds": ["orc-shaman"],
       "notes": "Orc equipment list weapons only; Shamans may never wear armour."
     },

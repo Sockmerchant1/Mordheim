@@ -114,6 +114,11 @@ export function getAllowedSkills(
     if (missingRequiredRule) {
       return blocked(skill, `${skill.name} requires ${missingRequiredRule}.`, source);
     }
+    const missingRequiredSkill = skill.validation.requiredSkillIds.find((skillId) => !member.skills.includes(skillId));
+    if (missingRequiredSkill) {
+      const requiredSkill = rulesDb.skills.find((entry) => entry.id === missingRequiredSkill);
+      return blocked(skill, `${skill.name} requires ${requiredSkill?.name ?? missingRequiredSkill}.`, source);
+    }
     if (skill.id === "battle-tongue" && warband?.leaderFighterTypeId !== fighterType.id) {
       return blocked(skill, "Battle Tongue is leader-only.", source);
     }
@@ -156,7 +161,7 @@ export function calculateWarbandRating(roster: Roster, rulesDb: RulesDb): number
     const warriors = member.kind === "henchman_group" ? member.groupSize : 1;
     const basePerWarrior =
       fighterType.ratingOverride ?? (fighterType.isLargeCreature ? 20 : 5);
-    return rating + basePerWarrior * warriors + Math.max(0, member.experience);
+    return rating + basePerWarrior * warriors + Math.max(0, member.experience) + equipmentRating(member, rulesDb);
   }, 0);
 }
 
@@ -443,6 +448,12 @@ function equipmentOptionFor(
   if (!listAllowed && !skillAllowed) {
     return blocked(item, `${item.name} is not in the ${fighterType.name} equipment list.`, source);
   }
+  if (
+    item.validation.allowedFighterTypeIds.length > 0 &&
+    !item.validation.allowedFighterTypeIds.includes(fighterType.id)
+  ) {
+    return blocked(item, `${item.name} is restricted to specific fighter types.`, source);
+  }
 
   if (!options.ignoreCurrentLimit) {
     const simulated = { ...member, equipment: [...member.equipment, item.id] };
@@ -474,6 +485,7 @@ function validateWeaponAndArmourLimits(member: RosterMember, rulesDb: RulesDb, i
         if (item.validation.isBodyArmour) acc.bodyArmour += 1;
         if (item.validation.isShield || item.validation.isBuckler) acc.shieldOrBuckler += 1;
         if (item.validation.isHelmet) acc.helmets += 1;
+        if (item.category === "mount") acc.mounts += 1;
         return acc;
       },
       {
@@ -482,6 +494,7 @@ function validateWeaponAndArmourLimits(member: RosterMember, rulesDb: RulesDb, i
         bodyArmour: 0,
         shieldOrBuckler: 0,
         helmets: 0,
+        mounts: 0,
         freeCloseCombatUsed: false
       }
     );
@@ -536,6 +549,9 @@ function validateWeaponAndArmourLimits(member: RosterMember, rulesDb: RulesDb, i
     }
     if (counts.helmets > 1) {
       issues.push(issue("error", "TOO_MANY_HELMETS", `This fighter${label} has more than one helmet.`, "Only one helmet can be worn at a time.", member.id, "equipment", source, "Keep one helmet."));
+    }
+    if (counts.mounts > 1) {
+      issues.push(issue("error", "TOO_MANY_MOUNTS", `This fighter${label} has more than one mount.`, "A warrior can only ride one mount at a time.", member.id, "equipment", source, "Keep one mount."));
     }
   });
 
@@ -669,6 +685,14 @@ function equipmentSetCost(equipment: string[], rulesDb: RulesDb): number {
   }
 
   return total;
+}
+
+function equipmentRating(member: RosterMember, rulesDb: RulesDb): number {
+  if (member.kind === "hired_sword") return 0;
+  const equipmentSets = member.perModelEquipment?.length ? member.perModelEquipment : [member.equipment];
+  return equipmentSets.reduce((total, equipment) => (
+    total + equipment.reduce((setTotal, itemId) => setTotal + (findEquipment(rulesDb, itemId)?.validation.ratingModifier ?? 0), 0)
+  ), 0);
 }
 
 function rosterMembersInWarband(roster: Roster, rulesDb: RulesDb): RosterMember[] {
