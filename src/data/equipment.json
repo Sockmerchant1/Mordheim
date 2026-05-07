@@ -119,6 +119,19 @@
     "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
+    "id": "lance",
+    "name": "Lance",
+    "category": "close_combat",
+    "cost": 40,
+    "rulesSummary": "Cavalry weapon. It can only be used while mounted on a warhorse and gives +2 Strength on the charge for that turn.",
+    "specialRuleIds": ["lance-cavalry-weapon", "lance-cavalry-bonus"],
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/close-combat",
+    "pageRef": "Lance",
+    "restrictions": "Mounted warriors only; the current seeded fixed user is the Freelancer.",
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "requiredEquipmentItemIds": ["warhorse"], "allowedFighterTypeIds": ["hired-sword-freelancer"] }
+  },
+  {
     "id": "halberd",
     "name": "Halberd",
     "category": "close_combat",
@@ -235,6 +248,32 @@
     "sourceUrl": "https://www.broheim.net/downloads/rules/Mordheim%20Core%20Rules%20Printable.pdf",
     "pageRef": "Witch Hunters p. 16",
     "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+  },
+  {
+    "id": "spiked-gauntlet",
+    "name": "Spiked Gauntlet",
+    "category": "close_combat",
+    "cost": 0,
+    "rulesSummary": "Pit Fighter equipment. It counts as an additional hand weapon and as a buckler.",
+    "specialRuleIds": ["spiked-gauntlet-additional-hand-weapon", "spiked-gauntlet-buckler"],
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/campaigns/hired-swords/grade-1a",
+    "pageRef": "Pit Fighter",
+    "restrictions": "Pit Fighter only; other Heroes cannot learn to use it.",
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": true, "nonRepeatable": true, "grantsWeaponUse": [], "allowedFighterTypeIds": ["hired-sword-pit-fighter"] }
+  },
+  {
+    "id": "staff",
+    "name": "Staff",
+    "category": "close_combat",
+    "cost": 0,
+    "rulesSummary": "Warlock equipment. The Warlock entry lists a staff and gives no extra weapon rules, so the app treats it as his fixed close-combat weapon with Strength as user.",
+    "specialRuleIds": [],
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/campaigns/hired-swords/grade-1a",
+    "pageRef": "Warlock",
+    "restrictions": "Warlock hired sword only.",
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "allowedFighterTypeIds": ["hired-sword-warlock"] }
   },
   {
     "id": "bow",
@@ -532,6 +571,19 @@
     "sourceUrl": "https://www.broheim.net/downloads/rules/Mordheim%20Core%20Rules%20Printable.pdf",
     "pageRef": "Witch Hunters p. 16",
     "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": true, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [] }
+  },
+  {
+    "id": "cooking-pot-helmet",
+    "name": "Cooking Pot",
+    "category": "armour",
+    "cost": 0,
+    "rulesSummary": "Halfling Scout equipment. The cooking pot counts as a helmet.",
+    "specialRuleIds": ["cooking-pot-counts-as-helmet"],
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/campaigns/hired-swords/grade-1a",
+    "pageRef": "Halfling Scout",
+    "restrictions": "Halfling Scout only.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": true, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "allowedFighterTypeIds": ["hired-sword-halfling-scout"] }
   },
   {
     "id": "holy-tome",
@@ -1137,10 +1189,10 @@
     "sourceDocumentId": "mordheim-core-rules",
     "sourceUrl": "https://mordheimer.net/docs/weapons-armour/animal-bestiary",
     "pageRef": "Animal Bestiary / Warhorse",
-    "restrictions": "Optional mounted combat rules. Human Heroes only.",
+    "restrictions": "Optional mounted combat rules. Human Heroes and fixed mounted hired swords only.",
     "validation": {
       "nonRepeatable": true,
-      "allowedFighterTypeIds": ["witch-hunter-captain", "warrior-priest", "witch-hunter", "sigmarite-matriarch", "sister-superior", "augur", "reikland-mercenary-captain", "reikland-champion", "reikland-youngblood", "middenheim-mercenary-captain", "middenheim-champion", "middenheim-youngblood", "marienburg-mercenary-captain", "marienburg-champion", "marienburg-youngblood"],
+      "allowedFighterTypeIds": ["witch-hunter-captain", "warrior-priest", "witch-hunter", "sigmarite-matriarch", "sister-superior", "augur", "reikland-mercenary-captain", "reikland-champion", "reikland-youngblood", "middenheim-mercenary-captain", "middenheim-champion", "middenheim-youngblood", "marienburg-mercenary-captain", "marienburg-champion", "marienburg-youngblood", "hired-sword-freelancer"],
       "ratingModifier": 5
     }
   },

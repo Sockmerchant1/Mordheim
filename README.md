@@ -2,7 +2,7 @@
 
 An unofficial local-first Mordheim roster and campaign helper. The app separates canonical rules data from player roster state so rosters reference structured records for fighter types, equipment, skills, special rules, source documents and campaign log entries.
 
-The first fully seeded warbands are **Witch Hunters**, the official **Mercenaries** variants, **Sisters of Sigmar**, **Carnival of Chaos**, **Skaven**, **Undead**, **Orc Mob**, **Shadow Warriors**, **Lizardmen**, and **Forest Goblins**. The attached workbook was used as a roster layout and data-entry reference only; Broheim-hosted rule documents are treated as the source references.
+The first fully seeded warbands are **Witch Hunters**, the official **Mercenaries** variants, **Sisters of Sigmar**, **Carnival of Chaos**, **Skaven**, **Skaven of Clan Pestilens**, **Undead**, **Orc Mob**, **Shadow Warriors**, **Lizardmen**, and **Forest Goblins**. The attached workbook was used as a roster layout and data-entry reference only; Broheim-hosted rule documents are treated as the source references.
 
 ## Stack
 
@@ -74,12 +74,44 @@ Rules live in JSON seed files under `src/data`; campaign roster state is saved s
 ## App Modes
 
 - **Roster Editor**: the existing long-term roster builder and campaign editor.
-- **Play Mode**: opened by the Roster button for quick table use, temporary fighter status, wound tracking, rules lookup and printable PDF roster sheets.
+- **Campaign**: a campaign dashboard for history, economy, fighter progression, notes and between-game reminders.
+- **Schedule**: a shared game scheduler for campaign games, invitations, a compact month calendar and optional Google Calendar invites.
+- **Play Mode**: opened by the Roster button for quick table use, dice/table helpers, temporary fighter status, wound tracking, rules lookup and printable PDF roster sheets.
 - **After Battle**: a guided post-game draft for result, XP, serious injuries, exploration, income, trading, advances, roster updates and final review.
 
 The Create Warband screen also includes legal starter roster templates for implemented warbands. Templates live in `src/data/starterRosters.ts`, use canonical fighter/equipment ids, and are verified by the Node rules check.
 
-The After Battle flow compares pre-battle XP with final XP using the central advancement threshold helper in `src/rules/engine.ts`, queues one advance slot per crossed threshold, and writes one campaign history entry when updates are applied.
+The After Battle flow compares pre-battle XP with final XP using the central advancement threshold helper in `src/rules/engine.ts`, queues one advance slot per crossed threshold, and writes one campaign history entry when updates are applied. Serious injury and exploration steps use the shared dice/table helper in `src/rules/tableDice.ts`, so rolls can fill draft fields while still allowing manual overrides.
+
+## Game Scheduler
+
+The Schedule page is separate from local warband storage. It stores the local player profile in browser storage, then uses a scheduler store abstraction in `src/scheduler/store.ts`.
+
+Scheduler data is designed to be shared through this Google Sheet:
+
+`https://docs.google.com/spreadsheets/d/1n2hA3dIFmkJ_gha16WkRD0hqNC5Zt9tmiUHwuJsVCkE/edit`
+
+The frontend does not write directly to Google Sheets. Instead, deploy the Apps Script template in `scripts/googleAppsScriptScheduler.js` as a Web App, then set these environment values in Netlify:
+
+```text
+VITE_SCHEDULER_APPS_SCRIPT_URL=https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec
+VITE_SCHEDULER_CAMPAIGN_ID=autumn-in-the-city
+VITE_SCHEDULER_CAMPAIGN_NAME=Autumn in the City
+VITE_SCHEDULER_GOOGLE_SHEET_ID=1n2hA3dIFmkJ_gha16WkRD0hqNC5Zt9tmiUHwuJsVCkE
+VITE_SCHEDULER_GOOGLE_CALENDAR_ID=
+```
+
+If `VITE_SCHEDULER_APPS_SCRIPT_URL` is not set, the scheduler still works in local fallback mode on that device only. This is useful for testing the UI but not for shared campaign scheduling.
+
+Suggested Google Sheet tabs are created by the Apps Script if missing:
+
+- `Games`
+- `Invitations`
+- `Players`
+
+Google Calendar invites are also created by Apps Script. The app calls `createGoogleCalendarInvite`, Apps Script creates the event with attendee emails, then writes the event id/link fields back to the `Games` tab. No private Google credentials are stored in the frontend.
+
+Scheduler player login is also handled by Apps Script. Players register with a name, optional email and password. The script stores a salted password hash and a session token hash in the `Players` tab; the frontend stores only the returned session token in that player's browser. If the Apps Script endpoint is not configured, login falls back to local test mode and is not shared protection.
 
 ## Rules Validation
 
@@ -92,7 +124,7 @@ The pure TypeScript rules engine in `src/rules/engine.ts` accepts a roster and r
 
 Validation currently covers implemented-warband composition, leader requirements, model limits, ratio limits, group size limits, equipment list restrictions, required roster options, required paired equipment, exclusive equipment, weapon count limits, Skaven Tail Fighting weapon allowance, armour conflicts, henchman equipment uniformity, skill category access, prayer/spell/ritual access, experience sanity checks, cost totals and rating totals.
 
-Hired swords are seeded from local data and can be hired from the Roster Editor. They are stored as roster members with canonical fighter profiles, hire fees, upkeep notes and source references, but they do not count toward normal warband size or hero limits.
+Hired swords are seeded from local data and can be hired from the Roster Editor. They are stored as roster members with canonical fighter profiles, fixed equipment records, hire fees, upkeep notes and source references, but they do not count toward normal warband size or hero limits.
 
 ## Implemented Warbands
 
@@ -103,6 +135,7 @@ Hired swords are seeded from local data and can be hired from the Roster Editor.
 - Sisters of Sigmar
 - Carnival of Chaos
 - Skaven
+- Skaven of Clan Pestilens
 - Undead
 - Orc Mob
 - Shadow Warriors

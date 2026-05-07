@@ -161,7 +161,8 @@ export function calculateWarbandRating(roster: Roster, rulesDb: RulesDb): number
     const warriors = member.kind === "henchman_group" ? member.groupSize : 1;
     const basePerWarrior =
       fighterType.ratingOverride ?? (fighterType.isLargeCreature ? 20 : 5);
-    return rating + basePerWarrior * warriors + Math.max(0, member.experience) + equipmentRating(member, rulesDb);
+    const fixedEquipmentRating = member.kind === "hired_sword" ? 0 : equipmentRating(member, rulesDb);
+    return rating + basePerWarrior * warriors + Math.max(0, member.experience) + fixedEquipmentRating;
   }, 0);
 }
 

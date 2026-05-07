@@ -17,7 +17,7 @@ import undead from "./warbands/undead.json";
 import witchHunters from "./warbands/witch-hunters.json";
 import warbandIndexSeed from "./warbandIndex.json";
 import { hiredSwordSchema, rulesDbSchema, warbandSeedCollectionSchema, warbandSeedSchema } from "../rules/schemas";
-import type { FighterType, RulesDb } from "../rules/types";
+import type { EquipmentList, FighterType, RulesDb } from "../rules/types";
 
 const warbandSeeds = [
   warbandSeedSchema.parse(witchHunters),
@@ -47,7 +47,7 @@ const hiredSwordFighterTypes: FighterType[] = parsedHiredSwords
     hireCost: hiredSword.hireFee,
     startingExperience: hiredSword.startingExperience,
     profile: hiredSword.profile!,
-    equipmentListIds: [],
+    equipmentListIds: [`hired-sword-${hiredSword.id}-equipment`],
     skillCategoryIds: hiredSword.skillCategoryIds,
     specialRuleIds: hiredSword.specialRuleIds,
     canGainExperience: true,
@@ -66,6 +66,16 @@ const hiredSwordFighterTypes: FighterType[] = parsedHiredSwords
       label: hiredSword.name
     }
   }));
+const hiredSwordEquipmentLists: EquipmentList[] = parsedHiredSwords
+  .filter((hiredSword) => hiredSword.profile)
+  .map((hiredSword) => ({
+    id: `hired-sword-${hiredSword.id}-equipment`,
+    name: `${hiredSword.name} Fixed Equipment`,
+    warbandTypeId: "hired-swords",
+    allowedEquipmentItemIds: Array.from(new Set(hiredSword.equipmentItemIds)),
+    appliesToFighterTypeIds: [`hired-sword-${hiredSword.id}`],
+    notes: "Fixed equipment from this Hired Sword's source entry. Players cannot buy extra equipment for hired swords."
+  }));
 
 export const rulesDb: RulesDb = rulesDbSchema.parse({
   sourceDocuments,
@@ -81,7 +91,8 @@ export const rulesDb: RulesDb = rulesDbSchema.parse({
   equipmentItems,
   equipmentLists: [
     ...warbandSeeds.flatMap((seed) => seed.equipmentLists),
-    ...warbandSeedCollections.flatMap((seed) => seed.equipmentLists)
+    ...warbandSeedCollections.flatMap((seed) => seed.equipmentLists),
+    ...hiredSwordEquipmentLists
   ],
   skillCategories: skillsSeed.categories,
   skills: skillsSeed.skills,

@@ -862,6 +862,48 @@ describe("rules engine - Forest Goblins", () => {
   });
 });
 
+describe("rules engine - Hired Sword equipment", () => {
+  it("models fixed hired sword equipment as real equipment records", () => {
+    const freelancer = rulesDb.hiredSwords.find((hiredSword) => hiredSword.id === "freelancer");
+    const pitFighter = rulesDb.hiredSwords.find((hiredSword) => hiredSword.id === "pit-fighter");
+    const warlock = rulesDb.hiredSwords.find((hiredSword) => hiredSword.id === "warlock");
+    const halfling = rulesDb.hiredSwords.find((hiredSword) => hiredSword.id === "halfling-scout");
+
+    expect(freelancer?.equipmentItemIds).toEqual(["heavy-armour", "shield", "lance", "sword", "warhorse"]);
+    expect(pitFighter?.equipmentItemIds).toContain("spiked-gauntlet");
+    expect(warlock?.equipmentItemIds).toContain("staff");
+    expect(halfling?.equipmentItemIds).toContain("cooking-pot-helmet");
+    expect(rulesDb.equipmentItems.find((item) => item.id === "spiked-gauntlet")?.validation.isBuckler).toBe(true);
+    expect(rulesDb.equipmentItems.find((item) => item.id === "cooking-pot-helmet")?.validation.isHelmet).toBe(true);
+    expect(rulesDb.equipmentItems.find((item) => item.id === "warhorse")?.validation.allowedFighterTypeIds).toContain("hired-sword-freelancer");
+  });
+
+  it("exposes fixed equipment through hired sword equipment lists", () => {
+    const roster = { ...validStartingWitchHunters(), id: "roster-hired-sword-equipment", warbandTypeId: "witch-hunters", members: [] };
+    const freelancerType = rulesDb.fighterTypes.find((fighterType) => fighterType.id === "hired-sword-freelancer");
+    const pitFighterType = rulesDb.fighterTypes.find((fighterType) => fighterType.id === "hired-sword-pit-fighter");
+    const warlockType = rulesDb.fighterTypes.find((fighterType) => fighterType.id === "hired-sword-warlock");
+    if (!freelancerType || !pitFighterType || !warlockType) throw new Error("Missing hired sword fighter type.");
+
+    expect(freelancerType.equipmentListIds).toContain("hired-sword-freelancer-equipment");
+    expect(pitFighterType.equipmentListIds).toContain("hired-sword-pit-fighter-equipment");
+    expect(warlockType.equipmentListIds).toContain("hired-sword-warlock-equipment");
+
+    const freelancerMember = createRosterMemberFromType(freelancerType, roster.id, "hired_sword", "Freelancer");
+    const freelancerOptions = getAllowedEquipment(freelancerMember, roster, rulesDb);
+    const mountedFreelancerOptions = getAllowedEquipment({ ...freelancerMember, equipment: ["warhorse"] }, roster, rulesDb);
+    const pitFighterOptions = getAllowedEquipment(createRosterMemberFromType(pitFighterType, roster.id, "hired_sword", "Pit Fighter"), roster, rulesDb);
+    const warlockOptions = getAllowedEquipment(createRosterMemberFromType(warlockType, roster.id, "hired_sword", "Warlock"), roster, rulesDb);
+
+    expect(freelancerOptions.find((option) => option.item.id === "warhorse")?.allowed).toBe(true);
+    expect(freelancerOptions.find((option) => option.item.id === "lance")?.allowed).toBe(false);
+    expect(mountedFreelancerOptions.find((option) => option.item.id === "lance")?.allowed).toBe(true);
+    expect(pitFighterOptions.find((option) => option.item.id === "spiked-gauntlet")?.allowed).toBe(true);
+    expect(warlockOptions.find((option) => option.item.id === "staff")?.allowed).toBe(true);
+    expect(calculateWarbandRating({ ...roster, members: [{ ...freelancerMember, equipment: ["heavy-armour", "shield", "lance", "sword", "warhorse"] }] }, rulesDb)).toBe(21);
+  });
+});
+
 function codes(roster: ReturnType<typeof validStartingWitchHunters>) {
   return validateRoster(roster, rulesDb).map((issue) => issue.code);
 }

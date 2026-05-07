@@ -4,6 +4,7 @@ import { hiredSwordSchema, rulesDbSchema, warbandSeedCollectionSchema, warbandSe
 import {
   calculateRosterCost,
   calculateWarbandRating,
+  createRosterMemberFromType,
   getAllowedEquipment,
   getAllowedFighterTypes,
   getAllowedSkills,
@@ -639,6 +640,38 @@ assert.equal(armouredWeaverSpells.find((option) => option.item.id === "shadow-po
 assert.equal(shadowMasterSpells.find((option) => option.item.id === "shadow-pool-of-shadow")?.allowed, false);
 assert.ok(rulesDb.hiredSwords.find((hiredSword) => hiredSword.id === "elf-ranger")?.allowedWarbandTypeIds.includes("shadow-warriors"));
 
+const freelancer = rulesDb.hiredSwords.find((hiredSword) => hiredSword.id === "freelancer");
+const pitFighter = rulesDb.hiredSwords.find((hiredSword) => hiredSword.id === "pit-fighter");
+const warlockHiredSword = rulesDb.hiredSwords.find((hiredSword) => hiredSword.id === "warlock");
+const halflingScout = rulesDb.hiredSwords.find((hiredSword) => hiredSword.id === "halfling-scout");
+assert.deepEqual(freelancer?.equipmentItemIds, ["heavy-armour", "shield", "lance", "sword", "warhorse"]);
+assert.ok(pitFighter?.equipmentItemIds.includes("spiked-gauntlet"));
+assert.ok(warlockHiredSword?.equipmentItemIds.includes("staff"));
+assert.ok(halflingScout?.equipmentItemIds.includes("cooking-pot-helmet"));
+assert.equal(rulesDb.equipmentItems.find((item) => item.id === "lance")?.sourceDocumentId, "mordheim-core-rules");
+assert.equal(rulesDb.equipmentItems.find((item) => item.id === "spiked-gauntlet")?.validation.isBuckler, true);
+assert.equal(rulesDb.equipmentItems.find((item) => item.id === "cooking-pot-helmet")?.validation.isHelmet, true);
+assert.ok(rulesDb.equipmentItems.find((item) => item.id === "warhorse")?.validation.allowedFighterTypeIds.includes("hired-sword-freelancer"));
+
+const hiredSwordRoster = { ...validStartingWitchHunters(), id: "roster-hired-sword-equipment", warbandTypeId: "witch-hunters", members: [] };
+const freelancerType = rulesDb.fighterTypes.find((fighterType) => fighterType.id === "hired-sword-freelancer");
+const pitFighterType = rulesDb.fighterTypes.find((fighterType) => fighterType.id === "hired-sword-pit-fighter");
+const warlockType = rulesDb.fighterTypes.find((fighterType) => fighterType.id === "hired-sword-warlock");
+assert.ok(freelancerType?.equipmentListIds.includes("hired-sword-freelancer-equipment"));
+assert.ok(pitFighterType?.equipmentListIds.includes("hired-sword-pit-fighter-equipment"));
+assert.ok(warlockType?.equipmentListIds.includes("hired-sword-warlock-equipment"));
+const freelancerMember = createRosterMemberFromType(freelancerType, hiredSwordRoster.id, "hired_sword", "Freelancer");
+const freelancerOptions = getAllowedEquipment(freelancerMember, hiredSwordRoster, rulesDb);
+const mountedFreelancerOptions = getAllowedEquipment({ ...freelancerMember, equipment: ["warhorse"] }, hiredSwordRoster, rulesDb);
+const pitFighterOptions = getAllowedEquipment(createRosterMemberFromType(pitFighterType, hiredSwordRoster.id, "hired_sword", "Pit Fighter"), hiredSwordRoster, rulesDb);
+const warlockOptions = getAllowedEquipment(createRosterMemberFromType(warlockType, hiredSwordRoster.id, "hired_sword", "Warlock"), hiredSwordRoster, rulesDb);
+assert.equal(freelancerOptions.find((option) => option.item.id === "warhorse")?.allowed, true);
+assert.equal(freelancerOptions.find((option) => option.item.id === "lance")?.allowed, false);
+assert.equal(mountedFreelancerOptions.find((option) => option.item.id === "lance")?.allowed, true);
+assert.equal(pitFighterOptions.find((option) => option.item.id === "spiked-gauntlet")?.allowed, true);
+assert.equal(warlockOptions.find((option) => option.item.id === "staff")?.allowed, true);
+assert.equal(calculateWarbandRating({ ...hiredSwordRoster, members: [{ ...freelancerMember, equipment: freelancer.equipmentItemIds }] }, rulesDb), 21);
+
 assert.ok(getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).some((warband) => warband.id === "lizardmen"));
 assert.deepEqual(errorCodes(validLizardmen()), []);
 assert.equal(calculateRosterCost(validLizardmen(), rulesDb), 309);
@@ -810,7 +843,7 @@ async function loadRulesDb() {
       hireCost: hiredSword.hireFee,
       startingExperience: hiredSword.startingExperience,
       profile: hiredSword.profile,
-      equipmentListIds: [],
+      equipmentListIds: [`hired-sword-${hiredSword.id}-equipment`],
       skillCategoryIds: hiredSword.skillCategoryIds,
       specialRuleIds: hiredSword.specialRuleIds,
       canGainExperience: true,
@@ -829,12 +862,22 @@ async function loadRulesDb() {
         label: hiredSword.name
       }
     }));
+  const hiredSwordEquipmentLists = parsedHiredSwords
+    .filter((hiredSword) => hiredSword.profile)
+    .map((hiredSword) => ({
+      id: `hired-sword-${hiredSword.id}-equipment`,
+      name: `${hiredSword.name} Fixed Equipment`,
+      warbandTypeId: "hired-swords",
+      allowedEquipmentItemIds: Array.from(new Set(hiredSword.equipmentItemIds)),
+      appliesToFighterTypeIds: [`hired-sword-${hiredSword.id}`],
+      notes: "Fixed equipment from this Hired Sword's source entry. Players cannot buy extra equipment for hired swords."
+    }));
   return rulesDbSchema.parse({
     sourceDocuments,
     warbandTypes: [warbandSeed.warbandType, sistersSeed.warbandType, carnivalSeed.warbandType, skavenSeed.warbandType, pestilensSeed.warbandType, undeadSeed.warbandType, orcMobSeed.warbandType, shadowWarriorsSeed.warbandType, lizardmenSeed.warbandType, forestGoblinsSeed.warbandType, ...mercenarySeed.warbandTypes],
     fighterTypes: [...warbandSeed.fighterTypes, ...sistersSeed.fighterTypes, ...carnivalSeed.fighterTypes, ...skavenSeed.fighterTypes, ...pestilensSeed.fighterTypes, ...undeadSeed.fighterTypes, ...orcMobSeed.fighterTypes, ...shadowWarriorsSeed.fighterTypes, ...lizardmenSeed.fighterTypes, ...forestGoblinsSeed.fighterTypes, ...mercenarySeed.fighterTypes, ...hiredSwordFighterTypes],
     equipmentItems,
-    equipmentLists: [...warbandSeed.equipmentLists, ...sistersSeed.equipmentLists, ...carnivalSeed.equipmentLists, ...skavenSeed.equipmentLists, ...pestilensSeed.equipmentLists, ...undeadSeed.equipmentLists, ...orcMobSeed.equipmentLists, ...shadowWarriorsSeed.equipmentLists, ...lizardmenSeed.equipmentLists, ...forestGoblinsSeed.equipmentLists, ...mercenarySeed.equipmentLists],
+    equipmentLists: [...warbandSeed.equipmentLists, ...sistersSeed.equipmentLists, ...carnivalSeed.equipmentLists, ...skavenSeed.equipmentLists, ...pestilensSeed.equipmentLists, ...undeadSeed.equipmentLists, ...orcMobSeed.equipmentLists, ...shadowWarriorsSeed.equipmentLists, ...lizardmenSeed.equipmentLists, ...forestGoblinsSeed.equipmentLists, ...mercenarySeed.equipmentLists, ...hiredSwordEquipmentLists],
     skillCategories: skillSeed.categories,
     skills: skillSeed.skills,
     specialRules,

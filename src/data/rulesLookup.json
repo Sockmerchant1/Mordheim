@@ -1456,6 +1456,93 @@
           ["Four or more of a kind", "Resolve the matching higher Exploration result if your campaign uses it."],
           ["Re-rolls / modifiers", "Apply skills, equipment and hired sword effects before finalising the kept dice."]
         ]
+      },
+      {
+        "caption": "Exploration Chart - Doubles",
+        "columns": ["Combination", "Result", "Campaign effect"],
+        "rows": [
+          ["1 1", "Well", "Choose a Hero and roll D6. If the result is equal to or below Toughness, gain 1 wyrdstone shard; otherwise that Hero misses the next game."],
+          ["2 2", "Shop", "Gain D6 gc. On a roll of 1, also find a Lucky Charm."],
+          ["3 3", "Corpse", "Roll D6: 1-2 D6 gc; 3 Dagger; 4 Axe; 5 Sword; 6 Suit of Light Armour."],
+          ["4 4", "Straggler", "Faction-specific result: Skaven gain 2D6 gc; Possessed leader gains +1 XP; Undead gain a free Zombie; others gain an extra exploration die next time and discard one die."],
+          ["5 5", "Overturned Cart", "Roll D6: 1-2 Mordheim Map; 3-4 purse with 2D6 gc; 5-6 jewelled sword and dagger, keep or sell at enhanced value."],
+          ["6 6", "Ruined Hovels", "Gain D6 gc from loot."]
+        ]
+      },
+      {
+        "caption": "Exploration Chart - Triples",
+        "columns": ["Combination", "Result", "Campaign effect"],
+        "rows": [
+          ["1 1 1", "Tavern", "Leader takes a Leadership test. If passed, gain 4D6 gc; if failed, gain D6 gc. Undead, Witch Hunters and Sisters of Sigmar automatically pass."],
+          ["2 2 2", "Smithy", "Roll D6: 1 Sword; 2 Double-handed weapon; 3 Flail; 4 D3 Halberds; 5 Lance; 6 2D6 gc."],
+          ["3 3 3", "Prisoners", "Faction-specific result: Possessed gain D3 XP; Undead gain D3 Zombies; Skaven gain 3D6 gc; others gain 2D6 gc and may add one equipped human Henchman."],
+          ["4 4 4", "Fletcher", "Roll D6: 1-2 D3 Short Bows; 3 D3 Bows; 4 D3 Long Bows; 5 Quiver of Hunting Arrows; 6 D3 Crossbows."],
+          ["5 5 5", "Market Hall", "Gain items worth 2D6 gc."],
+          ["6 6 6", "Returning a Favour", "Gain one available Hired Sword for the next battle free of hire fee; after that battle, either let them leave or pay upkeep."]
+        ]
+      },
+      {
+        "caption": "Exploration Chart - Four Of A Kind",
+        "columns": ["Combination", "Result", "Campaign effect"],
+        "rows": [
+          ["1 1 1 1", "Gunsmith", "Roll D6: 1 Blunderbuss; 2 Brace of Pistols; 3 Brace of Duelling Pistols; 4 D3 Handguns; 5 D3 Superior Blackpowder; 6 Hochland Long Rifle."],
+          ["2 2 2 2", "Shrine", "Most warbands may strip it for 3D6 gc. Sisters of Sigmar or Witch Hunters may instead gain 3D6 gc and bless one weapon against Undead or Possessed."],
+          ["3 3 3 3", "Townhouse", "Gain 3D6 gc worth of loot."],
+          ["4 4 4 4", "Armourer", "Roll D6: 1-2 D3 Shields or Bucklers; 3 D3 Helmets; 4 D3 Light Armour; 5 D3 Heavy Armour; 6 Ithilmar Armour."],
+          ["5 5 5 5", "Graveyard", "Most warbands may loot D6x10 gc but will be hated by Sisters/Witch Hunters next time. Sisters or Witch Hunters may instead gain D6 XP distributed among Heroes."],
+          ["6 6 6 6", "Catacombs", "Next battle, set up to three eligible fighters from tunnels at the end of your first turn, anywhere at ground level and not within 8 inches of enemies."]
+        ]
+      },
+      {
+        "caption": "Exploration Chart - Five Of A Kind",
+        "columns": ["Combination", "Result", "Campaign effect"],
+        "rows": [
+          ["1 1 1 1 1", "Moneylender's House", "Gain D6x10 gc."],
+          ["2 2 2 2 2", "Alchemist's Laboratory", "Gain 3D6 gc. One Hero may gain access to Academic skills whenever they gain a new skill."],
+          ["3 3 3 3 3", "Jewelsmith", "Roll D6: 1-2 quartz worth D6x5 gc; 3-4 amethyst worth 20 gc; 5 necklace worth 50 gc; 6 ruby worth D6x15 gc. If kept, a Hero gains +1 to rare item location rolls."],
+          ["4 4 4 4 4", "Merchant's House", "Gain 2D6x5 gc. If the money roll is a double, find the Order of Freetraders symbol instead and a Hero gains Haggle."],
+          ["5 5 5 5 5", "Shattered Building", "Gain D3 wyrdstone shards. If the leader passes a Leadership test, a Wardog joins the warband."],
+          ["6 6 6 6 6", "Entrance to the Catacombs", "From now on, re-roll one die when rolling on the Exploration chart. Further entrances do not stack."]
+        ]
+      },
+      {
+        "caption": "Exploration Chart - Six Of A Kind",
+        "columns": ["Combination", "Result", "Campaign effect"],
+        "rows": [
+          ["1 1 1 1 1 1", "The Pit", "You may send one Hero. Roll D6: on 1 the Hero is lost; on 2+ the Hero returns with D6+1 wyrdstone shards."],
+          ["2 2 2 2 2 2", "Hidden Treasure", "Roll separately for each listed item: D3 wyrdstone on 4+, 5D6x5 gc automatically, Holy Relic 5+, Heavy Armour 5+, D3 gems on 4+, Elven Cloak 5+, Holy Tome 5+, Magical Artefact 5+."],
+          ["3 3 3 3 3 3", "Dwarf Smithy", "Roll D6: 1 D3 Double-handed axes; 2 D3 Heavy Armour; 3 Gromril Axe; 4 Gromril Hammer; 5 Double-handed Gromril Axe; 6 Gromril Armour."],
+          ["4 4 4 4 4 4", "Slaughtered Warband", "Roll for each item: 3D6x5 gc automatically, D3 Light Armour 4+, Heavy Armour 5+, D6 Daggers automatically, Mordheim Map 4+, D3 Halberds 5+, D3 Swords 3+, D3 Shields 2+, D3 Bows 4+, D3 Helmets 2+."],
+          ["5 5 5 5 5 5", "Fighting Arena", "Find a training manual. Sell it for 100 gc or let one Hero read it to gain Combat skill access and a higher Weapon Skill maximum."],
+          ["6 6 6 6 6 6", "Noble's Villa", "Roll D6: 1-2 gain D6x10 gc; 3-4 gain D6 vials of Crimson Shade; 5-6 roll on the Magical Artefacts table."]
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table-wyrdstone-income",
+    "name": "Selling Wyrdstone",
+    "category": "misc",
+    "text": "After exploration, sell any amount of stored wyrdstone. The gold shown is profit after warband upkeep and depends on warband size and how many wyrdstone pieces are sold.",
+    "source": "Mordheim Rulebook: Income",
+    "sourceUrl": "https://mordheimer.net/docs/campaigns/income",
+    "page": "Selling wyrdstone",
+    "tags": ["income", "wyrdstone", "after battle", "treasury"],
+    "aliases": ["shards sold", "selling wyrdstone", "income chart"],
+    "tables": [
+      {
+        "caption": "Selling Wyrdstone Income",
+        "columns": ["Wyrdstone sold", "1-3 warriors", "4-6 warriors", "7-9 warriors", "10-12 warriors", "13-15 warriors", "16+ warriors"],
+        "rows": [
+          ["1", "45 gc", "40 gc", "35 gc", "30 gc", "30 gc", "25 gc"],
+          ["2", "60 gc", "55 gc", "50 gc", "45 gc", "40 gc", "35 gc"],
+          ["3", "75 gc", "70 gc", "65 gc", "60 gc", "55 gc", "50 gc"],
+          ["4", "90 gc", "80 gc", "70 gc", "65 gc", "60 gc", "55 gc"],
+          ["5", "110 gc", "100 gc", "90 gc", "80 gc", "70 gc", "65 gc"],
+          ["6", "120 gc", "110 gc", "100 gc", "90 gc", "80 gc", "70 gc"],
+          ["7", "145 gc", "130 gc", "120 gc", "110 gc", "100 gc", "90 gc"],
+          ["8+", "155 gc", "140 gc", "130 gc", "120 gc", "110 gc", "100 gc"]
+        ]
       }
     ]
   },

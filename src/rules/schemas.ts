@@ -290,6 +290,75 @@ export const rosterMemberSchema = z.object({
   status: memberStatusSchema
 });
 
+export const campaignLogDetailsSchema = z.object({
+  tags: z.array(z.string()).default([]),
+  battle: z.object({
+    opponent: z.string().optional(),
+    scenario: z.string().optional(),
+    result: z.string().optional(),
+    datePlayed: z.string().optional(),
+    leaderSurvived: z.boolean().optional(),
+    routType: z.string().optional(),
+    notes: z.string().optional()
+  }).optional(),
+  xp: z.array(z.object({
+    fighterId: z.string(),
+    fighterName: z.string(),
+    previousXp: z.number(),
+    gainedXp: z.number(),
+    finalXp: z.number(),
+    pendingAdvanceThresholds: z.array(z.number()).default([])
+  })).default([]),
+  injuries: z.array(z.object({
+    fighterId: z.string(),
+    fighterName: z.string(),
+    result: z.string(),
+    permanentEffect: z.string().optional(),
+    notes: z.string().optional(),
+    casualties: z.number().optional(),
+    followUps: z.array(z.object({
+      result: z.string(),
+      effect: z.string().optional(),
+      notes: z.string().optional()
+    })).default([])
+  })).default([]),
+  exploration: z.object({
+    diceValues: z.array(z.number()).default([]),
+    wyrdstoneFound: z.number().default(0),
+    specialResults: z.array(z.string()).default([]),
+    notes: z.string().optional()
+  }).optional(),
+  treasury: z.object({
+    before: z.number(),
+    after: z.number(),
+    wyrdstoneSold: z.number().default(0),
+    wyrdstoneIncome: z.number().default(0),
+    otherIncome: z.number().default(0),
+    deductions: z.number().default(0),
+    manualAdjustment: z.number().default(0)
+  }).optional(),
+  transactions: z.array(z.object({
+    action: z.string(),
+    itemName: z.string(),
+    value: z.number().optional(),
+    assignedTo: z.string().optional(),
+    notes: z.string().optional()
+  })).default([]),
+  advances: z.array(z.object({
+    fighterId: z.string(),
+    fighterName: z.string(),
+    xpThreshold: z.number(),
+    result: z.string(),
+    notes: z.string().optional()
+  })).default([]),
+  rosterUpdates: z.array(z.object({
+    type: z.string(),
+    targetId: z.string().optional(),
+    description: z.string(),
+    payload: z.record(z.string(), z.unknown()).optional()
+  })).default([])
+}).partial().default({});
+
 export const campaignLogEntrySchema = z.object({
   id: z.string(),
   rosterId: z.string().optional(),
@@ -302,13 +371,17 @@ export const campaignLogEntrySchema = z.object({
     "injury",
     "advance",
     "income",
+    "upkeep",
     "exploration",
+    "stash",
+    "status",
     "note"
   ]),
   description: z.string(),
   goldDelta: z.number().default(0),
   wyrdstoneDelta: z.number().default(0),
-  rosterChanges: z.string().default("")
+  rosterChanges: z.string().default(""),
+  details: campaignLogDetailsSchema.optional()
 });
 
 export const rosterSchema = z.object({

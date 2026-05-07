@@ -37,7 +37,7 @@
     "equipmentItemIds": ["elf-bow", "sword", "elven-cloak"],
     "skillCategoryIds": ["shooting", "speed"],
     "specialRuleIds": ["excellent-sight"],
-    "notes": "Equipment: Elf Bow, Sword and Elven Cloak. Seeker is noted but not yet automated."
+    "notes": "Equipment is modeled as Elf Bow, Sword and Elven Cloak. Seeker is noted but not yet automated."
   },
   {
     "id": "freelancer",
@@ -54,10 +54,10 @@
     "ratingOverride": 21,
     "startingExperience": 0,
     "profile": { "M": 4, "WS": 4, "BS": 3, "S": 4, "T": 3, "W": 1, "I": 4, "A": 1, "Ld": 7 },
-    "equipmentItemIds": ["heavy-armour", "shield", "sword"],
+    "equipmentItemIds": ["heavy-armour", "shield", "lance", "sword", "warhorse"],
     "skillCategoryIds": ["combat", "strength"],
     "specialRuleIds": [],
-    "notes": "Equipment: Heavy Armour, Shield, Lance and Sword. Lance and Warhorse support are not yet separate records."
+    "notes": "Equipment is modeled as Heavy Armour, Shield, Lance, Sword and Warhorse. Mounted optional rules remain table-managed."
   },
   {
     "id": "halfling-scout",
@@ -74,10 +74,10 @@
     "ratingOverride": 5,
     "startingExperience": 0,
     "profile": { "M": 4, "WS": 2, "BS": 4, "S": 2, "T": 2, "W": 1, "I": 4, "A": 1, "Ld": 8 },
-    "equipmentItemIds": ["bow", "dagger", "helmet"],
+    "equipmentItemIds": ["bow", "dagger", "cooking-pot-helmet"],
     "skillCategoryIds": ["shooting", "speed"],
     "specialRuleIds": [],
-    "notes": "Cooking pot counts as a Helmet. Cook maximum-warband-size bonus is shown as a note and is not automated yet."
+    "notes": "Cooking Pot is modeled as its own helmet-equivalent equipment. Cook maximum-warband-size bonus is shown as a note and is not automated yet."
   },
   {
     "id": "ogre-bodyguard",
@@ -115,10 +115,10 @@
     "ratingOverride": 22,
     "startingExperience": 0,
     "profile": { "M": 4, "WS": 4, "BS": 3, "S": 4, "T": 4, "W": 1, "I": 4, "A": 2, "Ld": 7 },
-    "equipmentItemIds": ["morning-star", "helmet"],
+    "equipmentItemIds": ["morning-star", "spiked-gauntlet", "helmet"],
     "skillCategoryIds": ["combat", "strength", "speed"],
     "specialRuleIds": [],
-    "notes": "Equipment: Morning Star, Spiked Gauntlet and Helmet. Spiked Gauntlet counts as an additional hand weapon and buckler but is not yet a separate equipment record."
+    "notes": "Equipment is modeled as Morning Star, Spiked Gauntlet and Helmet."
   },
   {
     "id": "warlock",
@@ -135,9 +135,9 @@
     "ratingOverride": 16,
     "startingExperience": 0,
     "profile": { "M": 4, "WS": 2, "BS": 2, "S": 3, "T": 3, "W": 1, "I": 4, "A": 1, "Ld": 8 },
-    "equipmentItemIds": [],
+    "equipmentItemIds": ["staff"],
     "skillCategoryIds": ["academic"],
     "specialRuleIds": ["spellcaster"],
-    "notes": "Equipment: Staff. Staff and Lesser Magic spells are not yet fully seeded as separate records."
+    "notes": "Staff is modeled as fixed equipment. Lesser Magic spells are not yet fully seeded as selectable records."
   }
 ]

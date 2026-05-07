@@ -585,6 +585,61 @@
     "relatedRuleIds": ["hired-swords"]
   },
   {
+    "id": "lance-cavalry-weapon",
+    "name": "Cavalry Weapon",
+    "effectSummary": "A lance can only be used by a warrior riding a warhorse.",
+    "appliesTo": "Lance.",
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/close-combat",
+    "pageRef": "Lance",
+    "restrictions": "Requires a warhorse.",
+    "relatedRuleIds": ["warhorse", "mounted-warrior-rules"]
+  },
+  {
+    "id": "lance-cavalry-bonus",
+    "name": "Cavalry Bonus",
+    "effectSummary": "If mounted rules are used, a warrior armed with a lance receives +2 Strength when he charges. The bonus only applies for that turn.",
+    "appliesTo": "Lance.",
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/weapons-armour/close-combat",
+    "pageRef": "Lance",
+    "restrictions": "Charge turn only.",
+    "relatedRuleIds": ["mounted-warrior-rules"]
+  },
+  {
+    "id": "spiked-gauntlet-additional-hand-weapon",
+    "name": "Additional Hand Weapon",
+    "effectSummary": "The Pit Fighter's spiked gauntlet counts as an additional hand weapon.",
+    "appliesTo": "Spiked Gauntlet.",
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/campaigns/hired-swords/grade-1a",
+    "pageRef": "Pit Fighter",
+    "restrictions": "Pit Fighter only.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "spiked-gauntlet-buckler",
+    "name": "Buckler",
+    "effectSummary": "The Pit Fighter's spiked gauntlet also counts as a buckler in close combat.",
+    "appliesTo": "Spiked Gauntlet.",
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/campaigns/hired-swords/grade-1a",
+    "pageRef": "Pit Fighter",
+    "restrictions": "Pit Fighter only.",
+    "relatedRuleIds": ["buckler"]
+  },
+  {
+    "id": "cooking-pot-counts-as-helmet",
+    "name": "Counts as Helmet",
+    "effectSummary": "The Halfling Scout's cooking pot counts as a helmet.",
+    "appliesTo": "Cooking Pot.",
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://mordheimer.net/docs/campaigns/hired-swords/grade-1a",
+    "pageRef": "Halfling Scout",
+    "restrictions": "Halfling Scout only.",
+    "relatedRuleIds": ["helmet"]
+  },
+  {
     "id": "not-orcs",
     "name": "Not Orcs",
     "effectSummary": "Goblin Warriors and Cave Squigs taken out of action count as half a model for Orc Mob Rout test thresholds.",
