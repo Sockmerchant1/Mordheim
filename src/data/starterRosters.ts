@@ -173,6 +173,51 @@ export const starterRosterTemplates: StarterRosterTemplate[] = [
     ]
   },
   {
+    id: "black-orcs-balanced",
+    warbandTypeId: "black-orcs",
+    name: "Ironjaw's Bashers",
+    summary: "A compact Black Orc start with Boss, Black Orc, upgraded Young'un, Boyz, Shootaz and a Nutta.",
+    playStyle: "Tough heroes, controlled shooting and one unstable melee threat.",
+    members: [
+      { fighterTypeId: "black-orc-boss", displayName: "Ironjaw", equipment: ["dagger", "axe", "shield"] },
+      { fighterTypeId: "black-orc", displayName: "Gorbad", equipment: ["dagger", "black-orc-choppa"] },
+      { fighterTypeId: "black-orc-youngun", displayName: "Ruk", equipment: ["dagger", "axe", "black-orc-blood-upgrade"] },
+      { fighterTypeId: "black-orc-boy", displayName: "Da Boyz", groupSize: 2, equipment: ["dagger", "axe"] },
+      { fighterTypeId: "black-orc-shoota", displayName: "Da Shootaz", groupSize: 2, equipment: ["dagger", "bow"] },
+      { fighterTypeId: "orc-nutta", displayName: "Snort", groupSize: 1, equipment: ["dagger", "axe"] }
+    ]
+  },
+  {
+    id: "beastmen-raiders-balanced",
+    warbandTypeId: "beastmen-raiders",
+    name: "Gorehorn Herd",
+    summary: "A fast Beastmen start with Chief, Shaman, Bestigor, Centigor, Gor, Ungor and a Chaos Hound.",
+    playStyle: "Mobile, melee-focused and straightforward, with Chaos Rituals for table tricks.",
+    members: [
+      { fighterTypeId: "beastman-chief", displayName: "Krazak Gorehorn", equipment: ["dagger", "axe", "shield"] },
+      { fighterTypeId: "beastman-shaman", displayName: "Morgoth", equipment: ["dagger", "hammer"] },
+      { fighterTypeId: "bestigor", displayName: "Brak", equipment: ["dagger", "halberd"] },
+      { fighterTypeId: "centigor", displayName: "Boroq", equipment: ["dagger", "axe", "shield"] },
+      { fighterTypeId: "gor", displayName: "Gor Pack", groupSize: 2, equipment: ["dagger", "mace"] },
+      { fighterTypeId: "ungor", displayName: "Ungor Pack", groupSize: 2, equipment: ["dagger", "axe"] },
+      { fighterTypeId: "warhound-of-chaos", displayName: "Chaos Hound", groupSize: 1, equipment: [] }
+    ]
+  },
+  {
+    id: "dwarf-treasure-hunters-balanced",
+    warbandTypeId: "dwarf-treasure-hunters",
+    name: "Cragbrow's Claim",
+    summary: "A steady Dwarf start with Noble, Engineer, Troll Slayer, Clansmen and Thunderers.",
+    playStyle: "Tough, compact and reliable, with crossbow fire and a Slayer for counter-charges.",
+    members: [
+      { fighterTypeId: "dwarf-noble", displayName: "Lord Cragbrow", equipment: ["dagger", "axe", "shield"] },
+      { fighterTypeId: "dwarf-engineer", displayName: "Borin Gearhand", equipment: ["dagger", "hammer", "crossbow"] },
+      { fighterTypeId: "dwarf-troll-slayer", displayName: "Snorri Doombound", equipment: ["dagger", "dwarf-axe"] },
+      { fighterTypeId: "dwarf-clansman", displayName: "Stoneguard", groupSize: 2, equipment: ["dagger", "hammer"] },
+      { fighterTypeId: "dwarf-thunderer", displayName: "Blackpowder Kin", groupSize: 2, equipment: ["dagger", "crossbow"] }
+    ]
+  },
+  {
     id: "shadow-warriors-balanced",
     warbandTypeId: "shadow-warriors",
     name: "Night's Edge",

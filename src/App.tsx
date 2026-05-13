@@ -225,6 +225,17 @@ type WyrdstoneIncomeRow = {
 };
 
 const rulesLookupRecords = buildRulesLookupRecords();
+const AFTER_BATTLE_STEPS = [
+  { label: "Battle result", shortLabel: "Result", help: "Record who you played and how the battle ended." },
+  { label: "Experience", shortLabel: "XP", help: "Carry across battle XP and check for advances." },
+  { label: "Serious injuries", shortLabel: "Injuries", help: "Resolve fighters who went Out of Action." },
+  { label: "Exploration", shortLabel: "Explore", help: "Record dice, wyrdstone and special exploration finds." },
+  { label: "Income", shortLabel: "Income", help: "Sell wyrdstone and update the treasury." },
+  { label: "Trading", shortLabel: "Trading", help: "Record purchases, sales and equipment movement." },
+  { label: "Advances", shortLabel: "Advances", help: "Choose each pending advance result." },
+  { label: "Roster updates", shortLabel: "Updates", help: "Review automatic changes and add campaign notes." },
+  { label: "Review", shortLabel: "Review", help: "Check the report before applying permanent changes." }
+] as const;
 const WYRDSTONE_INCOME_TABLE: Record<number, WyrdstoneIncomeRow> = {
   1: { "1-3": 45, "4-6": 40, "7-9": 35, "10-12": 30, "13-15": 30, "16+": 25 },
   2: { "1-3": 60, "4-6": 55, "7-9": 50, "10-12": 45, "13-15": 40, "16+": 35 },
@@ -625,7 +636,7 @@ function WarbandList({
                     </a>
                   </td>
                   <td>
-                    <span className={warband.implementationStatus === "implemented" ? "pill success" : "pill"}>
+                    <span className={["implemented", "tested"].includes(warband.implementationStatus) ? "pill success" : "pill"}>
                       {warband.implementationStatus.replaceAll("_", " ")}
                     </span>
                   </td>
@@ -2219,7 +2230,7 @@ function ExplorationFollowUpRoller({
         )}
       </header>
       <div className="button-row">
-        <button onClick={() => setRoll(rollExplorationFollowUp(combo))}>
+        <button onClick={() => setRoll(rollExplorationFollowUp(combo, Math.random, rulesLookupRecords))}>
           <Dices aria-hidden /> {buttonLabel}
         </button>
         {roll && (
@@ -2614,17 +2625,7 @@ function AfterBattleView({
 }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [draft, setDraft] = useState<AfterBattleDraft>(() => prepareAfterBattleDraft(roster));
-  const steps = [
-    "Battle result",
-    "Experience",
-    "Serious injuries",
-    "Exploration",
-    "Income",
-    "Trading",
-    "Advances",
-    "Roster updates",
-    "Review"
-  ];
+  const steps = AFTER_BATTLE_STEPS;
 
   useEffect(() => {
     setDraft(prepareAfterBattleDraft(roster));
@@ -2640,14 +2641,16 @@ function AfterBattleView({
   }
 
   const canContinue = canContinueAfterBattleStep(stepIndex, draft, roster);
+  const stepBlocker = canContinue ? "" : afterBattleStepBlocker(stepIndex, draft, roster);
+  const blockers = reviewBlockingMessages(draft, roster);
 
   return (
     <section className="after-battle">
       <div className="after-battle-header">
         <div>
-          <p className="eyebrow">After Battle</p>
+          <p className="eyebrow">After Action Report</p>
           <h2>{roster.name}</h2>
-          <p>Draft saved locally until you apply the final updates.</p>
+          <p>Resolve the post-game steps here. Nothing permanent changes until the final review.</p>
         </div>
         <div className="button-row">
           <button onClick={onBackToPlay}>Back to Play Mode</button>
@@ -2655,20 +2658,29 @@ function AfterBattleView({
         </div>
       </div>
 
+      <AfterBattleOverview
+        draft={draft}
+        roster={roster}
+        blockers={blockers}
+        currentStep={steps[stepIndex]}
+        onGoToStep={setStepIndex}
+      />
+
       <nav className="after-steps" aria-label="After Battle steps">
         {steps.map((step, index) => (
           <button
-            key={step}
+            key={step.label}
             className={index === stepIndex ? "active" : ""}
             onClick={() => setStepIndex(index)}
           >
-            {index + 1}. {step}
+            <span>{index + 1}. {step.shortLabel}</span>
+            <small>{afterBattleStepStatus(index, draft, roster)}</small>
           </button>
         ))}
       </nav>
 
       <div className="after-step-body">
-        {stepIndex === 0 && <BattleResultStep draft={draft} onChange={updateDraft} />}
+        {stepIndex === 0 && <BattleResultStep draft={draft} roster={roster} onChange={updateDraft} />}
         {stepIndex === 1 && <ExperienceStep draft={draft} onChange={updateDraft} />}
         {stepIndex === 2 && <SeriousInjuriesStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
         {stepIndex === 3 && <ExplorationStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
@@ -2702,24 +2714,105 @@ function AfterBattleView({
           <span className="muted">Review the draft, then apply when ready.</span>
         )}
       </div>
+      {stepBlocker && <p className="after-step-blocker">{stepBlocker}</p>}
+    </section>
+  );
+}
+
+function AfterBattleOverview({
+  draft,
+  roster,
+  blockers,
+  currentStep,
+  onGoToStep
+}: {
+  draft: AfterBattleDraft;
+  roster: Roster;
+  blockers: string[];
+  currentStep: (typeof AFTER_BATTLE_STEPS)[number];
+  onGoToStep: (step: number) => void;
+}) {
+  const xpEntries = draft.xp.filter((entry) => entry.gainedXp > 0);
+  const pendingAdvances = draft.advances.length;
+  const unresolvedInjuries = draft.injuries.filter((entry) => {
+    const member = roster.members.find((item) => item.id === entry.fighterId);
+    if (member?.kind === "henchman_group") return false;
+    return !entry.resolvedOutsideApp && !entry.result.trim();
+  }).length;
+  const treasuryDelta = draft.treasury.after - roster.treasuryGold;
+  const changedUpdates = previewRosterUpdates(roster, draft).filter((line) => line !== "No roster updates recorded.").length;
+
+  return (
+    <section className="after-report-summary">
+      <div className="after-report-current">
+        <span className="eyebrow">Current step</span>
+        <strong>{currentStep.label}</strong>
+        <p>{currentStep.help}</p>
+      </div>
+      <div className="after-report-metrics">
+        <button type="button" onClick={() => onGoToStep(1)}>
+          <span>XP entered</span>
+          <strong>{xpEntries.length}</strong>
+          <small>{pendingAdvances ? `${pendingAdvances} advance${pendingAdvances === 1 ? "" : "s"} pending` : "No advances pending"}</small>
+        </button>
+        <button type="button" onClick={() => onGoToStep(2)}>
+          <span>Injuries</span>
+          <strong>{draft.injuries.length}</strong>
+          <small>{unresolvedInjuries ? `${unresolvedInjuries} unresolved` : "Resolved so far"}</small>
+        </button>
+        <button type="button" onClick={() => onGoToStep(3)}>
+          <span>Wyrdstone</span>
+          <strong>{draft.exploration.wyrdstoneShards}</strong>
+          <small>{draft.treasury.wyrdstoneSold} marked to sell</small>
+        </button>
+        <button type="button" onClick={() => onGoToStep(8)}>
+          <span>Final treasury</span>
+          <strong>{draft.treasury.after} gc</strong>
+          <small>{treasuryDelta === 0 ? "No gold change" : `${treasuryDelta > 0 ? "+" : ""}${treasuryDelta} gc`}</small>
+        </button>
+      </div>
+      <div className={`after-report-attention ${blockers.length ? "needs-work" : "ready"}`}>
+        {blockers.length ? (
+          <>
+            <strong>Needs attention</strong>
+            <p>{blockers[0]}</p>
+          </>
+        ) : (
+          <>
+            <strong>Ready so far</strong>
+            <p>{changedUpdates} roster change{changedUpdates === 1 ? "" : "s"} currently queued for review.</p>
+          </>
+        )}
+      </div>
     </section>
   );
 }
 
 function BattleResultStep({
   draft,
+  roster,
   onChange
 }: {
   draft: AfterBattleDraft;
+  roster: Roster;
   onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
 }) {
   function updateBattleResult(patch: Partial<AfterBattleDraft["battleResult"]>) {
-    onChange((current) => ({ ...current, battleResult: { ...current.battleResult, ...patch } }));
+    onChange((current) => applyBattleResultXpDefaults({
+      ...current,
+      battleResult: { ...current.battleResult, ...patch }
+    }, roster, patch));
   }
 
   return (
     <section className="after-card">
       <h3>Battle result</h3>
+      {draft.battleResult.result === "win" && (
+        <div className="exploration-result-callout">
+          <strong>Winning leader XP</strong>
+          <p>The leader of the winning warband normally gains +1 XP. This has been added in the Experience step and can still be edited there.</p>
+        </div>
+      )}
       <div className="form-grid">
         <label>
           <span>Opponent warband</span>
@@ -2790,42 +2883,57 @@ function ExperienceStep({
 
   return (
     <section className="after-card">
-      <h3>Experience</h3>
+      <div className="section-heading">
+        <div>
+          <h3>Experience</h3>
+          <p>Use the quick buttons for common XP, then open a fighter only when you need the extra fields.</p>
+        </div>
+        <span className="pill">{draft.advances.length ? `${draft.advances.length} advance${draft.advances.length === 1 ? "" : "s"} pending` : "No advances pending"}</span>
+      </div>
       <div className="xp-grid">
         {draft.xp.length === 0 ? (
           <div className="empty-state">No fighters in this roster can gain experience.</div>
         ) : (
           draft.xp.map((entry) => (
-            <article className="xp-panel" key={entry.fighterId}>
-              <header>
+            <details className="xp-panel xp-panel-details" key={entry.fighterId} open={(entry.gainedXp > 0 || entry.pendingAdvanceThresholds.length > 0 || Boolean(entry.notes)) || undefined}>
+              <summary>
                 <div>
                   <strong>{entry.fighterName}</strong>
                   <p>Starting {entry.startingXp} XP. Previous {entry.previousXp} XP.</p>
                 </div>
-                <span className="pill">{advanceSummary(entry.pendingAdvanceThresholds.length)}</span>
-              </header>
-              <div className="xp-controls">
-                <NumberField label="Survived" value={entry.survived} onChange={(value) => updateXpEntry(entry.fighterId, { survived: value })} />
-                <NumberField label="Leader bonus" value={entry.leaderBonus} onChange={(value) => updateXpEntry(entry.fighterId, { leaderBonus: value })} />
+                <div className="xp-summary-stack">
+                  <span className="pill">{advanceSummary(entry.pendingAdvanceThresholds.length)}</span>
+                  <strong>{entry.gainedXp > 0 ? `+${entry.gainedXp} XP` : "0 XP"}</strong>
+                </div>
+              </summary>
+              <div className="quick-xp compact">
+                <button onClick={() => updateXpEntry(entry.fighterId, { enemyOoa: Math.max(0, entry.enemyOoa + 1) })}>+1 enemy OOA</button>
+                <button onClick={() => updateXpEntry(entry.fighterId, { objective: Math.max(0, entry.objective + 1) })}>+1 objective</button>
+                <button onClick={() => updateXpEntry(entry.fighterId, { other: entry.other + 1 })}>+1 other</button>
+              </div>
+              <div className="xp-controls xp-controls-primary">
                 <NumberField label="Enemy OOA" value={entry.enemyOoa} onChange={(value) => updateXpEntry(entry.fighterId, { enemyOoa: value })} />
                 <NumberField label="Objective" value={entry.objective} onChange={(value) => updateXpEntry(entry.fighterId, { objective: value })} />
-                <NumberField label="Underdog" value={entry.underdog} onChange={(value) => updateXpEntry(entry.fighterId, { underdog: value })} />
                 <NumberField label="Manual / other" value={entry.other} onChange={(value) => updateXpEntry(entry.fighterId, { other: value })} />
               </div>
-              <div className="quick-xp">
-                <button onClick={() => updateXpEntry(entry.fighterId, { other: entry.other - 1 })}>-1 other XP</button>
-                <button onClick={() => updateXpEntry(entry.fighterId, { other: entry.other + 1 })}>+1 other XP</button>
-              </div>
+              <details className="optional-after-fields">
+                <summary>Survival, leader, underdog and notes</summary>
+                <div className="xp-controls">
+                  <NumberField label="Survived" value={entry.survived} onChange={(value) => updateXpEntry(entry.fighterId, { survived: value })} />
+                  <NumberField label="Leader bonus" value={entry.leaderBonus} onChange={(value) => updateXpEntry(entry.fighterId, { leaderBonus: value })} />
+                  <NumberField label="Underdog" value={entry.underdog} onChange={(value) => updateXpEntry(entry.fighterId, { underdog: value })} />
+                </div>
+                <label>
+                  <span>XP notes</span>
+                  <input value={entry.notes ?? ""} onChange={(event) => updateXpEntry(entry.fighterId, { notes: event.target.value })} />
+                </label>
+              </details>
               <div className="xp-total-line">
                 <strong>Gained {entry.gainedXp}</strong>
                 <strong>Final XP {entry.finalXp}</strong>
                 <span>Thresholds: {entry.pendingAdvanceThresholds.length ? entry.pendingAdvanceThresholds.join(", ") : "none"}</span>
               </div>
-              <label>
-                <span>XP notes</span>
-                <input value={entry.notes ?? ""} onChange={(event) => updateXpEntry(entry.fighterId, { notes: event.target.value })} />
-              </label>
-            </article>
+            </details>
           ))
         )}
       </div>
@@ -2883,12 +2991,29 @@ function SeriousInjuriesStep({
         <div className="injury-grid">
           {draft.injuries.map((entry) => {
             const member = roster.members.find((item) => item.id === entry.fighterId);
+            const simpleFollowUp = simpleInjuryFollowUpFor(entry.result);
+            const needsFollowUp = entry.result === "Multiple Injuries" || entry.result === "Bitter Enmity" || Boolean(simpleFollowUp) || entry.result === "Sold To The Pits";
+            const hasFollowUps = (
+              entry.result === "Multiple Injuries" && (entry.followUpInjuries?.length ?? 0) > 0
+            ) || (
+              entry.result === "Bitter Enmity" && Boolean(entry.permanentEffect?.trim())
+            ) || (
+              Boolean(simpleFollowUp) && Boolean(entry.permanentEffect?.trim())
+            ) || (
+              entry.result === "Sold To The Pits" && Boolean(entry.permanentEffect?.trim())
+            );
+            const isResolved = entry.resolvedOutsideApp || Boolean(entry.result.trim());
             return (
               <article className="injury-panel" key={entry.fighterId}>
                 <header>
                   <strong>{entry.fighterName}</strong>
-                  <span className="pill">{member?.kind === "henchman_group" ? "Henchman group" : "Hero"}</span>
+                  <span className="pill">{isResolved ? "Result recorded" : member?.kind === "henchman_group" ? "Needs casualty result" : "Needs injury result"}</span>
                 </header>
+                <ol className="resolution-flow" aria-label="Serious injury resolution order">
+                  <li className={entry.result || entry.resolvedOutsideApp ? "done" : "current"}>Roll or choose result</li>
+                  <li className={hasFollowUps ? "done" : needsFollowUp ? "current" : "muted"}>Resolve follow-up rolls</li>
+                  <li className={isResolved ? "done" : "muted"}>Confirm final effect</li>
+                </ol>
                 <SmartTableRoller
                   title={member?.kind === "henchman_group" ? "Henchman casualty roll" : "Hero serious injury roll"}
                   rollKind={member?.kind === "henchman_group" ? "d6" : "d66"}
@@ -2904,7 +3029,7 @@ function SeriousInjuriesStep({
                   <NumberField label="Casualties / group size reduction" value={entry.casualties ?? 0} onChange={(value) => updateInjury(entry.fighterId, { casualties: Math.max(0, value) })} />
                 )}
                 <label>
-                  <span>Injury result</span>
+                  <span>Final injury result</span>
                   <select value={entry.result} onChange={(event) => updateInjury(entry.fighterId, injuryResultPatch(entry, event.target.value))}>
                     <option value="">Select or mark resolved</option>
                     {SERIOUS_INJURY_RESULTS.map((result) => (
@@ -2920,25 +3045,259 @@ function SeriousInjuriesStep({
                     onLookup={onLookup}
                   />
                 )}
-                <label>
-                  <span>Permanent effect</span>
-                  <input value={entry.permanentEffect ?? ""} onChange={(event) => updateInjury(entry.fighterId, { permanentEffect: event.target.value })} />
-                </label>
-                <label className="toggle">
-                  <input
-                    type="checkbox"
-                    checked={entry.resolvedOutsideApp ?? false}
-                    onChange={(event) => updateInjury(entry.fighterId, { resolvedOutsideApp: event.target.checked })}
+                {member?.kind !== "henchman_group" && entry.result === "Bitter Enmity" && (
+                  <BitterEnmityResolver
+                    entry={entry}
+                    onChange={(patch) => updateInjury(entry.fighterId, patch)}
+                    onLookup={onLookup}
                   />
-                  Resolved outside app
-                </label>
-                <label>
-                  <span>Notes</span>
-                  <textarea value={entry.notes ?? ""} onChange={(event) => updateInjury(entry.fighterId, { notes: event.target.value })} />
-                </label>
+                )}
+                {member?.kind !== "henchman_group" && simpleFollowUp && (
+                  <SimpleInjuryFollowUpResolver
+                    entry={entry}
+                    config={simpleFollowUp}
+                    onChange={(patch) => updateInjury(entry.fighterId, patch)}
+                    onLookup={onLookup}
+                  />
+                )}
+                {member?.kind !== "henchman_group" && entry.result === "Captured" && (
+                  <CapturedResolver
+                    entry={entry}
+                    onChange={(patch) => updateInjury(entry.fighterId, patch)}
+                    onLookup={onLookup}
+                  />
+                )}
+                {member?.kind !== "henchman_group" && entry.result === "Sold To The Pits" && (
+                  <SoldToPitsResolver
+                    entry={entry}
+                    onChange={(patch) => updateInjury(entry.fighterId, patch)}
+                    onLookup={onLookup}
+                  />
+                )}
+                <details className="optional-after-fields" open={Boolean(entry.permanentEffect || entry.notes || entry.resolvedOutsideApp) || undefined}>
+                  <summary>Permanent effect, outside result and notes</summary>
+                  <label>
+                    <span>Permanent effect</span>
+                    <input value={entry.permanentEffect ?? ""} onChange={(event) => updateInjury(entry.fighterId, { permanentEffect: event.target.value })} />
+                  </label>
+                  <label className="toggle">
+                    <input
+                      type="checkbox"
+                      checked={entry.resolvedOutsideApp ?? false}
+                      onChange={(event) => updateInjury(entry.fighterId, { resolvedOutsideApp: event.target.checked })}
+                    />
+                    Resolved outside app
+                  </label>
+                  <label>
+                    <span>Notes</span>
+                    <textarea value={entry.notes ?? ""} onChange={(event) => updateInjury(entry.fighterId, { notes: event.target.value })} />
+                  </label>
+                </details>
               </article>
             );
           })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function BitterEnmityResolver({
+  entry,
+  onChange,
+  onLookup
+}: {
+  entry: AfterBattleInjuryEntry;
+  onChange: (patch: Partial<AfterBattleInjuryEntry>) => void;
+  onLookup: (item: LookupItem) => void;
+}) {
+  function applyHatredRoll(roll: TableRollResult) {
+    const target = [roll.result, roll.effect].filter(Boolean).join(" - ");
+    onChange({
+      permanentEffect: `Hatred: ${target}`,
+      notes: prependNote(`${roll.rollLabel}: Bitter Enmity - ${target}.`, entry.notes)
+    });
+  }
+
+  return (
+    <section className="multiple-injuries-box bitter-enmity-box">
+      <div className="section-heading">
+        <div>
+          <h4>Bitter Enmity follow-up</h4>
+          <p>Roll D6 to determine who the Hero hates from now on.</p>
+        </div>
+        <button onClick={() => openLookupRecord("table-bitter-enmity", onLookup)}>
+          <BookOpen aria-hidden /> Hatred table
+        </button>
+      </div>
+      <SmartTableRoller
+        title="Bitter Enmity hatred roll"
+        rollKind="d6"
+        recordId="table-bitter-enmity"
+        tableCaption="Bitter Enmity Hatred"
+        autoApply
+        helperText="Rolls the Bitter Enmity D6 table and records the hatred target as the permanent effect."
+        onLookup={onLookup}
+        onUseResult={applyHatredRoll}
+      />
+      {entry.permanentEffect?.trim() && (
+        <div className="exploration-follow-up-result">
+          <strong>Recorded effect</strong>
+          <p>{entry.permanentEffect}</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function SimpleInjuryFollowUpResolver({
+  entry,
+  config,
+  onChange,
+  onLookup
+}: {
+  entry: AfterBattleInjuryEntry;
+  config: NonNullable<ReturnType<typeof simpleInjuryFollowUpFor>>;
+  onChange: (patch: Partial<AfterBattleInjuryEntry>) => void;
+  onLookup: (item: LookupItem) => void;
+}) {
+  function applyFollowUpRoll(roll: TableRollResult) {
+    const effect = [roll.result, roll.effect].filter(Boolean).join(" - ");
+    onChange({
+      permanentEffect: effect,
+      notes: prependNote(`${roll.rollLabel}: ${entry.result} - ${effect}.`, entry.notes)
+    });
+  }
+
+  return (
+    <section className="multiple-injuries-box">
+      <div className="section-heading">
+        <div>
+          <h4>{config.title}</h4>
+          <p>{config.helperText}</p>
+        </div>
+        <button onClick={() => openLookupRecord(config.recordId, onLookup)}>
+          <BookOpen aria-hidden /> Follow-up table
+        </button>
+      </div>
+      <SmartTableRoller
+        title={config.title}
+        rollKind="d6"
+        recordId={config.recordId}
+        tableCaption={config.tableCaption}
+        autoApply
+        helperText={config.helperText}
+        onLookup={onLookup}
+        onUseResult={applyFollowUpRoll}
+      />
+      {entry.permanentEffect?.trim() && (
+        <div className="exploration-follow-up-result">
+          <strong>Recorded effect</strong>
+          <p>{entry.permanentEffect}</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CapturedResolver({
+  entry,
+  onChange,
+  onLookup
+}: {
+  entry: AfterBattleInjuryEntry;
+  onChange: (patch: Partial<AfterBattleInjuryEntry>) => void;
+  onLookup: (item: LookupItem) => void;
+}) {
+  function applySaleRoll(roll: TableRollResult) {
+    const effect = `Sold to slavers: ${roll.result}`;
+    onChange({
+      permanentEffect: effect,
+      notes: prependNote(`${roll.rollLabel}: Captured - ${effect}. Add the gold in the Income step if your warband receives it.`, entry.notes)
+    });
+  }
+
+  return (
+    <section className="multiple-injuries-box">
+      <div className="section-heading">
+        <div>
+          <h4>Captured options</h4>
+          <p>Use this if the captive is sold to slavers. Ransom, exchange and faction-specific outcomes can be recorded manually.</p>
+        </div>
+        <button onClick={() => openLookupRecord("table-captured-sale", onLookup)}>
+          <BookOpen aria-hidden /> Slaver sale table
+        </button>
+      </div>
+      <SmartTableRoller
+        title="Sell captive to slavers"
+        rollKind="d6"
+        recordId="table-captured-sale"
+        tableCaption="Captured Sale To Slavers"
+        autoApply
+        helperText="Rolls D6 x 5 gc for selling the captive to slavers."
+        onLookup={onLookup}
+        onUseResult={applySaleRoll}
+      />
+    </section>
+  );
+}
+
+function SoldToPitsResolver({
+  entry,
+  onChange,
+  onLookup
+}: {
+  entry: AfterBattleInjuryEntry;
+  onChange: (patch: Partial<AfterBattleInjuryEntry>) => void;
+  onLookup: (item: LookupItem) => void;
+}) {
+  const [lastRoll, setLastRoll] = useState<{ roll: TableRollResult; rerolled: TableRollResult[] }>();
+
+  function recordWin() {
+    onChange({
+      permanentEffect: "Won pit fight: gains 50 gc and +2 Experience; rejoins with weapons and equipment.",
+      notes: prependNote("Sold To The Pits: won the pit fight. Add 50 gc in Income and +2 XP in Experience.", entry.notes)
+    });
+  }
+
+  function rollLosingInjury() {
+    const result = createSoldToPitsLosingInjuryRoll();
+    setLastRoll(result);
+    const effect = `${result.roll.result}${result.roll.effect ? ` - ${result.roll.effect}` : ""}`;
+    onChange({
+      permanentEffect: `Lost pit fight: ${effect}. If not dead, loses weapons and armour before rejoining.`,
+      notes: prependNote(`${result.roll.rollLabel}: Sold To The Pits losing injury - ${effect}.`, entry.notes)
+    });
+  }
+
+  return (
+    <section className="multiple-injuries-box">
+      <div className="section-heading">
+        <div>
+          <h4>Sold To The Pits follow-up</h4>
+          <p>Resolve the pit fight. If the Hero loses, roll a D66 result from 11-35.</p>
+        </div>
+        <button onClick={() => openLookupRecord("table-sold-to-pits-losing-injury", onLookup)}>
+          <BookOpen aria-hidden /> Losing injury table
+        </button>
+      </div>
+      <div className="button-row">
+        <button onClick={recordWin}>Record pit fight win</button>
+        <button className="primary" onClick={rollLosingInjury}>
+          <Dices aria-hidden /> Roll losing injury
+        </button>
+      </div>
+      {lastRoll && (
+        <div className="exploration-follow-up-result">
+          <strong>{lastRoll.roll.rollLabel}: {lastRoll.roll.result}</strong>
+          {lastRoll.roll.effect && <p>{lastRoll.roll.effect}</p>}
+          {lastRoll.rerolled.length > 0 && <p className="muted">Re-rolled outside 11-35: {lastRoll.rerolled.map((roll) => roll.rollLabel).join(", ")}</p>}
+        </div>
+      )}
+      {entry.permanentEffect?.trim() && (
+        <div className="exploration-follow-up-result">
+          <strong>Recorded effect</strong>
+          <p>{entry.permanentEffect}</p>
         </div>
       )}
     </section>
@@ -2966,6 +3325,20 @@ function ExplorationStep({
 
   function updateExploration(patch: Partial<AfterBattleDraft["exploration"]>) {
     onChange((current) => ({ ...current, exploration: { ...current.exploration, ...patch } }));
+  }
+
+  function updateWyrdstoneFound(value: number) {
+    const found = Math.max(0, value);
+    onChange((current) => ({
+      ...current,
+      exploration: {
+        ...current.exploration,
+        wyrdstoneShards: found
+      },
+      treasury: current.treasury.wyrdstoneSold === 0
+        ? treasuryWithWyrdstoneSale(current.treasury, found, incomeWarriors)
+        : current.treasury
+    }));
   }
 
   function useExplorationShardCount(value: number) {
@@ -3038,6 +3411,23 @@ function ExplorationStep({
           <BookOpen aria-hidden /> Exploration table
         </button>
       </div>
+      <div className="after-action-cards">
+        <article>
+          <span>Dice total</span>
+          <strong>{draft.exploration.diceValues.length ? draft.exploration.diceValues.reduce((total, value) => total + value, 0) : "-"}</strong>
+          <p>{draft.exploration.diceValues.length ? describeExplorationDice(draft.exploration.diceValues) : "Enter dice or use the roller."}</p>
+        </article>
+        <article>
+          <span>Wyrdstone found</span>
+          <strong>{draft.exploration.wyrdstoneShards}</strong>
+          <p>{draft.treasury.wyrdstoneSold ? `${draft.treasury.wyrdstoneSold} will be sold in Income.` : "Nothing marked for sale yet."}</p>
+        </article>
+        <article>
+          <span>Special results</span>
+          <strong>{draft.exploration.specialResults?.length ?? 0}</strong>
+          <p>{(draft.exploration.specialResults ?? []).slice(0, 2).join("; ") || "No doubles, triples or follow-up results recorded."}</p>
+        </article>
+      </div>
       <div className="form-grid">
         <label>
           <span>Dice rolled</span>
@@ -3050,14 +3440,7 @@ function ExplorationStep({
             placeholder="Example: 1, 3, 3, 6"
           />
         </label>
-        <NumberField label="Wyrdstone found" value={draft.exploration.wyrdstoneShards} onChange={(value) => updateExploration({ wyrdstoneShards: Math.max(0, value) })} />
-        <label>
-          <span>Special results</span>
-          <input
-            value={(draft.exploration.specialResults ?? []).join(", ")}
-            onChange={(event) => updateExploration({ specialResults: splitList(event.target.value) })}
-          />
-        </label>
+        <NumberField label="Wyrdstone found" value={draft.exploration.wyrdstoneShards} onChange={updateWyrdstoneFound} />
       </div>
       <ExplorationDiceInsight
         diceValues={draft.exploration.diceValues}
@@ -3088,11 +3471,20 @@ function ExplorationStep({
           Add random D6
         </button>
       </div>
-      <p className="muted">Notable combinations: {describeExplorationDice(draft.exploration.diceValues)}</p>
-      <label>
-        <span>Exploration notes</span>
-        <textarea value={draft.exploration.notes ?? ""} onChange={(event) => updateExploration({ notes: event.target.value })} />
-      </label>
+      <details className="optional-after-fields" open={Boolean(draft.exploration.notes || draft.exploration.specialResults?.length) || undefined}>
+        <summary>Manual special results and notes</summary>
+        <label>
+          <span>Special results</span>
+          <input
+            value={(draft.exploration.specialResults ?? []).join(", ")}
+            onChange={(event) => updateExploration({ specialResults: splitList(event.target.value) })}
+          />
+        </label>
+        <label>
+          <span>Exploration notes</span>
+          <textarea value={draft.exploration.notes ?? ""} onChange={(event) => updateExploration({ notes: event.target.value })} />
+        </label>
+      </details>
     </section>
   );
 }
@@ -3246,6 +3638,10 @@ function IncomeStep({
     updateTreasury({ wyrdstoneSold: sold, shardSaleIncome });
   }
 
+  function sellAllAvailable() {
+    updateWyrdstoneSold(availableWyrdstone);
+  }
+
   return (
     <section className="after-card">
       <div className="section-heading">
@@ -3257,11 +3653,32 @@ function IncomeStep({
           <BookOpen aria-hidden /> Wyrdstone income table
         </button>
       </div>
+      <div className="after-action-cards">
+        <article>
+          <span>Available wyrdstone</span>
+          <strong>{availableWyrdstone}</strong>
+          <p>{storedWyrdstone} stored before battle, {foundWyrdstone} found this battle.</p>
+        </article>
+        <article>
+          <span>Marked to sell</span>
+          <strong>{draft.treasury.wyrdstoneSold}</strong>
+          <p>{expectedSaleIncome} gc by the income chart for {incomeWarriors} warriors.</p>
+        </article>
+        <article>
+          <span>Treasury preview</span>
+          <strong>{draft.treasury.after} gc</strong>
+          <p>{draft.treasury.after - draft.treasury.before >= 0 ? "+" : ""}{draft.treasury.after - draft.treasury.before} gc after income and deductions.</p>
+        </article>
+      </div>
       <div className="income-metrics">
         <span>Stored wyrdstone before battle <strong>{storedWyrdstone}</strong></span>
         <span>Wyrdstone found this battle <strong>{foundWyrdstone}</strong></span>
         <span>Wyrdstone available <strong>{availableWyrdstone}</strong></span>
         <span>Chart income <strong>{expectedSaleIncome} gc</strong></span>
+      </div>
+      <div className="button-row">
+        <button disabled={availableWyrdstone === 0} onClick={sellAllAvailable}>Sell all available wyrdstone</button>
+        <button disabled={draft.treasury.wyrdstoneSold === 0} onClick={() => updateTreasury({ shardSaleIncome: expectedSaleIncome })}>Use chart income</button>
       </div>
       {draft.treasury.wyrdstoneSold > 0 && draft.treasury.shardSaleIncome !== expectedSaleIncome && (
         <div className="exploration-result-callout">
@@ -3432,11 +3849,18 @@ function RosterUpdatesStep({
   onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
 }) {
   const automaticUpdates = previewRosterUpdates(roster, draft);
+  const quickUpdates = [
+    { type: "recruit", title: "Recruit warrior", description: "Recruit a new warrior after the game." },
+    { type: "equipment", title: "Move equipment", description: "Move equipment between a fighter and the stash." },
+    { type: "injury", title: "Add injury note", description: "Record an injury or miss next game reminder." },
+    { type: "skill", title: "Add skill or spell", description: "Record a new skill, spell, prayer or special rule." },
+    { type: "note", title: "Campaign note", description: "Add a general post-game note." }
+  ];
 
-  function addManualUpdate() {
+  function addManualUpdate(type = "note", description = "") {
     onChange((current) => ({
       ...current,
-      rosterUpdates: [...current.rosterUpdates, { id: id("update"), type: "note", description: "" }]
+      rosterUpdates: [...current.rosterUpdates, { id: id("update"), type, description }]
     }));
   }
 
@@ -3452,13 +3876,25 @@ function RosterUpdatesStep({
       <div className="section-heading">
         <div>
           <h3>Roster updates</h3>
-          <p>Automatic updates are previewed here. Add extra manual campaign changes as notes before review.</p>
+          <p>Check what will be applied, then add any extra campaign decisions as simple action notes.</p>
         </div>
-        <button onClick={addManualUpdate}>
+        <button onClick={() => addManualUpdate()}>
           <Plus aria-hidden /> Add manual update
         </button>
       </div>
-      <div className="review-list">
+      <div className="after-action-cards">
+        {quickUpdates.map((template) => (
+          <article key={template.title}>
+            <span>{template.title}</span>
+            <p>{template.description}</p>
+            <button onClick={() => addManualUpdate(template.type, template.description)}>
+              <Plus aria-hidden /> Add
+            </button>
+          </article>
+        ))}
+      </div>
+      <div className="review-list automatic-update-list">
+        <strong>Automatic changes queued</strong>
         {automaticUpdates.map((line) => (
           <p key={line}>{line}</p>
         ))}
@@ -3523,7 +3959,13 @@ function ReviewApplyStep({
 
   return (
     <section className="after-card">
-      <h3>Review and apply</h3>
+      <div className="section-heading">
+        <div>
+          <h3>Review and apply</h3>
+          <p>This is the After Action Report that will be saved to the campaign log.</p>
+        </div>
+        <span className="pill">{blockingMessages.length ? `${blockingMessages.length} item${blockingMessages.length === 1 ? "" : "s"} to finish` : "Ready to apply"}</span>
+      </div>
       {blockingMessages.length > 0 && (
         <div className="member-issues">
           {blockingMessages.map((message) => (
@@ -3537,6 +3979,23 @@ function ReviewApplyStep({
           ))}
         </div>
       )}
+      <div className="after-action-cards review-report-lead">
+        <article>
+          <span>Battle</span>
+          <strong>{draft.battleResult.result?.replaceAll("-", " ") || "Not recorded"}</strong>
+          <p>{draft.battleResult.scenario || "Scenario not recorded"} vs {draft.battleResult.opponent || "unknown opponent"}</p>
+        </article>
+        <article>
+          <span>Campaign gains</span>
+          <strong>{draft.exploration.wyrdstoneShards} wyrdstone</strong>
+          <p>{draft.treasury.before} gc to {draft.treasury.after} gc.</p>
+        </article>
+        <article>
+          <span>Roster impact</span>
+          <strong>{draft.advances.length} advance{draft.advances.length === 1 ? "" : "s"}</strong>
+          <p>{draft.injuries.length} injury record{draft.injuries.length === 1 ? "" : "s"}, {draft.transactions.length} transaction{draft.transactions.length === 1 ? "" : "s"}.</p>
+        </article>
+      </div>
       <div className="review-grid">
         <ReviewBlock title="Battle result" lines={[
           `Opponent: ${draft.battleResult.opponent || "not recorded"}`,
@@ -4629,6 +5088,30 @@ function WarbandBadgeSymbol({ warbandTypeId, fallback }: { warbandTypeId: string
           <path {...common} d="M21 36l-8-6M43 36l8-6M25 41l4 7M39 41l-4 7M26 31h.5M38 31h.5" />
         </svg>
       );
+    case "black-orcs":
+      return (
+        <svg viewBox="0 0 64 64" aria-hidden>
+          <path {...common} d="M15 39c4-15 30-15 34 0-4 10-10 15-17 15S19 49 15 39z" />
+          <path {...common} d="M20 35 11 25M44 35l9-10M24 30h.5M40 30h.5M26 42l6 5 6-5" />
+          <path {...common} d="M23 12h18l-4 12H27zM29 12l-3-5M35 12l3-5" />
+        </svg>
+      );
+    case "beastmen-raiders":
+      return (
+        <svg viewBox="0 0 64 64" aria-hidden>
+          <path {...common} d="M20 32c3-10 21-10 24 0 0 12-5 20-12 20s-12-8-12-20z" />
+          <path {...common} d="M24 21C16 13 11 13 8 19c8 1 13 5 16 12M40 21c8-8 13-8 16-2-8 1-13 5-16 12" />
+          <path {...common} d="M27 35h.5M37 35h.5M28 43l4 3 4-3M32 19v-8" />
+        </svg>
+      );
+    case "dwarf-treasure-hunters":
+      return (
+        <svg viewBox="0 0 64 64" aria-hidden>
+          <path {...common} d="M16 47h32M22 38h20l-4 9H26zM26 20h12l5 10H21z" />
+          <path {...common} d="M18 17 31 30M39 14 25 28M38 14l6 6M19 17l-5 5" />
+          <path {...common} d="M32 8l5 6-5 6-5-6z" />
+        </svg>
+      );
     case "forest-goblins":
       return (
         <svg viewBox="0 0 64 64" aria-hidden>
@@ -4672,6 +5155,9 @@ function warbandBadgeMeta(warbandTypeId: string, warband?: WarbandType): { mark:
     undead: { mark: "UN", title: "Undead" },
     "carnival-of-chaos": { mark: "CC", title: "Carnival of Chaos" },
     "orc-mob": { mark: "OM", title: "Orc Mob" },
+    "black-orcs": { mark: "BO", title: "Black Orcs" },
+    "beastmen-raiders": { mark: "BR", title: "Beastmen Raiders" },
+    "dwarf-treasure-hunters": { mark: "DT", title: "Dwarf Treasure Hunters" },
     "shadow-warriors": { mark: "SW", title: "Shadow Warriors" },
     lizardmen: { mark: "LM", title: "Lizardmen" },
     "forest-goblins": { mark: "FG", title: "Forest Goblins" },
@@ -4739,6 +5225,33 @@ const SERIOUS_INJURY_TABLE = [
   { min: 65, max: 65, result: "Sold To The Pits" },
   { min: 66, max: 66, result: "Survives Against The Odds" }
 ];
+
+const SIMPLE_SERIOUS_INJURY_FOLLOW_UPS = {
+  "Arm Wound": {
+    recordId: "table-arm-wound",
+    tableCaption: "Arm Wound Follow-up",
+    title: "Arm Wound follow-up",
+    helperText: "Rolls the Arm Wound D6 table and records the permanent effect."
+  },
+  Madness: {
+    recordId: "table-madness",
+    tableCaption: "Madness Follow-up",
+    title: "Madness follow-up",
+    helperText: "Rolls the Madness D6 table and records Stupidity or Frenzy."
+  },
+  "Smashed Leg": {
+    recordId: "table-smashed-leg",
+    tableCaption: "Smashed Leg Follow-up",
+    title: "Smashed Leg follow-up",
+    helperText: "Rolls the Smashed Leg D6 table and records the result."
+  },
+  "Deep Wound": {
+    recordId: "table-deep-wound",
+    tableCaption: "Deep Wound Recovery",
+    title: "Deep Wound recovery",
+    helperText: "Rolls the Deep Wound D3 result using a D6 table and records how many games are missed."
+  }
+} as const;
 
 const ADVANCE_RESULTS = [
   "+1 M",
@@ -5213,6 +5726,41 @@ function recalculateXpEntry(entry: AfterBattleXpEntry): AfterBattleXpEntry {
   };
 }
 
+function applyBattleResultXpDefaults(
+  draft: AfterBattleDraft,
+  roster: Roster,
+  patch: Partial<AfterBattleDraft["battleResult"]>
+): AfterBattleDraft {
+  if (!Object.prototype.hasOwnProperty.call(patch, "result")) return draft;
+
+  const leaderMember = leaderMemberForRoster(roster);
+  if (!leaderMember) return draft;
+
+  const result = patch.result;
+  const xp = draft.xp.map((entry) => {
+    if (entry.fighterId !== leaderMember.id) return entry;
+    if (result === "win" && entry.leaderBonus === 0) {
+      return recalculateXpEntry({ ...entry, leaderBonus: 1 });
+    }
+    if (result !== "win" && entry.leaderBonus === 1) {
+      return recalculateXpEntry({ ...entry, leaderBonus: 0 });
+    }
+    return recalculateXpEntry(entry);
+  });
+
+  return syncDraftAdvances({ ...draft, xp });
+}
+
+function leaderMemberForRoster(roster: Roster): RosterMember | undefined {
+  const warband = currentWarband(roster);
+  if (!warband) return undefined;
+  return roster.members.find((member) =>
+    member.status !== "dead" &&
+    member.status !== "retired" &&
+    member.fighterTypeId === warband.leaderFighterTypeId
+  );
+}
+
 function syncDraftAdvances(draft: AfterBattleDraft): AfterBattleDraft {
   const existing = new Map(draft.advances.map((advance) => [`${advance.fighterId}:${advance.xpThreshold}`, advance]));
   const advances = draft.xp.flatMap((entry) =>
@@ -5438,6 +5986,15 @@ function reviewBlockingMessages(draft: AfterBattleDraft, roster: Roster): string
         messages.push(`${injury.fighterName} needs serious injury follow-up rolls for Multiple Injuries.`);
       }
     }
+    if (member?.kind !== "henchman_group" && !injury.resolvedOutsideApp && injury.result === "Bitter Enmity" && !injury.permanentEffect?.trim()) {
+      messages.push(`${injury.fighterName} needs a Bitter Enmity hatred roll or manual hatred target.`);
+    }
+    if (member?.kind !== "henchman_group" && !injury.resolvedOutsideApp && simpleInjuryFollowUpFor(injury.result) && !injury.permanentEffect?.trim()) {
+      messages.push(`${injury.fighterName} needs a ${injury.result} follow-up roll or manual permanent effect.`);
+    }
+    if (member?.kind !== "henchman_group" && !injury.resolvedOutsideApp && injury.result === "Sold To The Pits" && !injury.permanentEffect?.trim()) {
+      messages.push(`${injury.fighterName} needs the Sold To The Pits result recorded or marked resolved outside app.`);
+    }
   }
   for (const advance of draft.advances) {
     if (!advance.result.trim()) messages.push(`${advance.fighterName} needs an advance result for ${advance.xpThreshold} XP.`);
@@ -5445,9 +6002,39 @@ function reviewBlockingMessages(draft: AfterBattleDraft, roster: Roster): string
   return messages;
 }
 
+function afterBattleStepStatus(stepIndex: number, draft: AfterBattleDraft, roster: Roster) {
+  if (stepIndex === 0) return draft.battleResult.result ? "done" : "optional";
+  if (stepIndex === 1) return draft.xp.some((entry) => entry.gainedXp > 0) ? "xp entered" : "ready";
+  if (stepIndex === 2) {
+    const injuryBlockers = reviewBlockingMessages({ ...draft, advances: [] }, roster);
+    if (injuryBlockers.length) return "needs result";
+    return draft.injuries.length ? "done" : "none";
+  }
+  if (stepIndex === 3) return draft.exploration.diceValues.length || draft.exploration.wyrdstoneShards ? "recorded" : "ready";
+  if (stepIndex === 4) return draft.treasury.wyrdstoneSold || draft.treasury.after !== roster.treasuryGold ? "updated" : "ready";
+  if (stepIndex === 5) return draft.transactions.length ? `${draft.transactions.length} item${draft.transactions.length === 1 ? "" : "s"}` : "optional";
+  if (stepIndex === 6) {
+    if (!draft.advances.length) return "none";
+    return draft.advances.every((advance) => advance.result.trim()) ? "done" : "needs result";
+  }
+  if (stepIndex === 7) return previewRosterUpdates(roster, draft).length ? "queued" : "optional";
+  return reviewBlockingMessages(draft, roster).length ? "blocked" : "ready";
+}
+
+function afterBattleStepBlocker(stepIndex: number, draft: AfterBattleDraft, roster: Roster) {
+  if (stepIndex === 2) {
+    return reviewBlockingMessages({ ...draft, advances: [] }, roster)[0] ?? "Finish the injury results before moving on.";
+  }
+  if (stepIndex === 6) {
+    const missing = draft.advances.find((advance) => !advance.result.trim());
+    return missing ? `${missing.fighterName} still needs an advance result.` : "Choose every pending advance before moving on.";
+  }
+  return "Finish the required fields before moving on.";
+}
+
 function canContinueAfterBattleStep(stepIndex: number, draft: AfterBattleDraft, roster: Roster) {
   if (stepIndex === 2) {
-    return !reviewBlockingMessages({ ...draft, advances: [] }, roster).some((message) => message.includes("serious injury"));
+    return reviewBlockingMessages({ ...draft, advances: [] }, roster).length === 0;
   }
   if (stepIndex === 6) {
     return draft.advances.every((advance) => advance.result.trim());
@@ -5463,6 +6050,24 @@ function advanceSummary(count: number) {
 
 function seriousInjuryResultForRoll(roll: number) {
   return SERIOUS_INJURY_TABLE.find((entry) => roll >= entry.min && roll <= entry.max)?.result ?? "Other / custom";
+}
+
+function simpleInjuryFollowUpFor(result: string) {
+  return SIMPLE_SERIOUS_INJURY_FOLLOW_UPS[result as keyof typeof SIMPLE_SERIOUS_INJURY_FOLLOW_UPS];
+}
+
+function createSoldToPitsLosingInjuryRoll(random = Math.random): { roll: TableRollResult; rerolled: TableRollResult[] } {
+  const rerolled: TableRollResult[] = [];
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const roll = createTableRoll(rulesLookupRecords, {
+      kind: "d66",
+      recordId: "table-sold-to-pits-losing-injury",
+      tableCaption: "Sold To The Pits Losing Injury"
+    }, random);
+    if (roll.rangeLabel || attempt === 29) return { roll, rerolled };
+    rerolled.push(roll);
+  }
+  return { roll: createTableRoll(rulesLookupRecords, { kind: "d66" }, random), rerolled };
 }
 
 function injuryPatchFromRoll(entry: AfterBattleInjuryEntry, roll: TableRollResult, isHenchmanGroup: boolean): Partial<AfterBattleInjuryEntry> {
@@ -5536,7 +6141,8 @@ function injurySummary(injury: AfterBattleInjuryEntry) {
   if (injury.resolvedOutsideApp) return "resolved outside app";
   const main = injury.result || "not recorded";
   const followUps = followUpInjurySummary(injury);
-  return followUps ? `${main}; ${followUps}` : main;
+  const permanent = injury.permanentEffect?.trim() ? `; ${injury.permanentEffect}` : "";
+  return followUps ? `${main}; ${followUps}${permanent}` : `${main}${permanent}`;
 }
 
 function followUpInjurySummary(injury: AfterBattleInjuryEntry) {

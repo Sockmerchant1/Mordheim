@@ -119,6 +119,17 @@ export function getAllowedSkills(
       const requiredSkill = rulesDb.skills.find((entry) => entry.id === missingRequiredSkill);
       return blocked(skill, `${skill.name} requires ${requiredSkill?.name ?? missingRequiredSkill}.`, source);
     }
+    const missingRequiredEquipment = skill.validation.requiredEquipmentItemIds.find((itemId) => !member.equipment.includes(itemId));
+    if (missingRequiredEquipment) {
+      const requiredEquipment = findEquipment(rulesDb, missingRequiredEquipment);
+      return blocked(skill, `${skill.name} requires ${requiredEquipment?.name ?? missingRequiredEquipment}.`, source);
+    }
+    if (
+      typeof skill.validation.minimumExperience === "number" &&
+      (member.currentXp ?? member.experience) < skill.validation.minimumExperience
+    ) {
+      return blocked(skill, `${skill.name} requires ${skill.validation.minimumExperience} XP.`, source);
+    }
     if (skill.id === "battle-tongue" && warband?.leaderFighterTypeId !== fighterType.id) {
       return blocked(skill, "Battle Tongue is leader-only.", source);
     }
@@ -311,6 +322,8 @@ export function validateRoster(roster: Roster, rulesDb: RulesDb): ValidationIssu
     validateExperience(member, fighterType, rulesDb, issues);
   }
 
+  validateEquipmentWarbandCaps(activeMembers, rulesDb, issues);
+
   if (typeof roster.claimedCost === "number" && roster.claimedCost !== rosterCost) {
     issues.push(issue("warning", "CLAIMED_COST_MISMATCH", `Saved cost is ${roster.claimedCost} gc, but calculated cost is ${rosterCost} gc.`, "The app calculates cost from fighter types and equipment data.", undefined, "claimedCost", sourceForRule(rulesDb, "starting-warband"), "Use the calculated total."));
   }
@@ -438,7 +451,10 @@ function equipmentOptionFor(
   const source = sourceForEquipment(item);
   if (!fighterType) return blocked(item, "Unknown fighter type.", source);
 
-  const listAllowed = fighterType.equipmentListIds
+  const grantedEquipmentListIds = member.skills
+    .map((skillId) => rulesDb.skills.find((skill) => skill.id === skillId))
+    .flatMap((skill) => skill?.validation.grantsEquipmentListIds ?? []);
+  const listAllowed = [...fighterType.equipmentListIds, ...grantedEquipmentListIds]
     .flatMap((listId) => rulesDb.equipmentLists.filter((list) => list.id === listId))
     .some((list) => list.allowedEquipmentItemIds.includes(item.id));
 
@@ -454,6 +470,13 @@ function equipmentOptionFor(
     !item.validation.allowedFighterTypeIds.includes(fighterType.id)
   ) {
     return blocked(item, `${item.name} is restricted to specific fighter types.`, source);
+  }
+  if (
+    typeof item.validation.maxCountInWarband === "number" &&
+    countEquipmentInRoster(roster, item.id, rulesDb, member.id) >= item.validation.maxCountInWarband &&
+    countEquipmentInstances(member, item.id) === 0
+  ) {
+    return blocked(item, `${item.name} is limited to ${item.validation.maxCountInWarband} per warband.`, source);
   }
 
   if (!options.ignoreCurrentLimit) {
@@ -577,6 +600,25 @@ function validateSkills(member: RosterMember, roster: Roster, rulesDb: RulesDb, 
     if (!option?.allowed) {
       issues.push(issue("error", "INVALID_SKILL", `${skill.name} is not legal for this fighter.`, option?.reason ?? "The fighter type does not have this skill access.", member.id, "skills", sourceForSkill(skill), "Choose a skill from an allowed category."));
     }
+  }
+}
+
+function validateEquipmentWarbandCaps(members: RosterMember[], rulesDb: RulesDb, issues: ValidationIssue[]) {
+  for (const item of rulesDb.equipmentItems) {
+    if (typeof item.validation.maxCountInWarband !== "number") continue;
+    const carriers = members.filter((member) => member.kind !== "hired_sword" && countEquipmentInstances(member, item.id) > 0);
+    const count = carriers.reduce((total, member) => total + countEquipmentInstances(member, item.id), 0);
+    if (count <= item.validation.maxCountInWarband) continue;
+    issues.push(issue(
+      "error",
+      "EQUIPMENT_MAX_COUNT",
+      `${item.name} is limited to ${item.validation.maxCountInWarband} per warband.`,
+      `The roster has ${count}. This limit is stored in the equipment validation metadata.`,
+      carriers[0]?.id,
+      "equipment",
+      sourceForEquipment(item),
+      `Remove excess ${item.name}.`
+    ));
   }
 }
 
@@ -736,6 +778,20 @@ function countSkillInRoster(roster: Roster, skillId: string, excludingMemberId?:
     member.id !== excludingMemberId &&
     member.skills.includes(skillId)
   ).length;
+}
+
+function countEquipmentInRoster(roster: Roster, itemId: string, rulesDb: RulesDb, excludingMemberId?: string): number {
+  return rosterMembersInWarband(roster, rulesDb)
+    .filter((member) => member.id !== excludingMemberId && member.kind !== "hired_sword")
+    .reduce((total, member) => total + countEquipmentInstances(member, itemId), 0);
+}
+
+function countEquipmentInstances(member: RosterMember, itemId: string): number {
+  if (member.perModelEquipment?.length) {
+    return member.perModelEquipment.reduce((total, equipment) => total + equipment.filter((entry) => entry === itemId).length, 0);
+  }
+  const instances = member.equipment.filter((entry) => entry === itemId).length;
+  return member.kind === "henchman_group" ? instances * member.groupSize : instances;
 }
 
 function hasArmourEquipment(member: RosterMember, rulesDb: RulesDb): boolean {

@@ -22,7 +22,7 @@
       "isOfficial": true,
       "sourceCode": "EIF",
       "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Beastmen%2C%20Errata%27d.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "carnival-of-chaos",
@@ -55,7 +55,7 @@
       "isOfficial": true,
       "sourceCode": "A02",
       "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "kislevites",
@@ -77,7 +77,7 @@
       "isOfficial": true,
       "sourceCode": "MHR",
       "sourceUrl": "https://broheim.net/downloads/warbands/official/Mercenaries.pdf",
-      "implementationStatus": "implemented"
+      "implementationStatus": "tested"
     },
     {
       "id": "middenheimers",
@@ -88,7 +88,7 @@
       "isOfficial": true,
       "sourceCode": "MHR",
       "sourceUrl": "https://broheim.net/downloads/warbands/official/Mercenaries.pdf",
-      "implementationStatus": "implemented"
+      "implementationStatus": "tested"
     },
     {
       "id": "orc-mob",
@@ -121,7 +121,7 @@
       "isOfficial": true,
       "sourceCode": "MHR",
       "sourceUrl": "https://broheim.net/downloads/warbands/official/Mercenaries.pdf",
-      "implementationStatus": "implemented"
+      "implementationStatus": "tested"
     },
     {
       "id": "sisters-of-sigmar",
@@ -132,7 +132,7 @@
       "isOfficial": true,
       "sourceCode": "MHR",
       "sourceUrl": "https://broheim.net/downloads/warbands/official/Sisters%20of%20Sigmar.pdf",
-      "implementationStatus": "implemented"
+      "implementationStatus": "tested"
     },
     {
       "id": "skaven",
@@ -143,7 +143,7 @@
       "isOfficial": true,
       "sourceCode": "MHR",
       "sourceUrl": "https://broheim.net/downloads/warbands/official/Skaven.pdf",
-      "implementationStatus": "implemented"
+      "implementationStatus": "tested"
     },
     {
       "id": "undead",
@@ -165,7 +165,7 @@
       "isOfficial": true,
       "sourceCode": "MHR",
       "sourceUrl": "https://broheim.net/downloads/warbands/official/Witch%20Hunters.pdf",
-      "implementationStatus": "implemented"
+      "implementationStatus": "tested"
     },
     {
       "id": "amazons-lustria",
@@ -209,7 +209,7 @@
       "isOfficial": true,
       "sourceCode": "NC",
       "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "bretonnian-knights",
@@ -564,7 +564,7 @@
       "implementationStatus": "not_started"
     },
     {
-      "id": "night-goblins",
+      "id": "night-goblins-web",
       "name": "Night Goblins",
       "race": "Night Goblin",
       "broheimGrade": "1c",
@@ -586,7 +586,7 @@
       "implementationStatus": "not_started"
     },
     {
-      "id": "norse-explorers",
+      "id": "norse-explorers-btb",
       "name": "Norse Explorers",
       "race": "Chaos Human",
       "broheimGrade": "1c",
@@ -1037,7 +1037,7 @@
       "implementationStatus": "not_started"
     },
     {
-      "id": "forest-goblins",
+      "id": "forest-goblins-lustria",
       "name": "Forest Goblins",
       "race": "Goblin",
       "broheimGrade": "2b",
@@ -1125,7 +1125,7 @@
       "implementationStatus": "not_started"
     },
     {
-      "id": "lizardmen",
+      "id": "lizardmen-lustria",
       "name": "Lizardmen",
       "race": "Lizardmen",
       "broheimGrade": "2b",
@@ -1133,7 +1133,7 @@
       "isOfficial": false,
       "sourceCode": "LUS",
       "sourceUrl": "https://broheim.net/downloads/warbands/supplement/lustria/Lizardmen.pdf",
-      "implementationStatus": "tested"
+      "implementationStatus": "not_started"
     },
     {
       "id": "lords-of-the-marsh",
@@ -1224,7 +1224,7 @@
       "implementationStatus": "not_started"
     },
     {
-      "id": "night-goblins",
+      "id": "night-goblins-karak-azgal",
       "name": "Night Goblins",
       "race": "Night Goblin",
       "broheimGrade": "2b",
@@ -1323,7 +1323,7 @@
       "implementationStatus": "not_started"
     },
     {
-      "id": "skaven-of-clan-pestilens",
+      "id": "skaven-of-clan-pestilens-lustria",
       "name": "Skaven of Clan Pestilens",
       "race": "Skaven",
       "broheimGrade": "2b",
@@ -1334,7 +1334,7 @@
       "implementationStatus": "not_started"
     },
     {
-      "id": "skaven-of-clan-pestilens",
+      "id": "skaven-of-clan-pestilens-mousillon",
       "name": "Skaven of Clan Pestilens",
       "race": "Skaven",
       "broheimGrade": "2b",
@@ -1356,7 +1356,7 @@
       "implementationStatus": "not_started"
     },
     {
-      "id": "skaven-of-clan-skryre",
+      "id": "skaven-of-clan-skryre-relics",
       "name": "Skaven of Clan Skryre",
       "race": "Skaven",
       "broheimGrade": "2b",
@@ -1697,7 +1697,7 @@
       "implementationStatus": "not_started"
     },
     {
-      "id": "savage-orcs",
+      "id": "savage-orcs-athel-loren",
       "name": "Savage Orcs",
       "race": "Orcs & Goblins",
       "broheimGrade": "3",
@@ -1708,7 +1708,7 @@
       "implementationStatus": "not_started"
     },
     {
-      "id": "skaven-of-clan-skryre",
+      "id": "skaven-of-clan-skryre-athel-loren",
       "name": "Skaven of Clan Skryre",
       "race": "Skaven",
       "broheimGrade": "3",

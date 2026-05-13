@@ -1,0 +1,202 @@
+{
+  "warbandType": {
+    "id": "dwarf-treasure-hunters",
+    "name": "Dwarf Treasure Hunters",
+    "race": "Dwarf",
+    "broheimGrade": "1a",
+    "sourceCode": "A02",
+    "sourceDocumentId": "mhr-dwarf-treasure-hunters",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+    "implementationStatus": "tested",
+    "startingGold": 500,
+    "minWarriors": 3,
+    "maxWarriors": 12,
+    "maxHeroes": 5,
+    "leaderFighterTypeId": "dwarf-noble",
+    "notes": "Official Dwarf Treasure Hunters warband from Mordheim Annual material. Includes Dwarf common rules, Incomparable Miners, Gromril starting equipment, Dwarf Axes, Engineer range support and Troll Slayer skill access."
+  },
+  "fighterTypes": [
+    {
+      "id": "dwarf-noble",
+      "warbandTypeId": "dwarf-treasure-hunters",
+      "name": "Dwarf Noble",
+      "category": "hero",
+      "minCount": 1,
+      "maxCount": 1,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 85,
+      "startingExperience": 20,
+      "profile": { "M": 3, "WS": 5, "BS": 4, "S": 3, "T": 4, "W": 1, "I": 2, "A": 1, "Ld": 9 },
+      "equipmentListIds": ["dwarf-warrior-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "strength", "dwarf-special"],
+      "specialRuleIds": ["leader", "dwarf-hard-to-kill", "dwarf-hard-head", "dwarf-armour", "dwarf-hate-orcs-goblins", "dwarf-grudgebearers", "incomparable-miners"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Required leader; no more, no less.",
+      "source": {
+        "sourceDocumentId": "mhr-dwarf-treasure-hunters",
+        "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+        "pageRef": "Dwarf Treasure Hunters p. 22",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "dwarf-engineer",
+      "warbandTypeId": "dwarf-treasure-hunters",
+      "name": "Dwarf Engineer",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 1,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 50,
+      "startingExperience": 10,
+      "profile": { "M": 3, "WS": 4, "BS": 3, "S": 3, "T": 4, "W": 1, "I": 2, "A": 1, "Ld": 9 },
+      "equipmentListIds": ["dwarf-thunderer-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "dwarf-special"],
+      "specialRuleIds": ["dwarf-hard-to-kill", "dwarf-hard-head", "dwarf-armour", "dwarf-hate-orcs-goblins", "expert-weaponsmith"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "May include up to one. His Expert Weaponsmith rule extends Dwarf warband pistol, crossbow and handgun ranges while he takes part in the battle.",
+      "source": {
+        "sourceDocumentId": "mhr-dwarf-treasure-hunters",
+        "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+        "pageRef": "Dwarf Treasure Hunters p. 22",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "dwarf-troll-slayer",
+      "warbandTypeId": "dwarf-treasure-hunters",
+      "name": "Dwarf Troll Slayer",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 50,
+      "startingExperience": 8,
+      "profile": { "M": 3, "WS": 4, "BS": 3, "S": 3, "T": 4, "W": 1, "I": 2, "A": 1, "Ld": 9 },
+      "equipmentListIds": ["dwarf-slayer-equipment"],
+      "skillCategoryIds": ["combat", "strength", "dwarf-special", "troll-slayer-special"],
+      "specialRuleIds": ["dwarf-hard-to-kill", "dwarf-hard-head", "dwarf-hate-orcs-goblins", "deathwish", "slayer-skills"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "May include up to two. Slayers may never carry or use missile weapons or armour.",
+      "source": {
+        "sourceDocumentId": "mhr-dwarf-treasure-hunters",
+        "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+        "pageRef": "Dwarf Treasure Hunters p. 22",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "dwarf-clansman",
+      "warbandTypeId": "dwarf-treasure-hunters",
+      "name": "Dwarf Clansman",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": null,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 40,
+      "startingExperience": 0,
+      "profile": { "M": 3, "WS": 4, "BS": 3, "S": 3, "T": 4, "W": 1, "I": 2, "A": 1, "Ld": 9 },
+      "equipmentListIds": ["dwarf-warrior-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["dwarf-hard-to-kill", "dwarf-hard-head", "dwarf-armour", "dwarf-hate-orcs-goblins"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Bought in groups of 1-5.",
+      "source": {
+        "sourceDocumentId": "mhr-dwarf-treasure-hunters",
+        "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+        "pageRef": "Dwarf Treasure Hunters p. 23",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "dwarf-thunderer",
+      "warbandTypeId": "dwarf-treasure-hunters",
+      "name": "Dwarf Thunderer",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": 5,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 40,
+      "startingExperience": 0,
+      "profile": { "M": 3, "WS": 4, "BS": 3, "S": 3, "T": 4, "W": 1, "I": 2, "A": 1, "Ld": 9 },
+      "equipmentListIds": ["dwarf-thunderer-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["dwarf-hard-to-kill", "dwarf-hard-head", "dwarf-armour", "dwarf-hate-orcs-goblins"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "May include up to five. Bought in groups of 1-5.",
+      "source": {
+        "sourceDocumentId": "mhr-dwarf-treasure-hunters",
+        "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+        "pageRef": "Dwarf Treasure Hunters p. 23",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "beardling",
+      "warbandTypeId": "dwarf-treasure-hunters",
+      "name": "Beardling",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": null,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 25,
+      "startingExperience": 0,
+      "profile": { "M": 3, "WS": 3, "BS": 2, "S": 3, "T": 4, "W": 1, "I": 2, "A": 1, "Ld": 8 },
+      "equipmentListIds": ["dwarf-warrior-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["dwarf-hard-to-kill", "dwarf-hard-head", "dwarf-armour", "dwarf-hate-orcs-goblins"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Bought in groups of 1-5.",
+      "source": {
+        "sourceDocumentId": "mhr-dwarf-treasure-hunters",
+        "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+        "pageRef": "Dwarf Treasure Hunters p. 23",
+        "label": "Henchmen"
+      }
+    }
+  ],
+  "equipmentLists": [
+    {
+      "id": "dwarf-warrior-equipment",
+      "name": "Dwarf Warrior Equipment List",
+      "warbandTypeId": "dwarf-treasure-hunters",
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "dwarf-axe", "sword", "double-handed-weapon", "spear", "halberd", "gromril-mace", "gromril-hammer", "gromril-axe", "gromril-dwarf-axe", "gromril-sword", "gromril-double-handed-weapon", "gromril-spear", "gromril-halberd", "pistol", "brace-of-pistols", "light-armour", "heavy-armour", "gromril-armour", "shield", "helmet"],
+      "appliesToFighterTypeIds": ["dwarf-noble", "dwarf-clansman", "beardling"],
+      "notes": "Dwarf Warrior equipment list. Gromril weapon entries model the creation-only 3x cost as separate items."
+    },
+    {
+      "id": "dwarf-thunderer-equipment",
+      "name": "Dwarf Thunderer Equipment List",
+      "warbandTypeId": "dwarf-treasure-hunters",
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "pistol", "brace-of-pistols", "crossbow", "handgun", "light-armour", "heavy-armour", "shield", "helmet"],
+      "appliesToFighterTypeIds": ["dwarf-engineer", "dwarf-thunderer"],
+      "notes": "Thunderer equipment list. It does not include Dwarf Axes or Gromril starting equipment."
+    },
+    {
+      "id": "dwarf-slayer-equipment",
+      "name": "Dwarf Troll Slayer Weapons",
+      "warbandTypeId": "dwarf-treasure-hunters",
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "dwarf-axe", "sword", "double-handed-weapon", "spear", "halberd", "gromril-mace", "gromril-hammer", "gromril-axe", "gromril-dwarf-axe", "gromril-sword", "gromril-double-handed-weapon", "gromril-spear", "gromril-halberd"],
+      "appliesToFighterTypeIds": ["dwarf-troll-slayer"],
+      "notes": "Troll Slayers use weapons from the Dwarf Warrior list but may never carry missile weapons or armour."
+    }
+  ]
+}

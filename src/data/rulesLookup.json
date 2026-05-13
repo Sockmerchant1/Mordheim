@@ -1403,6 +1403,170 @@
     ]
   },
   {
+    "id": "table-bitter-enmity",
+    "name": "Bitter Enmity Hatred Roll",
+    "category": "injury",
+    "text": "After a Hero rolls Bitter Enmity on the Heroes' Serious Injuries chart, roll D6 to determine who or what the Hero hates from now on.",
+    "source": "The New Mordheimer: Serious Injuries",
+    "sourceUrl": "https://mordheimer.net/docs/campaigns",
+    "page": "Bitter Enmity",
+    "tags": ["after battle", "serious injury", "bitter enmity", "hatred", "table", "d6"],
+    "aliases": ["bitter enmity table", "bitter enmity hatred", "hatred roll"],
+    "tables": [
+      {
+        "caption": "Bitter Enmity Hatred",
+        "columns": ["D6", "Who the Hero hates"],
+        "rows": [
+          ["1-3", "Individual", "The individual who caused the injury. If it was a Henchman, the Hero hates the enemy leader instead."],
+          ["4", "Enemy leader", "The leader of the warband that caused the injury."],
+          ["5", "Enemy warband", "The entire warband of the warrior responsible for the injury."],
+          ["6", "Warband type", "All warbands of that type."]
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table-arm-wound",
+    "name": "Arm Wound Follow-up",
+    "category": "injury",
+    "text": "After a Hero rolls Arm Wound on the Heroes' Serious Injuries chart, roll D6 to determine whether the arm is amputated or the Hero misses the next game.",
+    "source": "The New Mordheimer: Serious Injuries",
+    "sourceUrl": "https://mordheimer.net/docs/campaigns",
+    "page": "Arm Wound",
+    "tags": ["after battle", "serious injury", "arm wound", "table", "d6", "miss next game"],
+    "aliases": ["arm wound table", "arm wound follow-up"],
+    "tables": [
+      {
+        "caption": "Arm Wound Follow-up",
+        "columns": ["D6", "Result", "Campaign effect"],
+        "rows": [
+          ["1", "Amputated arm", "The Hero may only use a single one-handed weapon from now on."],
+          ["2-6", "Miss next game", "The Hero misses the next game."]
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table-madness",
+    "name": "Madness Follow-up",
+    "category": "injury",
+    "text": "After a Hero rolls Madness on the Heroes' Serious Injuries chart, roll D6 to determine whether he suffers Stupidity or Frenzy from now on.",
+    "source": "The New Mordheimer: Serious Injuries",
+    "sourceUrl": "https://mordheimer.net/docs/campaigns",
+    "page": "Madness",
+    "tags": ["after battle", "serious injury", "madness", "stupidity", "frenzy", "table", "d6"],
+    "aliases": ["madness table", "madness follow-up"],
+    "tables": [
+      {
+        "caption": "Madness Follow-up",
+        "columns": ["D6", "Result", "Campaign effect"],
+        "rows": [
+          ["1-3", "Stupidity", "The Hero suffers from Stupidity from now on."],
+          ["4-6", "Frenzy", "The Hero suffers from Frenzy from now on."]
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table-smashed-leg",
+    "name": "Smashed Leg Follow-up",
+    "category": "injury",
+    "text": "After a Hero rolls Smashed Leg on the Heroes' Serious Injuries chart, roll D6 to determine whether the Hero may no longer run or misses the next game.",
+    "source": "The New Mordheimer: Serious Injuries",
+    "sourceUrl": "https://mordheimer.net/docs/campaigns",
+    "page": "Smashed Leg",
+    "tags": ["after battle", "serious injury", "smashed leg", "table", "d6", "miss next game"],
+    "aliases": ["smashed leg table", "smashed leg follow-up"],
+    "tables": [
+      {
+        "caption": "Smashed Leg Follow-up",
+        "columns": ["D6", "Result", "Campaign effect"],
+        "rows": [
+          ["1", "May not run", "The Hero may not run any more, but may still charge."],
+          ["2-6", "Miss next game", "The Hero misses the next game."]
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table-deep-wound",
+    "name": "Deep Wound Recovery",
+    "category": "injury",
+    "text": "After a Hero rolls Deep Wound on the Heroes' Serious Injuries chart, roll D3 to determine how many games he misses while recovering.",
+    "source": "The New Mordheimer: Serious Injuries",
+    "sourceUrl": "https://mordheimer.net/docs/campaigns",
+    "page": "Deep Wound",
+    "tags": ["after battle", "serious injury", "deep wound", "table", "d3", "miss next game"],
+    "aliases": ["deep wound table", "deep wound recovery"],
+    "tables": [
+      {
+        "caption": "Deep Wound Recovery",
+        "columns": ["D6", "D3 result", "Campaign effect"],
+        "rows": [
+          ["1-2", "1 game", "The Hero misses the next 1 game while recovering."],
+          ["3-4", "2 games", "The Hero misses the next 2 games while recovering."],
+          ["5-6", "3 games", "The Hero misses the next 3 games while recovering."]
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table-captured-sale",
+    "name": "Captured Sale To Slavers",
+    "category": "injury",
+    "text": "If a captured Hero is sold to slavers, roll D6 and multiply by 5 to determine the gold crowns received.",
+    "source": "The New Mordheimer: Serious Injuries",
+    "sourceUrl": "https://mordheimer.net/docs/campaigns",
+    "page": "Captured",
+    "tags": ["after battle", "serious injury", "captured", "slavers", "table", "d6", "income"],
+    "aliases": ["captured slavers", "sell captive", "sale to slavers"],
+    "tables": [
+      {
+        "caption": "Captured Sale To Slavers",
+        "columns": ["D6", "Income", "Campaign effect"],
+        "rows": [
+          ["1", "5 gc", "Captive sold to slavers for 5 gc."],
+          ["2", "10 gc", "Captive sold to slavers for 10 gc."],
+          ["3", "15 gc", "Captive sold to slavers for 15 gc."],
+          ["4", "20 gc", "Captive sold to slavers for 20 gc."],
+          ["5", "25 gc", "Captive sold to slavers for 25 gc."],
+          ["6", "30 gc", "Captive sold to slavers for 30 gc."]
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table-sold-to-pits-losing-injury",
+    "name": "Sold To The Pits Losing Injury",
+    "category": "injury",
+    "text": "If the Hero loses the pit fight, roll a D66 injury result from 11-35. Re-roll results outside that range.",
+    "source": "The New Mordheimer: Serious Injuries",
+    "sourceUrl": "https://mordheimer.net/docs/campaigns",
+    "page": "Sold To The Pits",
+    "tags": ["after battle", "serious injury", "sold to the pits", "pit fighter", "table", "d66"],
+    "aliases": ["sold to the pits injury", "pit fight injury"],
+    "tables": [
+      {
+        "caption": "Sold To The Pits Losing Injury",
+        "columns": ["D66", "Result", "Campaign effect"],
+        "rows": [
+          ["11-15", "Dead", "The Hero dies in the pits."],
+          ["16-21", "Multiple Injuries", "Resolve Multiple Injuries as normal, re-rolling Dead, Captured and further Multiple Injuries."],
+          ["22", "Leg Wound", "-1 Movement permanently."],
+          ["23", "Arm Wound", "Roll D6: 1 means the arm is amputated and the Hero may only use one one-handed weapon; 2-6 means miss next game."],
+          ["24", "Madness", "Roll D6: 1-3 Stupidity; 4-6 Frenzy."],
+          ["25", "Smashed Leg", "Roll D6: 1 means the Hero may not run but may charge; 2-6 means miss next game."],
+          ["26", "Chest Wound", "-1 Toughness permanently."],
+          ["31", "Blinded In One Eye", "-1 Ballistic Skill permanently. Retire if later blinded in the remaining eye."],
+          ["32", "Old Battle Wound", "Before each future battle roll D6; on 1 the Hero misses that battle."],
+          ["33", "Nervous Condition", "-1 Initiative permanently."],
+          ["34", "Hand Injury", "-1 Weapon Skill permanently."],
+          ["35", "Deep Wound", "Miss the next D3 games."]
+        ]
+      }
+    ]
+  },
+  {
     "id": "table-henchmen-injuries",
     "name": "Henchmen Injuries",
     "category": "misc",
@@ -1542,6 +1706,31 @@
           ["6", "120 gc", "110 gc", "100 gc", "90 gc", "80 gc", "70 gc"],
           ["7", "145 gc", "130 gc", "120 gc", "110 gc", "100 gc", "90 gc"],
           ["8+", "155 gc", "140 gc", "130 gc", "120 gc", "110 gc", "100 gc"]
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table-magical-artefacts",
+    "name": "Magical Artefacts",
+    "category": "equipment",
+    "text": "When an exploration result says a magical artefact is found, roll D6 on this table. In a campaign, each magical artefact should only appear once; if the rolled artefact is already in someone else's possession, roll again.",
+    "source": "The New Mordheimer: Income",
+    "sourceUrl": "https://mordheimer.net/docs/campaigns/income",
+    "page": "Magical artefacts table",
+    "tags": ["after battle", "exploration", "magical artefact", "equipment", "table", "d6"],
+    "aliases": ["magical artefact table", "magic artefacts", "artefacts table"],
+    "tables": [
+      {
+        "caption": "Magical Artefacts",
+        "columns": ["D6", "Artefact", "Campaign effect"],
+        "rows": [
+          ["1", "The Boots and Rope of Pieter", "The wearer moves normally over difficult terrain and vertical surfaces, adding horizontal and vertical distance together. Initiative tests are still needed for jumping gaps."],
+          ["2", "The Count of Ventimiglia's Misericordia", "Treat as a sword. A wounded enemy is stunned on 1-3, or out of action on 4-6. Undead are knocked down as normal instead of stunned."],
+          ["3", "Att'la's Plate Mail", "Gromril armour. The wearer is immune to spells, may move through solid objects, and gains +1 Wound even if this exceeds the normal maximum."],
+          ["4", "Bow of Seeking", "Treat as an Elven Bow that hits on 2+ regardless of modifiers. Its arrows count as Hunting Arrows. The shooter may pick any visible target, but must target an eligible Dwarf if one is available and cannot shoot at Elves."],
+          ["5", "Executioner's Hood", "The wearer is always frenzied, gains +1 Strength in close combat, and will not leave combat. If a stunned or knocked down model is within charge range at the start of the wearer's turn, the wearer charges the closest one, even if friendly."],
+          ["6", "All-seeing Eye of Numas", "The bearer can see hidden and out-of-sight models, rolls two exploration dice after battle, and has an unmodified 6+ save against shooting and close combat. Animals are frenzied when fighting the bearer."]
         ]
       }
     ]
@@ -1715,12 +1904,12 @@
     "id": "injury-bitter-enmity",
     "name": "Bitter Enmity",
     "category": "injury",
-    "text": "D66 56. The hero recovers but gains Hatred. Roll D6 to determine whether he hates the individual who injured him, that warband's leader, the whole responsible warband, or all warbands of that type.",
+    "text": "D66 56. The hero recovers but gains Hatred. Roll D6 on the Bitter Enmity Hatred table to determine whether he hates the individual who injured him, that warband's leader, the whole responsible warband, or all warbands of that type.",
     "source": "The New Mordheimer: Serious Injuries",
     "sourceUrl": "https://mordheimer.net/docs/campaigns",
     "page": "Heroes' serious injuries chart",
     "tags": ["after battle", "serious injury", "hatred"],
-    "aliases": ["bitter enmity", "bitter enmity / hatred"]
+    "aliases": ["bitter enmity", "bitter enmity / hatred", "bitter enmity hatred roll"]
   },
   {
     "id": "injury-captured",

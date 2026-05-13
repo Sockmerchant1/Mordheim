@@ -615,6 +615,21 @@ h3 {
   --badge-edge: #2d431e;
 }
 
+.badge-black-orcs {
+  --badge-bg: #44513f;
+  --badge-edge: #1e2a1c;
+}
+
+.badge-beastmen-raiders {
+  --badge-bg: #6d5433;
+  --badge-edge: #352617;
+}
+
+.badge-dwarf-treasure-hunters {
+  --badge-bg: #7d6a48;
+  --badge-edge: #3f3322;
+}
+
 .badge-shadow-warriors {
   --badge-bg: #596779;
   --badge-edge: #29313d;
@@ -2315,6 +2330,77 @@ button.blocked,
   justify-content: space-between;
 }
 
+.after-report-summary {
+  background: rgba(255, 250, 240, 0.72);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(180px, 1.1fr) minmax(280px, 2fr) minmax(180px, 0.9fr);
+  padding: 0.85rem;
+}
+
+.after-report-current,
+.after-report-attention {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.after-report-current strong,
+.after-report-attention strong {
+  font-size: 1.05rem;
+}
+
+.after-report-current p,
+.after-report-attention p {
+  color: var(--muted);
+  margin: 0;
+}
+
+.after-report-metrics {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.after-report-metrics button {
+  align-items: start;
+  background: rgba(255, 250, 240, 0.82);
+  display: grid;
+  gap: 0.15rem;
+  justify-content: stretch;
+  min-height: 74px;
+  text-align: left;
+}
+
+.after-report-metrics button strong {
+  font-size: 1.25rem;
+}
+
+.after-report-metrics button small,
+.after-steps button small {
+  color: var(--muted);
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.after-report-attention {
+  border-radius: 8px;
+  padding: 0.7rem;
+}
+
+.after-report-attention.ready {
+  background: rgba(94, 125, 68, 0.12);
+  border: 1px solid rgba(94, 125, 68, 0.28);
+}
+
+.after-report-attention.needs-work {
+  background: rgba(143, 33, 27, 0.1);
+  border: 1px solid rgba(143, 33, 27, 0.26);
+}
+
 .after-steps {
   display: flex;
   flex-wrap: wrap;
@@ -2322,14 +2408,22 @@ button.blocked,
 }
 
 .after-steps button {
+  align-items: start;
+  display: grid;
+  gap: 0.12rem;
   min-height: 36px;
   padding: 0.4rem 0.6rem;
+  text-align: left;
 }
 
 .after-steps button.active {
   background: var(--accent);
   border-color: var(--accent);
   color: #ffffff;
+}
+
+.after-steps button.active small {
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .after-step-body {
@@ -2340,6 +2434,16 @@ button.blocked,
   display: flex;
   gap: 0.6rem;
   justify-content: flex-end;
+}
+
+.after-step-blocker {
+  background: rgba(143, 33, 27, 0.1);
+  border: 1px solid rgba(143, 33, 27, 0.24);
+  border-radius: 8px;
+  color: var(--accent);
+  font-weight: 800;
+  margin: 0.65rem 0 0;
+  padding: 0.7rem;
 }
 
 .after-toggle {
@@ -2366,6 +2470,43 @@ button.blocked,
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 0.75rem;
+}
+
+.after-action-cards {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  margin: 0.7rem 0;
+}
+
+.after-action-cards article {
+  background: rgba(255, 250, 240, 0.68);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.7rem;
+}
+
+.after-action-cards span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.after-action-cards strong {
+  font-size: 1.2rem;
+}
+
+.after-action-cards p {
+  color: var(--muted);
+  margin: 0;
+}
+
+.after-action-cards button {
+  justify-content: center;
+  margin-top: 0.25rem;
 }
 
 .multiple-injuries-box {
@@ -2416,6 +2557,45 @@ button.blocked,
   margin-bottom: 0.75rem;
 }
 
+.xp-panel-details {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.xp-panel-details summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  list-style: none;
+}
+
+.xp-panel-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.xp-panel-details summary::after {
+  color: var(--muted);
+  content: "Open";
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 900;
+  margin-left: 0.5rem;
+  text-transform: uppercase;
+}
+
+.xp-panel-details[open] summary::after {
+  content: "Close";
+}
+
+.xp-summary-stack {
+  align-items: end;
+  display: grid;
+  gap: 0.25rem;
+  justify-items: end;
+}
+
 .xp-panel p,
 .review-block p {
   color: var(--muted);
@@ -2429,8 +2609,82 @@ button.blocked,
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
+.quick-xp {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.65rem 0;
+}
+
+.quick-xp.compact button {
+  min-height: 34px;
+  padding-block: 0.35rem;
+}
+
+.optional-after-fields {
+  background: rgba(255, 250, 240, 0.5);
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.65rem;
+  padding: 0.65rem;
+}
+
+.optional-after-fields summary {
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.resolution-flow {
+  counter-reset: resolution;
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+.resolution-flow li {
+  background: rgba(255, 250, 240, 0.55);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 0.5rem;
+}
+
+.resolution-flow li::before {
+  counter-increment: resolution;
+  content: counter(resolution) ". ";
+}
+
+.resolution-flow li.current {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.resolution-flow li.done {
+  background: rgba(94, 125, 68, 0.12);
+  border-color: rgba(94, 125, 68, 0.28);
+  color: #4f6a39;
+}
+
 .transaction-row {
   align-items: end;
+}
+
+.automatic-update-list {
+  background: rgba(255, 250, 240, 0.5);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.review-report-lead {
+  margin-top: 0;
 }
 
 .review-grid {
@@ -2482,8 +2736,13 @@ button.blocked,
   .play-controls,
   .campaign-grid,
   .campaign-grid.wide,
+  .after-report-summary,
   .scheduler-layout {
     grid-template-columns: 1fr;
+  }
+
+  .after-report-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .after-battle-header {
@@ -2599,6 +2858,8 @@ button.blocked,
 
   .metric-grid,
   .play-metrics,
+  .after-report-metrics,
+  .resolution-flow,
   .review-grid {
     grid-template-columns: 1fr;
   }

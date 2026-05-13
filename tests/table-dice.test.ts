@@ -33,6 +33,40 @@ describe("smart table dice helpers", () => {
     expect(roll.rowIndex).toBeGreaterThanOrEqual(0);
   });
 
+  it("rolls Bitter Enmity hatred targets from its follow-up table", () => {
+    const lowRoll = createTableRoll(
+      records,
+      { kind: "d6", recordId: "table-bitter-enmity", tableCaption: "Bitter Enmity Hatred" },
+      () => 0
+    );
+    const highRoll = createTableRoll(
+      records,
+      { kind: "d6", recordId: "table-bitter-enmity", tableCaption: "Bitter Enmity Hatred" },
+      () => 0.99
+    );
+
+    expect(lowRoll.rollValue).toBe(1);
+    expect(lowRoll.result).toBe("Individual");
+    expect(lowRoll.effect).toContain("individual who caused the injury");
+    expect(highRoll.result).toBe("Warband type");
+  });
+
+  it("matches immediate serious injury follow-up tables", () => {
+    const armWound = findTableRowForRoll(records, "table-arm-wound", 1, "Arm Wound Follow-up");
+    const madness = findTableRowForRoll(records, "table-madness", 6, "Madness Follow-up");
+    const smashedLeg = findTableRowForRoll(records, "table-smashed-leg", 4, "Smashed Leg Follow-up");
+    const deepWound = findTableRowForRoll(records, "table-deep-wound", 5, "Deep Wound Recovery");
+    const capturedSale = findTableRowForRoll(records, "table-captured-sale", 6, "Captured Sale To Slavers");
+    const pitLoss = findTableRowForRoll(records, "table-sold-to-pits-losing-injury", 35, "Sold To The Pits Losing Injury");
+
+    expect(armWound?.result).toBe("Amputated arm");
+    expect(madness?.result).toBe("Frenzy");
+    expect(smashedLeg?.result).toBe("Miss next game");
+    expect(deepWound?.result).toBe("3 games");
+    expect(capturedSale?.result).toBe("30 gc");
+    expect(pitLoss?.result).toBe("Deep Wound");
+  });
+
   it("summarises exploration dice with shard totals and combinations", () => {
     const summary = getExplorationDiceSummary(records, [1, 3, 3, 6]);
 
@@ -71,6 +105,31 @@ describe("smart table dice helpers", () => {
 
     expect(followUp.wyrdstoneDelta).toBe(3);
     expect(followUp.outcome).toContain("Wardog");
+  });
+
+  it("resolves Noble's Villa magical artefact rolls", () => {
+    const summary = getExplorationDiceSummary(records, [6, 6, 6, 6, 6, 6]);
+    const randomValues = [0.99, 0.6];
+    const followUp = rollExplorationFollowUp(summary.combinations[0], () => randomValues.shift() ?? 0, records);
+
+    expect(followUp.outcome).toContain("found a magical artefact");
+    expect(followUp.outcome).toContain("Bow of Seeking");
+    expect(followUp.diceValues).toEqual([6, 4]);
+  });
+
+  it("resolves Hidden Treasure magical artefact finds", () => {
+    const summary = getExplorationDiceSummary(records, [2, 2, 2, 2, 2, 2]);
+    const randomValues = [
+      0.99,
+      0,
+      0, 0, 0, 0, 0,
+      0.99, 0.99, 0.99, 0.99, 0.99, 0.99,
+      0.8
+    ];
+    const followUp = rollExplorationFollowUp(summary.combinations[0], () => randomValues.shift() ?? 0, records);
+
+    expect(followUp.outcome).toContain("Magical Artefact found");
+    expect(followUp.outcome).toContain("Executioner's Hood");
   });
 
   it("rolls Multiple Injuries follow-ups and rerolls forbidden outcomes", () => {

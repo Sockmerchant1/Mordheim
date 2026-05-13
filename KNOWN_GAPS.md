@@ -1,6 +1,6 @@
 # Known Gaps
 
-- Witch Hunters, the three official Mercenary variants, Sisters of Sigmar, Carnival of Chaos, Skaven, Skaven of Clan Pestilens, Undead, Orc Mob, Shadow Warriors, Lizardmen, and Forest Goblins are implemented and covered by rules-engine verification.
+- Witch Hunters, the three official Mercenary variants, Sisters of Sigmar, Carnival of Chaos, Skaven, Skaven of Clan Pestilens, Undead, Orc Mob, Dwarf Treasure Hunters, Beastmen Raiders, Shadow Warriors, Lizardmen, Forest Goblins, and Black Orcs are implemented and covered by rules-engine verification.
 - Warband index discovery is implemented, but most discovered warbands are still `not_started`.
 - Trading post rarity, rare item search, campaign discounts and selling rules are not fully automated.
 - Play Mode and the After Battle workflow are implemented. Serious injury and exploration rolls now have dice/table helpers, but trading availability and most roster update details remain manual entry by design.
@@ -17,6 +17,8 @@
 - Skaven validates roster composition, Skaven-only equipment, fighting claws exclusivity, Tail Fighting's extra tail weapon allowance, Horned Rat spell lookups and Rat Ogre large-creature rating.
 - Undead validates roster composition, Vampire/Necromancer/Dreg limits, Dire Wolf limits, no-equipment fighters, Necromancy spell lookups and Undead special rules.
 - Orc Mob validates roster composition, Goblin-to-Orc and Cave Squig-to-Goblin ratio limits, Shaman armour limits, Troll limits, Goblin special equipment dependencies, Orc special skills and Waaagh! Magic lookups.
+- Black Orcs validates roster composition, Boss/Black Orc/Young'un/Nutta/Troll limits, Shoota-to-Boy ratio, Black Orc Blood's one-per-warband limit, Proven Warrior prerequisites, Nuttaz equipment restrictions, Black Orc special skills and Troll upkeep lookup notes. Conditional Troll reduced-upkeep handling remains a manual post-game choice.
+- Beastmen Raiders validates roster composition, Chief/Shaman/Bestigor/Centigor/Gor/Warhound/Minotaur limits, Beastman and Ungor equipment lists, Shaman armour restriction, no normal Hired Swords, Beastmen special skills, Chaos Rituals, Warhound no-experience handling and Minotaur large-creature rating. Mutation purchases from the Mutant skill remain manual notes until mutation options are fully seeded.
 - Shadow Warriors validates roster composition, Shadow Master/Walker/Weaver limits, elf equipment restrictions, Shadow Warrior special skills, Powerful Build's Strength-skill access, Shadow Magic lookups and the Shadow Weaver armour casting restriction. Ithilmar weapon upgrades are modeled as separate Shadow Warrior creation-cost items rather than a general trading-post material system.
 - Lizardmen validates roster composition, Skink Priest/Totem Warrior/Great Crest limits, Saurus-to-Skink ratio limits, Kroxigor required halberd, no hired swords, Skink/Saurus equipment restrictions, Sacred Marking exclusivity, Lizardmen special skills and Lizardmen Magic lookups. Characteristic caps, full poison trading rules and Lustria exploration details remain manual.
 - Forest Goblins validates roster composition, Chieftain/Brave/Shaman/Red Toof/Slugga/Gigantic Spider limits, no-equipment Gigantic Spider, Forest Goblin equipment lists, Brave Animosity advance access, Forest Goblin Magic lookups and Gigantic Spider large-creature rating. Rare item search, mounted spider handling, poison assignment to a specific weapon and characteristic caps remain manual.
@@ -24,4 +26,4 @@
 - Hired sword upkeep and Dramatis Personae rating overrides are modeled but not fully seeded.
 - CSV export is not implemented. JSON export/import and browser-based PDF export are implemented; PDF export uses the browser print dialog's Save as PDF option.
 - SQLite uses Node 24 `node:sqlite` directly rather than Prisma or Drizzle.
-- In this sandbox, Vite/Vitest/Playwright package executables fail with `spawn EPERM`; TypeScript checks and the Node-native rules verification pass.
+- On machines without global Node/npm on PATH, use `Open Mordheim App.bat` or `run-local.ps1`; they use the bundled Node runtime when available.

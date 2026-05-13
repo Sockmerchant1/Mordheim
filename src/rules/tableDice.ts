@@ -120,7 +120,7 @@ export function hasExplorationFollowUp(combo: ExplorationCombination) {
   ]).has(combo.combination);
 }
 
-export function rollExplorationFollowUp(combo: ExplorationCombination, random = Math.random): ExplorationFollowUpResult {
+export function rollExplorationFollowUp(combo: ExplorationCombination, random = Math.random, records: TableLookupRecord[] = []): ExplorationFollowUpResult {
   const result = (outcome: string, diceValues: number[] = [], extras: Partial<ExplorationFollowUpResult> = {}): ExplorationFollowUpResult => ({
     combination: combo.combination,
     label: combo.label,
@@ -315,9 +315,11 @@ export function rollExplorationFollowUp(combo: ExplorationCombination, random = 
         rollChance("Holy Tome", 5, random),
         rollChance("Magical Artefact", 5, random)
       ];
+      const magicalArtefact = checks[5].success ? rollMagicalArtefact(records, random) : undefined;
       const diceValues = [wyrdstoneCheck, ...(wyrdstone ? [countToD3Die(wyrdstone)] : []), ...gold.diceValues, ...checks.map((check) => check.roll)];
+      if (magicalArtefact) diceValues.push(magicalArtefact.roll);
       return result(
-        `Hidden Treasure: ${wyrdstone ? `${wyrdstone} wyrdstone shard${wyrdstone === 1 ? "" : "s"}` : "no extra wyrdstone"}; ${gold.total * 5} gc; ${checks.map((check) => `${check.name} ${check.success ? "found" : "not found"} (${check.roll})`).join(", ")}.`,
+        `Hidden Treasure: ${wyrdstone ? `${wyrdstone} wyrdstone shard${wyrdstone === 1 ? "" : "s"}` : "no extra wyrdstone"}; ${gold.total * 5} gc; ${checks.map((check) => `${check.name} ${check.success ? "found" : "not found"} (${check.roll})`).join(", ")}${magicalArtefact ? `; ${magicalArtefact.text}` : ""}.`,
         diceValues,
         { goldDelta: gold.total * 5, wyrdstoneDelta: wyrdstone }
       );
@@ -374,7 +376,8 @@ export function rollExplorationFollowUp(combo: ExplorationCombination, random = 
         const vials = rollD6(random);
         return result(`Noble's Villa roll ${tableRoll}: gain ${vials} vial${vials === 1 ? "" : "s"} of Crimson Shade.`, [tableRoll, vials]);
       }
-      return result(`Noble's Villa roll ${tableRoll}: roll on the Magical Artefacts table.`, [tableRoll]);
+      const magicalArtefact = rollMagicalArtefact(records, random);
+      return result(`Noble's Villa roll ${tableRoll}: found a magical artefact. ${magicalArtefact.text}`, [tableRoll, magicalArtefact.roll]);
     }
     default:
       return result(combo.effect ? `Resolve manually: ${combo.effect}` : "No follow-up roll is listed for this result.");
@@ -685,6 +688,18 @@ function rollChance(name: string, target: number, random = Math.random) {
     name,
     roll,
     success: roll >= target
+  };
+}
+
+function rollMagicalArtefact(records: TableLookupRecord[], random = Math.random) {
+  const roll = rollD6(random);
+  const match = findTableRowForRoll(records, "table-magical-artefacts", roll, "Magical Artefacts");
+  const name = match?.result ?? `Magical Artefact ${roll}`;
+  const effect = match?.effect ? ` - ${match.effect}` : "";
+  return {
+    roll,
+    name,
+    text: `Magical Artefacts roll ${roll}: ${name}${effect}`
   };
 }
 

@@ -46,6 +46,16 @@
       "skillIds": ["ard-ead", "waaagh-charge", "ere-we-go", "da-cunnin-plan", "well-ard", "eadbasher"]
     },
     {
+      "id": "black-orc-special",
+      "name": "Black Orc Special",
+      "skillIds": ["proven-warrior", "black-orc-ard-ead", "black-orc-waaagh", "black-orc-ere-we-go", "black-orc-da-cunnin-plan", "black-orc-eadbasher"]
+    },
+    {
+      "id": "beastmen-special",
+      "name": "Beastmen Special",
+      "skillIds": ["shaggy-hide", "mutant", "fearless", "horned-one", "bellowing-roar", "manhater"]
+    },
+    {
       "id": "shadow-warrior-special",
       "name": "Shadow Warrior Special",
       "skillIds": ["shadow-infiltration", "see-in-shadows", "hide-in-shadows", "sniper", "powerful-build", "master-of-runes"]
@@ -59,6 +69,16 @@
       "id": "forest-goblin-special",
       "name": "Forest Goblin Special",
       "skillIds": ["shed-animosity"]
+    },
+    {
+      "id": "dwarf-special",
+      "name": "Dwarf Special",
+      "skillIds": ["master-of-blades", "extra-tough", "resource-hunter", "true-grit", "thick-skull"]
+    },
+    {
+      "id": "troll-slayer-special",
+      "name": "Troll Slayer Special",
+      "skillIds": ["troll-slayer-ferocious-charge", "troll-slayer-monster-slayer", "troll-slayer-berserker"]
     }
   ],
   "skills": [
@@ -474,6 +494,155 @@
       "relatedRuleIds": ["battle-knocked-down", "battle-stunned"]
     },
     {
+      "id": "proven-warrior",
+      "name": "Proven Warrior",
+      "categoryId": "black-orc-special",
+      "effectSummary": "The upgraded Young'un is now treated as a full Black Orc Warrior while retaining the Young'un title. He follows Black Orc rules, uses the Black Orc equipment list and gains the same skill access as a Black Orc.",
+      "restrictions": "Black Orc Young'un only; requires the Black Orc Blood upgrade and 25 experience.",
+      "sourceDocumentId": "nc-black-orcs",
+      "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
+      "pageRef": "Black Orcs p. 2",
+      "relatedRuleIds": ["black-orc-blood", "black-orc-natural-armour"],
+      "validation": {
+        "allowedFighterTypeIds": ["black-orc-youngun"],
+        "requiredSpecialRuleIds": [],
+        "requiredSkillIds": [],
+        "requiredEquipmentItemIds": ["black-orc-blood-upgrade"],
+        "grantsSkillCategoryIds": ["combat", "shooting", "strength", "speed", "black-orc-special"],
+        "grantsEquipmentListIds": ["black-orc-hero-equipment"],
+        "minimumExperience": 25
+      }
+    },
+    {
+      "id": "black-orc-ard-ead",
+      "name": "'Ard Ead",
+      "categoryId": "black-orc-special",
+      "effectSummary": "The warrior has a 3+ save to treat stunned as knocked down instead. If he also wears a helmet, this becomes 2+ and replaces the normal helmet rule.",
+      "restrictions": "Black Orc heroes with access to the Black Orc Special skill list.",
+      "sourceDocumentId": "nc-black-orcs",
+      "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
+      "pageRef": "Black Orcs p. 2",
+      "relatedRuleIds": ["battle-stunned", "battle-knocked-down"]
+    },
+    {
+      "id": "black-orc-waaagh",
+      "name": "Waaagh!",
+      "categoryId": "black-orc-special",
+      "effectSummary": "The warrior may add +D3 inches to his charge range.",
+      "restrictions": "Black Orc heroes with access to the Black Orc Special skill list.",
+      "sourceDocumentId": "nc-black-orcs",
+      "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
+      "pageRef": "Black Orcs p. 2",
+      "relatedRuleIds": []
+    },
+    {
+      "id": "black-orc-ere-we-go",
+      "name": "'Ere We Go!",
+      "categoryId": "black-orc-special",
+      "effectSummary": "The model may ignore Fear and Terror tests when charging.",
+      "restrictions": "Black Orc heroes with access to the Black Orc Special skill list.",
+      "sourceDocumentId": "nc-black-orcs",
+      "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
+      "pageRef": "Black Orcs p. 2",
+      "relatedRuleIds": ["fear"]
+    },
+    {
+      "id": "black-orc-da-cunnin-plan",
+      "name": "Da Cunnin' Plan",
+      "categoryId": "black-orc-special",
+      "effectSummary": "The warband may re-roll failed Rout tests as long as the Boss is not out of action.",
+      "restrictions": "Black Orc Boss only.",
+      "sourceDocumentId": "nc-black-orcs",
+      "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
+      "pageRef": "Black Orcs p. 2",
+      "relatedRuleIds": ["leader"],
+      "validation": {
+        "allowedFighterTypeIds": ["black-orc-boss"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "black-orc-eadbasher",
+      "name": "'Eadbasher",
+      "categoryId": "black-orc-special",
+      "effectSummary": "Knocked down results caused by the warrior in hand-to-hand combat count as stunned instead.",
+      "restrictions": "Black Orc heroes with access to the Black Orc Special skill list.",
+      "sourceDocumentId": "nc-black-orcs",
+      "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
+      "pageRef": "Black Orcs p. 2",
+      "relatedRuleIds": ["battle-knocked-down", "battle-stunned"]
+    },
+    {
+      "id": "shaggy-hide",
+      "name": "Shaggy Hide",
+      "categoryId": "beastmen-special",
+      "effectSummary": "The Beastman gains a 6+ armour save from its shaggy hide. This can be combined with other armour as normal.",
+      "restrictions": "Beastmen Heroes with access to the Beastmen Special skill list.",
+      "sourceDocumentId": "eif-beastmen-raiders",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Beastmen%2C%20Errata%27d.pdf",
+      "pageRef": "Beastmen Raiders p. 7",
+      "relatedRuleIds": []
+    },
+    {
+      "id": "mutant",
+      "name": "Mutant",
+      "categoryId": "beastmen-special",
+      "effectSummary": "The Beastman may buy one mutation. The exact mutation purchase remains a manual roster note until mutation options are fully seeded.",
+      "restrictions": "Beastmen Heroes with access to the Beastmen Special skill list.",
+      "sourceDocumentId": "eif-beastmen-raiders",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Beastmen%2C%20Errata%27d.pdf",
+      "pageRef": "Beastmen Raiders p. 7",
+      "relatedRuleIds": []
+    },
+    {
+      "id": "fearless",
+      "name": "Fearless",
+      "categoryId": "beastmen-special",
+      "effectSummary": "The Beastman is immune to fear, terror and All Alone tests.",
+      "restrictions": "Beastmen Heroes with access to the Beastmen Special skill list.",
+      "sourceDocumentId": "eif-beastmen-raiders",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Beastmen%2C%20Errata%27d.pdf",
+      "pageRef": "Beastmen Raiders p. 7",
+      "relatedRuleIds": ["fear"]
+    },
+    {
+      "id": "horned-one",
+      "name": "Horned One",
+      "categoryId": "beastmen-special",
+      "effectSummary": "On a turn in which the Beastman charges, he makes one additional attack with his basic Strength using his horns.",
+      "restrictions": "Beastmen Heroes with access to the Beastmen Special skill list.",
+      "sourceDocumentId": "eif-beastmen-raiders",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Beastmen%2C%20Errata%27d.pdf",
+      "pageRef": "Beastmen Raiders p. 7",
+      "relatedRuleIds": []
+    },
+    {
+      "id": "bellowing-roar",
+      "name": "Bellowing Roar",
+      "categoryId": "beastmen-special",
+      "effectSummary": "The Beastmen Chief may re-roll failed Rout tests.",
+      "restrictions": "Beastmen Chief only.",
+      "sourceDocumentId": "eif-beastmen-raiders",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Beastmen%2C%20Errata%27d.pdf",
+      "pageRef": "Beastmen Raiders p. 7",
+      "relatedRuleIds": ["leader", "rout-test"],
+      "validation": {
+        "allowedFighterTypeIds": ["beastman-chief"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "manhater",
+      "name": "Manhater",
+      "categoryId": "beastmen-special",
+      "effectSummary": "The Beastman is affected by Hatred when fighting Human warbands.",
+      "restrictions": "Beastmen Heroes with access to the Beastmen Special skill list.",
+      "sourceDocumentId": "eif-beastmen-raiders",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Beastmen%2C%20Errata%27d.pdf",
+      "pageRef": "Beastmen Raiders p. 7",
+      "relatedRuleIds": []
+    },
+    {
       "id": "shadow-infiltration",
       "name": "Infiltration",
       "categoryId": "shadow-warrior-special",
@@ -609,7 +778,7 @@
         "requiredSpecialRuleIds": []
       }
     },
-    {
+  {
       "id": "shed-animosity",
       "name": "Shed Animosity",
       "categoryId": "forest-goblin-special",
@@ -621,6 +790,106 @@
       "relatedRuleIds": ["forest-goblin-animosity"],
       "validation": {
         "allowedFighterTypeIds": ["forest-goblin-brave"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "master-of-blades",
+      "name": "Master of Blades",
+      "categoryId": "dwarf-special",
+      "effectSummary": "When using a weapon with Parry, the Dwarf parries if he beats or matches the enemy's highest to-hit roll. With two parry weapons he may parry two attacks; with two Dwarf Axes he may re-roll failed parries.",
+      "restrictions": "Dwarf Heroes with access to the Dwarf Special skill list.",
+      "sourceDocumentId": "mhr-dwarf-treasure-hunters",
+      "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+      "pageRef": "Dwarf Treasure Hunters p. 24",
+      "relatedRuleIds": ["dwarf-axe-parry"]
+    },
+    {
+      "id": "extra-tough",
+      "name": "Extra Tough",
+      "categoryId": "dwarf-special",
+      "effectSummary": "After a game in which this Hero was taken out of action, he may re-roll once on the Heroes Serious Injury chart. The second result must be kept.",
+      "restrictions": "Dwarf Heroes with access to the Dwarf Special skill list.",
+      "sourceDocumentId": "mhr-dwarf-treasure-hunters",
+      "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+      "pageRef": "Dwarf Treasure Hunters p. 24",
+      "relatedRuleIds": ["serious-injuries"]
+    },
+    {
+      "id": "resource-hunter",
+      "name": "Resource Hunter",
+      "categoryId": "dwarf-special",
+      "effectSummary": "When rolling on the Exploration chart after a game, this Hero may modify one exploration die by +1 or -1.",
+      "restrictions": "Dwarf Heroes with access to the Dwarf Special skill list.",
+      "sourceDocumentId": "mhr-dwarf-treasure-hunters",
+      "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+      "pageRef": "Dwarf Treasure Hunters p. 24",
+      "relatedRuleIds": ["table-exploration"]
+    },
+    {
+      "id": "true-grit",
+      "name": "True Grit",
+      "categoryId": "dwarf-special",
+      "effectSummary": "When rolling on the Injury table for this Hero, treat 1-3 as knocked down, 4-5 as stunned, and 6 as out of action.",
+      "restrictions": "Dwarf Heroes with access to the Dwarf Special skill list.",
+      "sourceDocumentId": "mhr-dwarf-treasure-hunters",
+      "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+      "pageRef": "Dwarf Treasure Hunters p. 24",
+      "relatedRuleIds": ["dwarf-hard-to-kill"]
+    },
+    {
+      "id": "thick-skull",
+      "name": "Thick Skull",
+      "categoryId": "dwarf-special",
+      "effectSummary": "The Hero has a 3+ D6 save to treat a stunned result as knocked down instead. If he also wears a helmet, this becomes 2+ and replaces the normal helmet rule.",
+      "restrictions": "Dwarf Heroes with access to the Dwarf Special skill list.",
+      "sourceDocumentId": "mhr-dwarf-treasure-hunters",
+      "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+      "pageRef": "Dwarf Treasure Hunters p. 24",
+      "relatedRuleIds": ["dwarf-hard-head", "helmet"]
+    },
+    {
+      "id": "troll-slayer-ferocious-charge",
+      "name": "Ferocious Charge",
+      "categoryId": "troll-slayer-special",
+      "effectSummary": "The Slayer may double his Attacks on the turn he charges, but suffers -1 to hit for that turn.",
+      "restrictions": "Dwarf Troll Slayers with access to the Troll Slayer Special skill list.",
+      "sourceDocumentId": "mhr-dwarf-treasure-hunters",
+      "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+      "pageRef": "Dwarf Treasure Hunters p. 22",
+      "relatedRuleIds": ["deathwish"],
+      "validation": {
+        "allowedFighterTypeIds": ["dwarf-troll-slayer"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "troll-slayer-monster-slayer",
+      "name": "Monster Slayer",
+      "categoryId": "troll-slayer-special",
+      "effectSummary": "In close combat the Slayer always wounds on 4+ unless his modified Strength would already wound on a better roll.",
+      "restrictions": "Dwarf Troll Slayers with access to the Troll Slayer Special skill list.",
+      "sourceDocumentId": "mhr-dwarf-treasure-hunters",
+      "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+      "pageRef": "Dwarf Treasure Hunters p. 22",
+      "relatedRuleIds": ["deathwish"],
+      "validation": {
+        "allowedFighterTypeIds": ["dwarf-troll-slayer"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "troll-slayer-berserker",
+      "name": "Berserker",
+      "categoryId": "troll-slayer-special",
+      "effectSummary": "The Slayer adds +1 to close combat to-hit rolls during the turn in which he charges.",
+      "restrictions": "Dwarf Troll Slayers with access to the Troll Slayer Special skill list.",
+      "sourceDocumentId": "mhr-dwarf-treasure-hunters",
+      "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+      "pageRef": "Dwarf Treasure Hunters p. 22",
+      "relatedRuleIds": ["deathwish"],
+      "validation": {
+        "allowedFighterTypeIds": ["dwarf-troll-slayer"],
         "requiredSpecialRuleIds": []
       }
     }

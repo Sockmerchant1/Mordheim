@@ -56,6 +56,22 @@
     "notes": "Official Broheim-hosted Orc Mob warband PDF from Mordheim Annual material."
   },
   {
+    "id": "mhr-dwarf-treasure-hunters",
+    "title": "Dwarf Treasure Hunters",
+    "url": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1a",
+    "notes": "Official Broheim-hosted Dwarf Treasure Hunters warband PDF from Mordheim Annual material. The app stores concise rules summaries and page references."
+  },
+  {
+    "id": "eif-beastmen-raiders",
+    "title": "Beastmen Raiders",
+    "url": "https://broheim.net/downloads/warbands/unofficial/Beastmen%2C%20Errata%27d.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1a",
+    "notes": "Broheim-hosted Beastmen Raiders PDF from Empire in Flames material. The app stores concise rules summaries and page references."
+  },
+  {
     "id": "mhr-shadow-warriors",
     "title": "Shadow Warriors",
     "url": "https://broheim.net/downloads/warbands/unofficial/Shadow%20Warriors.pdf",
@@ -78,6 +94,14 @@
     "type": "warband_pdf",
     "broheimGrade": "1b",
     "notes": "Broheim-hosted Forest Goblins warband PDF from the Nemesis Crown supplement. The app stores concise rules summaries and page references."
+  },
+  {
+    "id": "nc-black-orcs",
+    "title": "Black Orcs",
+    "url": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1b",
+    "notes": "Broheim-hosted Black Orcs warband PDF from the Nemesis Crown supplement. The app stores concise rules summaries and page references."
   },
   {
     "id": "tc29-skaven-pestilens",

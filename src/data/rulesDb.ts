@@ -4,7 +4,10 @@ import ruleReferences from "./ruleReferences.json";
 import skillsSeed from "./skills.json";
 import sourceDocuments from "./sources.json";
 import specialRules from "./specialRules.json";
+import beastmenRaiders from "./warbands/beastmen-raiders.json";
+import blackOrcs from "./warbands/black-orcs.json";
 import carnivalOfChaos from "./warbands/carnival-of-chaos.json";
+import dwarfTreasureHunters from "./warbands/dwarf-treasure-hunters.json";
 import forestGoblins from "./warbands/forest-goblins.json";
 import lizardmen from "./warbands/lizardmen.json";
 import mercenaries from "./warbands/mercenaries.json";
@@ -26,6 +29,9 @@ const warbandSeeds = [
   warbandSeedSchema.parse(skaven),
   warbandSeedSchema.parse(undead),
   warbandSeedSchema.parse(orcMob),
+  warbandSeedSchema.parse(beastmenRaiders),
+  warbandSeedSchema.parse(blackOrcs),
+  warbandSeedSchema.parse(dwarfTreasureHunters),
   warbandSeedSchema.parse(shadowWarriors),
   warbandSeedSchema.parse(lizardmen),
   warbandSeedSchema.parse(forestGoblins),

@@ -154,6 +154,64 @@ import {
   tooManySluggas,
   validForestGoblins
 } from "./fixtures/forestGoblinRosters";
+import {
+  dwarfClansmanWithGromrilArmour,
+  dwarfNoNoble,
+  dwarfNobleWithResourceHunter,
+  dwarfSlayerWithBerserker,
+  dwarfSlayerWithCrossbow,
+  dwarfThundererWithDwarfAxe,
+  dwarfTwoNobles,
+  invalidDwarfSkill,
+  tooManyDwarfEngineers,
+  tooManyDwarfThunderers,
+  tooManyDwarfTrollSlayers,
+  tooManyDwarfWarriors,
+  validDwarfTreasureHunters
+} from "./fixtures/dwarfTreasureHunterRosters";
+import {
+  blackOrcWithBossOnlySkill,
+  blackOrcsNoBoss,
+  blackOrcsTwoBosses,
+  nuttaWithBow,
+  shootaWithDoubleHandedWeapon,
+  tooManyBlackOrcs,
+  tooManyBlackOrcTrolls,
+  tooManyBlackOrcWarriors,
+  tooManyBlackOrcYounguns,
+  tooManyNuttaz,
+  tooManyShootazForBoyz,
+  trollWithWeapon,
+  twoYoungunsWithBlackOrcBlood,
+  validBlackOrcs,
+  youngunWithProvenWarriorAndMightyBlow,
+  youngunWithProvenWarriorTooEarly,
+  youngunWithProvenWarriorWithoutUpgrade
+} from "./fixtures/blackOrcRosters";
+import {
+  beastmanWithBow,
+  beastmenNoChief,
+  beastmenTwoChiefs,
+  beastmenWithWarlock,
+  bestigorWithBellowingRoar,
+  chaosHoundWithExperience,
+  chiefWithBellowingRoar,
+  chiefWithChaosRitual,
+  invalidBeastmenSkill,
+  shamanWithArmour,
+  shamanWithChaosRitual,
+  tooManyBeastmenShamans,
+  tooManyBeastmenWarriors,
+  tooManyBestigors,
+  tooManyCentigors,
+  tooManyChaosHounds,
+  tooManyGors,
+  tooManyMinotaurs,
+  ungorWithHelmet,
+  validBeastmenMinotaur,
+  validBeastmenRaiders,
+  warhoundWithWeapon
+} from "./fixtures/beastmenRosters";
 
 describe("rules engine - Witch Hunters", () => {
   it("calculates pending advance thresholds from XP crossings", () => {
@@ -859,6 +917,233 @@ describe("rules engine - Forest Goblins", () => {
     expect(braveSkills.find((option) => option.item.id === "shed-animosity")?.allowed).toBe(true);
     expect(shamanSpells.find((option) => option.item.id === "forest-goblin-wind-of-gork")?.allowed).toBe(true);
     expect(chieftainSpells.find((option) => option.item.id === "forest-goblin-wind-of-gork")?.allowed).toBe(false);
+  });
+});
+
+describe("rules engine - Beastmen Raiders", () => {
+  it("loads the official Beastmen Raiders warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { officialOnly: true }).map((warband) => warband.id);
+    expect(ids).toContain("beastmen-raiders");
+  });
+
+  it("validates a basic starting Beastmen roster", () => {
+    expect(errorCodes(validBeastmenRaiders())).toEqual([]);
+    expect(calculateRosterCost(validBeastmenRaiders(), rulesDb)).toBe(419);
+    expect(calculateWarbandRating(validBeastmenRaiders(), rulesDb)).toBe(92);
+  });
+
+  it("requires exactly one Beastman Chief and enforces fighter caps", () => {
+    expect(codes(beastmenNoChief())).toContain("REQUIRED_LEADER");
+    expect(codes(beastmenTwoChiefs())).toContain("REQUIRED_LEADER");
+    expect(codes(tooManyBeastmenWarriors())).toContain("MAX_WARRIORS");
+    expect(codes(tooManyBeastmenShamans())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyBestigors())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyCentigors())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyGors())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyChaosHounds())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyMinotaurs())).toContain("FIGHTER_MAX_COUNT");
+  });
+
+  it("enforces Beastmen equipment lists and hired sword restrictions", () => {
+    expect(codes(shamanWithArmour())).toContain("INVALID_EQUIPMENT");
+    expect(codes(ungorWithHelmet())).toContain("INVALID_EQUIPMENT");
+    expect(codes(warhoundWithWeapon())).toContain("INVALID_EQUIPMENT");
+    expect(codes(beastmanWithBow())).toContain("INVALID_EQUIPMENT");
+    expect(codes(beastmenWithWarlock())).toContain("HIRED_SWORD_NOT_AVAILABLE");
+
+    const roster = validBeastmenRaiders();
+    const chiefOptions = getAllowedEquipment(roster.members[0], roster, rulesDb);
+    const shamanOptions = getAllowedEquipment(roster.members[1], roster, rulesDb);
+    const ungorOptions = getAllowedEquipment(roster.members[5], roster, rulesDb);
+
+    expect(chiefOptions.find((option) => option.item.id === "halberd")?.allowed).toBe(true);
+    expect(chiefOptions.find((option) => option.item.id === "bow")?.allowed).toBe(false);
+    expect(shamanOptions.find((option) => option.item.id === "light-armour")?.allowed).toBe(false);
+    expect(ungorOptions.find((option) => option.item.id === "spear")?.allowed).toBe(true);
+    expect(ungorOptions.find((option) => option.item.id === "helmet")?.allowed).toBe(false);
+  });
+
+  it("enforces Beastmen skills and Chaos Ritual access", () => {
+    expect(codes(invalidBeastmenSkill())).toContain("INVALID_SKILL");
+    expect(codes(bestigorWithBellowingRoar())).toContain("INVALID_SKILL");
+    expect(errorCodes(chiefWithBellowingRoar())).toEqual([]);
+    expect(errorCodes(shamanWithChaosRitual())).toEqual([]);
+    expect(codes(chiefWithChaosRitual())).toContain("INVALID_SPECIAL_RULE");
+
+    const roster = validBeastmenRaiders();
+    const chiefSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const bestigorSkills = getAllowedSkills(roster.members[2], roster, rulesDb);
+    const shamanRituals = getAllowedSpecialRules(roster.members[1], roster, rulesDb);
+    const chiefRituals = getAllowedSpecialRules(roster.members[0], roster, rulesDb);
+
+    expect(chiefSkills.find((option) => option.item.id === "bellowing-roar")?.allowed).toBe(true);
+    expect(bestigorSkills.find((option) => option.item.id === "bellowing-roar")?.allowed).toBe(false);
+    expect(shamanRituals.find((option) => option.item.id === "chaos-eye-of-god")?.allowed).toBe(true);
+    expect(chiefRituals.find((option) => option.item.id === "chaos-eye-of-god")?.allowed).toBe(false);
+  });
+
+  it("models Beastmen animal and large creature experience/rating", () => {
+    expect(codes(chaosHoundWithExperience())).toContain("EXPERIENCE_NOT_ALLOWED");
+    expect(errorCodes(validBeastmenMinotaur())).toEqual([]);
+    expect(calculateWarbandRating(validBeastmenMinotaur(), rulesDb)).toBe(50);
+  });
+
+  it("returns source-backed Beastmen lookup data", () => {
+    const chaosRituals = rulesDb.specialRules.find((rule) => rule.id === "chaos-rituals");
+    const hornedOne = rulesDb.skills.find((skill) => skill.id === "horned-one");
+    const warband = rulesDb.warbandTypes.find((item) => item.id === "beastmen-raiders");
+
+    expect(warband?.sourceDocumentId).toBe("eif-beastmen-raiders");
+    expect(chaosRituals?.relatedRuleIds).toContain("chaos-eye-of-god");
+    expect(hornedOne?.effectSummary).toContain("additional attack");
+  });
+});
+
+describe("rules engine - Black Orcs", () => {
+  it("loads the Grade 1b Black Orcs warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+    expect(ids).toContain("black-orcs");
+  });
+
+  it("validates a basic starting Black Orc roster", () => {
+    expect(errorCodes(validBlackOrcs())).toEqual([]);
+    expect(calculateRosterCost(validBlackOrcs(), rulesDb)).toBe(385);
+    expect(calculateWarbandRating(validBlackOrcs(), rulesDb)).toBe(68);
+  });
+
+  it("requires exactly one Black Orc Boss and enforces fighter caps", () => {
+    expect(codes(blackOrcsNoBoss())).toContain("REQUIRED_LEADER");
+    expect(codes(blackOrcsTwoBosses())).toContain("REQUIRED_LEADER");
+    expect(codes(tooManyBlackOrcWarriors())).toContain("MAX_WARRIORS");
+    expect(codes(tooManyBlackOrcs())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyBlackOrcYounguns())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyNuttaz())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyBlackOrcTrolls())).toContain("FIGHTER_MAX_COUNT");
+  });
+
+  it("enforces Black Orc warband ratios and equipment lists", () => {
+    expect(codes(tooManyShootazForBoyz())).toContain("FIGHTER_RATIO_LIMIT");
+    expect(codes(shootaWithDoubleHandedWeapon())).toContain("INVALID_EQUIPMENT");
+    expect(codes(nuttaWithBow())).toContain("INVALID_EQUIPMENT");
+    expect(codes(trollWithWeapon())).toContain("INVALID_EQUIPMENT");
+    expect(codes(twoYoungunsWithBlackOrcBlood())).toContain("EQUIPMENT_MAX_COUNT");
+
+    const roster = validBlackOrcs();
+    const bossOptions = getAllowedEquipment(roster.members[0], roster, rulesDb);
+    const youngunOptions = getAllowedEquipment({ ...roster.members[2], equipment: ["dagger", "axe"] }, roster, rulesDb);
+    const shootaOptions = getAllowedEquipment(roster.members[4], roster, rulesDb);
+    const nuttaOptions = getAllowedEquipment(roster.members[5], roster, rulesDb);
+
+    expect(bossOptions.find((option) => option.item.id === "black-orc-choppa")?.allowed).toBe(true);
+    expect(youngunOptions.find((option) => option.item.id === "black-orc-blood-upgrade")?.allowed).toBe(true);
+    expect(shootaOptions.find((option) => option.item.id === "bow")?.allowed).toBe(true);
+    expect(shootaOptions.find((option) => option.item.id === "double-handed-weapon")?.allowed).toBe(false);
+    expect(nuttaOptions.find((option) => option.item.id === "bow")?.allowed).toBe(false);
+    expect(nuttaOptions.find((option) => option.item.id === "light-armour")?.allowed).toBe(false);
+  });
+
+  it("enforces Black Orc skill restrictions and Proven Warrior prerequisites", () => {
+    expect(codes(blackOrcWithBossOnlySkill())).toContain("INVALID_SKILL");
+    expect(codes(youngunWithProvenWarriorWithoutUpgrade())).toContain("INVALID_SKILL");
+    expect(codes(youngunWithProvenWarriorTooEarly())).toContain("INVALID_SKILL");
+    expect(errorCodes(youngunWithProvenWarriorAndMightyBlow())).toEqual([]);
+
+    const roster = validBlackOrcs();
+    const bossSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const blackOrcSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+    const earlyYoungunSkills = getAllowedSkills(roster.members[2], roster, rulesDb);
+    const provenRoster = youngunWithProvenWarriorAndMightyBlow();
+    const provenYoungunSkills = getAllowedSkills(provenRoster.members[2], provenRoster, rulesDb);
+    const provenYoungunEquipment = getAllowedEquipment(provenRoster.members[2], provenRoster, rulesDb);
+
+    expect(bossSkills.find((option) => option.item.id === "black-orc-da-cunnin-plan")?.allowed).toBe(true);
+    expect(blackOrcSkills.find((option) => option.item.id === "black-orc-da-cunnin-plan")?.allowed).toBe(false);
+    expect(earlyYoungunSkills.find((option) => option.item.id === "proven-warrior")?.allowed).toBe(false);
+    expect(provenYoungunSkills.find((option) => option.item.id === "resilient")?.allowed).toBe(true);
+    expect(provenYoungunEquipment.find((option) => option.item.id === "heavy-armour")?.allowed).toBe(true);
+  });
+
+  it("returns source-backed Black Orc lookup data", () => {
+    const choppa = rulesDb.equipmentItems.find((item) => item.id === "black-orc-choppa");
+    const naturalArmour = rulesDb.specialRules.find((rule) => rule.id === "black-orc-natural-armour");
+    const provenWarrior = rulesDb.skills.find((skill) => skill.id === "proven-warrior");
+
+    expect(choppa?.sourceDocumentId).toBe("nc-black-orcs");
+    expect(choppa?.specialRuleIds).toContain("black-orc-choppa-rule");
+    expect(naturalArmour?.effectSummary).toContain("6+ armour save");
+    expect(provenWarrior?.validation.requiredEquipmentItemIds).toContain("black-orc-blood-upgrade");
+  });
+});
+
+describe("rules engine - Dwarf Treasure Hunters", () => {
+  it("loads the official Dwarf Treasure Hunters warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { officialOnly: true }).map((warband) => warband.id);
+    expect(ids).toContain("dwarf-treasure-hunters");
+  });
+
+  it("validates a basic starting Dwarf roster", () => {
+    expect(errorCodes(validDwarfTreasureHunters())).toEqual([]);
+    expect(calculateRosterCost(validDwarfTreasureHunters(), rulesDb)).toBe(454);
+    expect(calculateWarbandRating(validDwarfTreasureHunters(), rulesDb)).toBe(73);
+  });
+
+  it("requires exactly one Dwarf Noble", () => {
+    expect(codes(dwarfNoNoble())).toContain("REQUIRED_LEADER");
+    expect(codes(dwarfTwoNobles())).toContain("REQUIRED_LEADER");
+  });
+
+  it("enforces Dwarf fighter caps and warrior limit", () => {
+    expect(codes(tooManyDwarfWarriors())).toContain("MAX_WARRIORS");
+    expect(codes(tooManyDwarfEngineers())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyDwarfTrollSlayers())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyDwarfThunderers())).toContain("FIGHTER_MAX_COUNT");
+  });
+
+  it("enforces Dwarf equipment lists", () => {
+    expect(codes(dwarfThundererWithDwarfAxe())).toContain("INVALID_EQUIPMENT");
+    expect(codes(dwarfSlayerWithCrossbow())).toContain("INVALID_EQUIPMENT");
+    expect(errorCodes(dwarfClansmanWithGromrilArmour())).toEqual([]);
+
+    const roster = validDwarfTreasureHunters();
+    const nobleOptions = getAllowedEquipment(roster.members[0], roster, rulesDb);
+    const engineerOptions = getAllowedEquipment(roster.members[1], roster, rulesDb);
+    const slayerOptions = getAllowedEquipment(roster.members[2], roster, rulesDb);
+    const thundererOptions = getAllowedEquipment(roster.members[4], roster, rulesDb);
+
+    expect(nobleOptions.find((option) => option.item.id === "dwarf-axe")?.allowed).toBe(true);
+    expect(nobleOptions.find((option) => option.item.id === "gromril-armour")?.allowed).toBe(true);
+    expect(engineerOptions.find((option) => option.item.id === "handgun")?.allowed).toBe(true);
+    expect(engineerOptions.find((option) => option.item.id === "gromril-armour")?.allowed).toBe(false);
+    expect(slayerOptions.find((option) => option.item.id === "crossbow")?.allowed).toBe(false);
+    expect(thundererOptions.find((option) => option.item.id === "dwarf-axe")?.allowed).toBe(false);
+  });
+
+  it("enforces Dwarf and Troll Slayer skill tables", () => {
+    expect(codes(invalidDwarfSkill())).toContain("INVALID_SKILL");
+    expect(errorCodes(dwarfNobleWithResourceHunter())).toEqual([]);
+    expect(errorCodes(dwarfSlayerWithBerserker())).toEqual([]);
+
+    const roster = validDwarfTreasureHunters();
+    const nobleSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const engineerSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+    const slayerSkills = getAllowedSkills(roster.members[2], roster, rulesDb);
+
+    expect(nobleSkills.find((option) => option.item.id === "resource-hunter")?.allowed).toBe(true);
+    expect(nobleSkills.find((option) => option.item.id === "sprint")?.allowed).toBe(false);
+    expect(engineerSkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(false);
+    expect(slayerSkills.find((option) => option.item.id === "troll-slayer-berserker")?.allowed).toBe(true);
+    expect(slayerSkills.find((option) => option.item.id === "quick-shot")?.allowed).toBe(false);
+  });
+
+  it("returns source-backed Dwarf lookup data", () => {
+    const dwarfAxe = rulesDb.equipmentItems.find((item) => item.id === "dwarf-axe");
+    const hardToKill = rulesDb.specialRules.find((rule) => rule.id === "dwarf-hard-to-kill");
+    const resourceHunter = rulesDb.skills.find((skill) => skill.id === "resource-hunter");
+
+    expect(dwarfAxe?.sourceDocumentId).toBe("mhr-dwarf-treasure-hunters");
+    expect(dwarfAxe?.specialRuleIds).toContain("dwarf-axe-parry");
+    expect(hardToKill?.effectSummary).toContain("only a 6");
+    expect(resourceHunter?.pageRef).toContain("Dwarf Treasure Hunters");
   });
 });
 

@@ -1,0 +1,261 @@
+{
+  "warbandType": {
+    "id": "black-orcs",
+    "name": "Black Orcs",
+    "race": "Orcs & Goblins",
+    "broheimGrade": "1b",
+    "sourceCode": "NC",
+    "sourceDocumentId": "nc-black-orcs",
+    "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
+    "implementationStatus": "tested",
+    "startingGold": 500,
+    "minWarriors": 3,
+    "maxWarriors": 12,
+    "maxHeroes": 5,
+    "leaderFighterTypeId": "black-orc-boss",
+    "notes": "Nemesis Crown Black Orcs warband. Includes Black Orc skills, Shoota/Boy ratio, Young'un Black Orc Blood upgrade, Nuttaz rules and Troll upkeep notes."
+  },
+  "fighterTypes": [
+    {
+      "id": "black-orc-boss",
+      "warbandTypeId": "black-orcs",
+      "name": "Black Orc Boss",
+      "category": "hero",
+      "minCount": 1,
+      "maxCount": 1,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 90,
+      "startingExperience": 20,
+      "profile": { "M": 4, "WS": 4, "BS": 4, "S": 4, "T": 4, "W": 1, "I": 3, "A": 1, "Ld": 8 },
+      "equipmentListIds": ["black-orc-hero-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "strength", "speed", "black-orc-special"],
+      "specialRuleIds": ["leader", "black-orc-natural-armour", "oi-behave", "let-the-goons-do-the-work"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Required leader; includes Oi Behave! for nearby failed Animosity tests.",
+      "source": {
+        "sourceDocumentId": "nc-black-orcs",
+        "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
+        "pageRef": "Black Orcs p. 3",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "black-orc",
+      "warbandTypeId": "black-orcs",
+      "name": "Black Orc",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 60,
+      "startingExperience": 8,
+      "profile": { "M": 4, "WS": 4, "BS": 3, "S": 4, "T": 4, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["black-orc-hero-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "strength", "speed", "black-orc-special"],
+      "specialRuleIds": ["black-orc-natural-armour", "let-the-goons-do-the-work"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to two may be hired.",
+      "source": {
+        "sourceDocumentId": "nc-black-orcs",
+        "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
+        "pageRef": "Black Orcs p. 3",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "black-orc-youngun",
+      "warbandTypeId": "black-orcs",
+      "name": "Young'un",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 25,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 2, "BS": 2, "S": 3, "T": 4, "W": 1, "I": 2, "A": 1, "Ld": 6 },
+      "equipmentListIds": ["black-orc-youngun-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "black-orc-special"],
+      "specialRuleIds": [],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to two may be hired. One Young'un may buy Black Orc Blood and later take Proven Warrior at 25 XP.",
+      "source": {
+        "sourceDocumentId": "nc-black-orcs",
+        "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
+        "pageRef": "Black Orcs p. 3",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "black-orc-boy",
+      "warbandTypeId": "black-orcs",
+      "name": "Orc Boy",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": null,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 25,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 3, "S": 3, "T": 4, "W": 1, "I": 2, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["black-orc-boy-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["black-orc-warband-animosity"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Bought in groups of 1-5.",
+      "source": {
+        "sourceDocumentId": "nc-black-orcs",
+        "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
+        "pageRef": "Black Orcs p. 4",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "black-orc-shoota",
+      "warbandTypeId": "black-orcs",
+      "name": "Orc Shoota",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": null,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 25,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 3, "S": 3, "T": 4, "W": 1, "I": 2, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["black-orc-shoota-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["black-orc-warband-animosity", "uncommon-shootaz"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Shootaz may not outnumber Boyz.",
+      "validation": {
+        "maxCountPerFighterTypeIds": [
+          {
+            "fighterTypeIds": ["black-orc-boy"],
+            "multiplier": 1,
+            "description": "Black Orc warbands may not have more Orc Shootaz than Orc Boyz."
+          }
+        ]
+      },
+      "source": {
+        "sourceDocumentId": "nc-black-orcs",
+        "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
+        "pageRef": "Black Orcs p. 4",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "orc-nutta",
+      "warbandTypeId": "black-orcs",
+      "name": "Orc Nutta",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": 4,
+      "groupMinSize": 1,
+      "groupMaxSize": 4,
+      "hireCost": 40,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 2, "S": 3, "T": 4, "W": 1, "I": 2, "A": 1, "Ld": 5 },
+      "equipmentListIds": ["black-orc-nutta-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["orc-nutta-unstable", "orc-nutta-crazy", "orc-nutta-savage"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Nuttaz cannot use armour or ranged weapons; their list only exposes legal close-combat equipment.",
+      "source": {
+        "sourceDocumentId": "nc-black-orcs",
+        "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
+        "pageRef": "Black Orcs p. 4",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "black-orc-troll",
+      "warbandTypeId": "black-orcs",
+      "name": "Troll",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": 1,
+      "groupMinSize": 1,
+      "groupMaxSize": 1,
+      "hireCost": 200,
+      "startingExperience": 0,
+      "profile": { "M": 6, "WS": 3, "BS": 1, "S": 5, "T": 4, "W": 3, "I": 1, "A": 3, "Ld": 4 },
+      "equipmentListIds": ["black-orc-no-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["fear", "stupidity", "large-target", "black-orc-troll-regeneration", "black-orc-troll-dumb-monster", "black-orc-troll-always-hungry", "black-orc-troll-vomit-attack"],
+      "canGainExperience": false,
+      "isLargeCreature": true,
+      "ratingOverride": null,
+      "notes": "Never uses weapons or armour and does not gain experience. Requires after-battle upkeep.",
+      "source": {
+        "sourceDocumentId": "nc-black-orcs",
+        "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
+        "pageRef": "Black Orcs p. 5",
+        "label": "Henchmen"
+      }
+    }
+  ],
+  "equipmentLists": [
+    {
+      "id": "black-orc-hero-equipment",
+      "name": "Black Orc Equipment List",
+      "warbandTypeId": "black-orcs",
+      "allowedEquipmentItemIds": ["dagger", "axe", "sword", "black-orc-choppa", "spear", "double-handed-weapon", "bow", "crossbow", "light-armour", "heavy-armour", "shield", "buckler", "helmet"],
+      "appliesToFighterTypeIds": ["black-orc-boss", "black-orc"],
+      "notes": "Black Orc hero equipment list from the Nemesis Crown PDF."
+    },
+    {
+      "id": "black-orc-youngun-equipment",
+      "name": "Young'un Equipment List",
+      "warbandTypeId": "black-orcs",
+      "allowedEquipmentItemIds": ["dagger", "axe", "sword", "black-orc-choppa", "spear", "light-armour", "shield", "helmet", "black-orc-blood-upgrade"],
+      "appliesToFighterTypeIds": ["black-orc-youngun"],
+      "notes": "Young'uns use the legal non-Shoota, non-Nutta parts of the Henchmen equipment list plus the Black Orc Blood upgrade."
+    },
+    {
+      "id": "black-orc-boy-equipment",
+      "name": "Boyz Equipment List",
+      "warbandTypeId": "black-orcs",
+      "allowedEquipmentItemIds": ["dagger", "axe", "sword", "black-orc-choppa", "spear", "double-handed-weapon", "light-armour", "shield", "helmet"],
+      "appliesToFighterTypeIds": ["black-orc-boy"],
+      "notes": "Boyz may take the close-combat and armour options from the Henchmen equipment list."
+    },
+    {
+      "id": "black-orc-shoota-equipment",
+      "name": "Shootaz Equipment List",
+      "warbandTypeId": "black-orcs",
+      "allowedEquipmentItemIds": ["dagger", "axe", "sword", "black-orc-choppa", "spear", "bow", "crossbow", "light-armour", "shield", "helmet"],
+      "appliesToFighterTypeIds": ["black-orc-shoota"],
+      "notes": "Shootaz may take missile weapons from the Henchmen list; two-handed weapons are reserved for Boyz and Nuttaz."
+    },
+    {
+      "id": "black-orc-nutta-equipment",
+      "name": "Nuttaz Equipment List",
+      "warbandTypeId": "black-orcs",
+      "allowedEquipmentItemIds": ["dagger", "axe", "sword", "black-orc-choppa", "spear", "double-handed-weapon"],
+      "appliesToFighterTypeIds": ["orc-nutta"],
+      "notes": "Nuttaz are Savage, so armour and ranged weapons are omitted."
+    },
+    {
+      "id": "black-orc-no-equipment",
+      "name": "Black Orc Warband No Equipment",
+      "warbandTypeId": "black-orcs",
+      "allowedEquipmentItemIds": [],
+      "appliesToFighterTypeIds": ["black-orc-troll"],
+      "notes": "The Troll does not use weapons or armour."
+    }
+  ]
+}
