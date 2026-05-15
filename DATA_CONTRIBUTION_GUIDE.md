@@ -50,3 +50,11 @@ Each equipment item needs:
 - Prefer generic validation metadata over warband-specific code.
 - If a rule is uncertain, mark the warband `extracted` or `reviewed`, not `tested`.
 - Add a known gap when a rule cannot yet be enforced.
+
+## Implementation Status
+
+- `not_started`: listed in the Broheim index, but no structured app data yet.
+- `extracted`: text or notes have been gathered, but the data has not been manually reviewed.
+- `reviewed`: core records have been checked against the source, but tests are incomplete.
+- `implemented`: usable in the app, with known gaps documented.
+- `tested`: covered by rules-engine verification for roster limits, costs, rating and key special restrictions.

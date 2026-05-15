@@ -195,8 +195,13 @@ type AfterBattleTransaction = {
   id: string;
   action: "bought" | "sold" | "moved" | "discarded" | "found" | "other";
   itemName: string;
+  equipmentItemId?: string;
   value?: number;
   assignedTo?: string;
+  removeFrom?: string;
+  rareRoll?: number;
+  availability?: "not_required" | "not_checked" | "available" | "failed";
+  applyToRoster?: boolean;
   notes?: string;
 };
 type AfterBattleAdvanceEntry = {
@@ -1744,7 +1749,11 @@ function StructuredCampaignLogDetails({ entry }: { entry: Roster["campaignLog"][
         <p><strong>Advances:</strong> {details.advances.map((advance) => `${advance.fighterName} ${advance.xpThreshold}: ${advance.result || "not selected"}`).join(", ")}</p>
       ) : null}
       {details.transactions?.length ? (
-        <p><strong>Transactions:</strong> {details.transactions.map((transaction) => `${transaction.action} ${transaction.itemName}`).join(", ")}</p>
+        <p><strong>Transactions:</strong> {details.transactions.map((transaction) => {
+          const value = typeof transaction.value === "number" ? ` (${formatGoldDelta(transaction.value)})` : "";
+          const movement = [transaction.removeFrom ? `from ${transaction.removeFrom}` : "", transaction.assignedTo ? `to ${transaction.assignedTo}` : ""].filter(Boolean).join(" ");
+          return `${transaction.action} ${transaction.itemName || transaction.equipmentItemId || "item"}${value}${movement ? ` ${movement}` : ""}`;
+        }).join(", ")}</p>
       ) : null}
     </div>
   );
@@ -1902,7 +1911,7 @@ function PlayModeView({
 
       <div className="play-card-grid">
         {visibleMembers.map((member) => (
-          <PlayFighterCard
+          <FighterCard
             key={member.id}
             roster={roster}
             member={member}
@@ -2253,7 +2262,7 @@ function ExplorationFollowUpRoller({
   );
 }
 
-function PlayFighterCard({
+function FighterCard({
   roster,
   member,
   battleState,
@@ -2267,12 +2276,10 @@ function PlayFighterCard({
   onOpenRule: (record: RuleLookupRecord) => void;
 }) {
   const fighterType = rulesDb.fighterTypes.find((item) => item.id === member.fighterTypeId)!;
+  const [rulesOpen, setRulesOpen] = useState(false);
   const equipment = member.equipment
     .map((itemId) => rulesDb.equipmentItems.find((item) => item.id === itemId))
     .filter((item): item is EquipmentItem => Boolean(item));
-  const weapons = equipment.filter((item) => item.category === "close_combat" || item.category === "missile");
-  const armour = equipment.filter((item) => item.category === "armour");
-  const otherEquipment = equipment.filter((item) => item.category !== "close_combat" && item.category !== "missile" && item.category !== "armour");
   const skills = member.skills
     .map((id) => rulesDb.skills.find((skill) => skill.id === id))
     .filter((skill): skill is Skill => Boolean(skill));
@@ -2289,66 +2296,74 @@ function PlayFighterCard({
     .map((id) => rulesDb.specialRules.find((rule) => rule.id === id))
     .filter((rule): rule is SpecialRule => Boolean(rule));
   const statusRule = ruleRecordForBattleStatus(battleState.status);
+  const equipmentRecords = equipment.map(ruleRecordForEquipment);
+  const relevantRuleRecords = uniqueById([
+    ...skills.map(ruleRecordForSkill),
+    ...castableRules.map(ruleRecordForSpecialRule),
+    ...member.injuries.map(ruleRecordForInjury),
+    ...(statusRule ? [statusRule] : []),
+    ...[...passiveRules, ...equipmentRules].map(ruleRecordForSpecialRule)
+  ]);
+  const battleXp = battleState.enemyOoaXp + battleState.objectiveXp + battleState.otherXp;
+  const roleLabel = member.kind === "henchman_group"
+    ? `Henchmen group x${member.groupSize}`
+    : member.kind === "hired_sword"
+      ? "Hired sword"
+      : "Hero";
+
+  function decrementBattleXp() {
+    if (battleState.enemyOoaXp > 0) {
+      onBattleChange({ enemyOoaXp: battleState.enemyOoaXp - 1 });
+      return;
+    }
+    if (battleState.objectiveXp > 0) {
+      onBattleChange({ objectiveXp: battleState.objectiveXp - 1 });
+      return;
+    }
+    onBattleChange({ otherXp: Math.max(0, battleState.otherXp - 1) });
+  }
 
   return (
     <article className={`play-fighter-card status-${battleState.status}`}>
-      <header>
-        <div>
-          <p className="eyebrow">{member.kind === "henchman_group" ? `Henchmen x${member.groupSize}` : fighterType.category}</p>
-          <h3>{member.displayName || fighterType.name}</h3>
-          <p>{fighterType.name}</p>
+      <header className="fighter-card-header">
+        <div className="fighter-card-identity">
+          <span className="fighter-card-icon" aria-hidden>
+            <Swords aria-hidden />
+          </span>
+          <div>
+            <h3>{member.displayName || fighterType.name}</h3>
+            <p>{fighterType.name} · {roleLabel}</p>
+          </div>
         </div>
-        <label>
-          <span>Battle status</span>
-          <select value={battleState.status} onChange={(event) => onBattleChange({ status: event.target.value as BattleStatus })}>
-            <option value="active">Active</option>
-            <option value="hidden">Hidden</option>
-            <option value="knocked_down">Knocked down</option>
-            <option value="stunned">Stunned</option>
-            <option value="out_of_action">Out of action</option>
-          </select>
-        </label>
+        <StatusPill status={battleState.status} onChange={(status) => onBattleChange({ status })} />
         <p className="print-only print-status">Battle status: {battleStatusLabel(battleState.status)}</p>
       </header>
 
-      <CompactProfile profile={member.currentProfile} />
+      <StatGrid profile={member.currentProfile} />
 
-      <div className="play-xp-line">
-        <span>Starting XP {startingXp}</span>
-        <span>Current XP {currentXp}</span>
-      </div>
-
-      <div className="battle-xp-controls" aria-label={`${member.displayName} battle experience`}>
-        <strong>Battle XP {battleState.enemyOoaXp + battleState.objectiveXp + battleState.otherXp}</strong>
-        <div className="battle-xp-row">
-          <span>Enemy out</span>
-          <button aria-label="Remove enemy out XP" onClick={() => onBattleChange({ enemyOoaXp: Math.max(0, battleState.enemyOoaXp - 1) })}>-</button>
-          <b>{battleState.enemyOoaXp}</b>
-          <button aria-label="Add enemy out XP" onClick={() => onBattleChange({ enemyOoaXp: battleState.enemyOoaXp + 1 })}>+</button>
-        </div>
-        <div className="battle-xp-row">
-          <span>Objective</span>
-          <button aria-label="Remove objective XP" onClick={() => onBattleChange({ objectiveXp: Math.max(0, battleState.objectiveXp - 1) })}>-</button>
-          <b>{battleState.objectiveXp}</b>
-          <button aria-label="Add objective XP" onClick={() => onBattleChange({ objectiveXp: battleState.objectiveXp + 1 })}>+</button>
-        </div>
-        <div className="battle-xp-row">
-          <span>Other</span>
-          <button aria-label="Remove other XP" onClick={() => onBattleChange({ otherXp: Math.max(0, battleState.otherXp - 1) })}>-</button>
-          <b>{battleState.otherXp}</b>
-          <button aria-label="Add other XP" onClick={() => onBattleChange({ otherXp: battleState.otherXp + 1 })}>+</button>
-        </div>
-      </div>
-
-      <div className="wound-tracker">
-        <span>Wounds</span>
-        <button aria-label="Reduce current wounds" onClick={() => onBattleChange({ currentWounds: Math.max(0, battleState.currentWounds - 1) })}>
-          -
-        </button>
-        <strong>{Math.min(battleState.currentWounds, maxWounds)} / {maxWounds}</strong>
-        <button aria-label="Increase current wounds" onClick={() => onBattleChange({ currentWounds: Math.min(maxWounds, battleState.currentWounds + 1) })}>
-          +
-        </button>
+      <div className="fighter-state-row">
+        <SmallPanel label="XP">
+          <strong>{currentXp}</strong>
+          <small>Starting {startingXp}</small>
+        </SmallPanel>
+        <SmallPanel label="Wounds">
+          <div className="inline-stepper">
+            <button aria-label="Reduce current wounds" onClick={() => onBattleChange({ currentWounds: Math.max(0, battleState.currentWounds - 1) })}>
+              -
+            </button>
+            <strong>{Math.min(battleState.currentWounds, maxWounds)} / {maxWounds}</strong>
+            <button aria-label="Increase current wounds" onClick={() => onBattleChange({ currentWounds: Math.min(maxWounds, battleState.currentWounds + 1) })}>
+              +
+            </button>
+          </div>
+        </SmallPanel>
+        <SmallPanel label="Battle XP">
+          <div className="inline-stepper battle-xp-stepper">
+            <button aria-label="Remove battle XP" onClick={decrementBattleXp}>-</button>
+            <strong>{battleXp}</strong>
+            <button aria-label="Add battle XP" onClick={() => onBattleChange({ enemyOoaXp: battleState.enemyOoaXp + 1 })}>+</button>
+          </div>
+        </SmallPanel>
       </div>
 
       <div className="paper-trackers print-only" aria-hidden="true">
@@ -2377,15 +2392,11 @@ function PlayFighterCard({
         </div>
       </div>
 
-      <PlayChipSection title="Weapons" items={weapons.map(ruleRecordForEquipment)} onOpenRule={onOpenRule} />
-      <PlayChipSection title="Armour" items={armour.map(ruleRecordForEquipment)} onOpenRule={onOpenRule} />
-      <PlayChipSection title="Equipment" items={otherEquipment.map(ruleRecordForEquipment)} onOpenRule={onOpenRule} />
-      <PlayChipSection title="Skills" items={skills.map(ruleRecordForSkill)} onOpenRule={onOpenRule} />
-      <PlayChipSection title="Spells & Prayers" items={castableRules.map(ruleRecordForSpecialRule)} onOpenRule={onOpenRule} />
-      <PlayChipSection title="Injuries" items={member.injuries.map(ruleRecordForInjury)} onOpenRule={onOpenRule} />
-      <PlayChipSection
-        title="Special Rules"
-        items={[...(statusRule ? [statusRule] : []), ...[...passiveRules, ...equipmentRules].map(ruleRecordForSpecialRule)]}
+      <RelevantRulesPanel
+        open={rulesOpen}
+        onToggle={() => setRulesOpen((value) => !value)}
+        equipmentRecords={equipmentRecords}
+        ruleRecords={relevantRuleRecords}
         onOpenRule={onOpenRule}
       />
       {member.notes && (
@@ -2398,17 +2409,101 @@ function PlayFighterCard({
   );
 }
 
-function CompactProfile({ profile }: { profile: RosterMember["currentProfile"] }) {
+function StatGrid({ profile }: { profile: RosterMember["currentProfile"] }) {
   const stats = ["M", "WS", "BS", "S", "T", "W", "I", "A", "Ld"] as const;
   return (
-    <div className="compact-profile" role="table" aria-label="Current profile">
+    <div className="fighter-stat-grid" role="table" aria-label="Current profile">
       {stats.map((stat) => (
-        <div role="cell" key={stat}>
-          <span>{stat}</span>
-          <strong>{profile[stat]}</strong>
-        </div>
+        <StatBox label={stat} value={profile[stat]} key={stat} />
       ))}
     </div>
+  );
+}
+
+function StatBox({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="stat-box" role="cell">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function StatusPill({ status, onChange }: { status: BattleStatus; onChange: (status: BattleStatus) => void }) {
+  return (
+    <label className={`fighter-status-pill status-${status}`}>
+      <span className="sr-only">Battle status</span>
+      <select value={status} onChange={(event) => onChange(event.target.value as BattleStatus)}>
+        <option value="active">Active</option>
+        <option value="hidden">Hidden</option>
+        <option value="knocked_down">Knocked down</option>
+        <option value="stunned">Stunned</option>
+        <option value="out_of_action">Out of action</option>
+      </select>
+    </label>
+  );
+}
+
+function SmallPanel({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <section className="fighter-small-panel">
+      <span>{label}</span>
+      <div>{children}</div>
+    </section>
+  );
+}
+
+function RelevantRulesPanel({
+  open,
+  onToggle,
+  equipmentRecords,
+  ruleRecords,
+  onOpenRule
+}: {
+  open: boolean;
+  onToggle: () => void;
+  equipmentRecords: RuleLookupRecord[];
+  ruleRecords: RuleLookupRecord[];
+  onOpenRule: (record: RuleLookupRecord) => void;
+}) {
+  const uniqueEquipment = uniqueById(equipmentRecords);
+  const uniqueRules = uniqueById(ruleRecords);
+  return (
+    <section className={`relevant-rules-panel ${open ? "open" : ""}`}>
+      <button className="relevant-rules-toggle" onClick={onToggle} aria-expanded={open}>
+        <span>
+          <ClipboardList aria-hidden />
+          Relevant rules
+          <b>{uniqueRules.length}</b>
+        </span>
+        <span>{open ? "Hide" : "Show"}</span>
+      </button>
+      {open && (
+        <div className="relevant-rules-body">
+          {uniqueEquipment.length > 0 && (
+            <div className="equipment-tag-row" aria-label="Equipment">
+              {uniqueEquipment.map((record) => (
+                <button className="equipment-tag" key={record.id} onClick={() => onOpenRule(record)}>
+                  {record.name}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="relevant-rule-grid">
+            {uniqueRules.length ? (
+              uniqueRules.map((record) => (
+                <button className="relevant-rule-button" key={record.id} onClick={() => onOpenRule(record)}>
+                  <strong>{record.name}</strong>
+                  <span>Tap to open rule excerpt</span>
+                </button>
+              ))
+            ) : (
+              <span className="muted">No relevant rules recorded.</span>
+            )}
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -3712,21 +3807,116 @@ function TradingStep({
   roster: Roster;
   onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
 }) {
-  function addTransaction() {
-    onChange((current) => ({
-      ...current,
-      transactions: [
-        ...current.transactions,
-        { id: id("trade"), action: "bought", itemName: "", value: 0, assignedTo: "stash", notes: "" }
-      ]
-    }));
+  const activeMembers = roster.members.filter((member) => member.status !== "dead" && member.status !== "retired");
+  const equipmentOptions = useMemo(
+    () => [...rulesDb.equipmentItems].sort((left, right) => left.name.localeCompare(right.name)),
+    []
+  );
+  const tradingDelta = tradingGoldDelta(draft.transactions);
+  const rosterEffects = previewTradingRosterEffects(roster, draft);
+  const pendingRareChecks = draft.transactions.filter((transaction) => {
+    const item = rulesDb.equipmentItems.find((equipment) => equipment.id === transaction.equipmentItemId);
+    return item?.rarity && transaction.action === "bought" && transaction.availability !== "available";
+  }).length;
+
+  function setTransactions(transform: (transactions: AfterBattleTransaction[]) => AfterBattleTransaction[]) {
+    onChange((current) => syncDraftTransactions(current, transform(current.transactions)));
+  }
+
+  function addTransaction(action: AfterBattleTransaction["action"] = "bought") {
+    setTransactions((transactions) => [...transactions, createAfterBattleTransaction(action)]);
   }
 
   function updateTransaction(transactionId: string, patch: Partial<AfterBattleTransaction>) {
-    onChange((current) => ({
-      ...current,
-      transactions: current.transactions.map((entry) => (entry.id === transactionId ? { ...entry, ...patch } : entry))
-    }));
+    setTransactions((transactions) =>
+      transactions.map((entry) => (entry.id === transactionId ? { ...entry, ...patch } : entry))
+    );
+  }
+
+  function removeTransaction(transactionId: string) {
+    setTransactions((transactions) => transactions.filter((entry) => entry.id !== transactionId));
+  }
+
+  function selectAction(transaction: AfterBattleTransaction, action: AfterBattleTransaction["action"]) {
+    const item = rulesDb.equipmentItems.find((equipment) => equipment.id === transaction.equipmentItemId);
+    updateTransaction(transaction.id, {
+      action,
+      value: defaultTradeGoldValue(action, item),
+      assignedTo: action === "sold" || action === "discarded" ? "" : transaction.assignedTo || "stash",
+      removeFrom: action === "bought" || action === "found" ? "" : transaction.removeFrom,
+      applyToRoster: transaction.equipmentItemId ? action !== "other" : false
+    });
+  }
+
+  function selectEquipment(transaction: AfterBattleTransaction, equipmentItemId: string) {
+    if (!equipmentItemId) {
+      updateTransaction(transaction.id, {
+        equipmentItemId: undefined,
+        itemName: "",
+        value: defaultTradeGoldValue(transaction.action),
+        availability: "not_required",
+        applyToRoster: false
+      });
+      return;
+    }
+
+    const item = rulesDb.equipmentItems.find((equipment) => equipment.id === equipmentItemId);
+    if (!item) return;
+    updateTransaction(transaction.id, {
+      equipmentItemId: item.id,
+      itemName: item.name,
+      value: defaultTradeGoldValue(transaction.action, item),
+      availability: item.rarity ? "not_checked" : "not_required",
+      applyToRoster: transaction.action !== "other"
+    });
+  }
+
+  function sourceHasItem(sourceId: string | undefined, itemId: string | undefined) {
+    if (!sourceId || !itemId) return false;
+    if (sourceId === "stash") return roster.storedEquipment.includes(itemId);
+    return roster.members.find((member) => member.id === sourceId)?.equipment.includes(itemId) ?? false;
+  }
+
+  function sourceOptions(transaction: AfterBattleTransaction) {
+    const options = [
+      { value: "", label: "Choose source" },
+      { value: "stash", label: `Stash (${roster.storedEquipment.filter((itemId) => !transaction.equipmentItemId || itemId === transaction.equipmentItemId).length})` },
+      ...activeMembers
+        .filter((member) => !transaction.equipmentItemId || member.equipment.includes(transaction.equipmentItemId))
+        .map((member) => ({ value: member.id, label: member.displayName }))
+    ];
+    if (transaction.removeFrom && !options.some((option) => option.value === transaction.removeFrom)) {
+      options.push({ value: transaction.removeFrom, label: `${tradeTargetLabel(roster, transaction.removeFrom)} (item not found)` });
+    }
+    return options;
+  }
+
+  function transactionWarnings(transaction: AfterBattleTransaction) {
+    const warnings: string[] = [];
+    const item = rulesDb.equipmentItems.find((equipment) => equipment.id === transaction.equipmentItemId);
+    if (!transaction.equipmentItemId && !transaction.itemName.trim()) warnings.push("Add an item name before applying the report.");
+    if (transaction.action === "bought" && (transaction.value ?? 0) > 0) warnings.push("Bought items normally use a negative gold change.");
+    if (transaction.action === "sold" && (transaction.value ?? 0) < 0) warnings.push("Sold items normally use a positive gold change.");
+    if (item?.rarity && transaction.action === "bought" && transaction.availability !== "available") {
+      warnings.push("Rare item availability is not marked as available yet.");
+    }
+    if (
+      transaction.equipmentItemId &&
+      transaction.applyToRoster !== false &&
+      ["sold", "moved", "discarded"].includes(transaction.action) &&
+      !transaction.removeFrom
+    ) {
+      warnings.push("Choose where this item comes from if you want the roster to be updated.");
+    }
+    if (
+      transaction.equipmentItemId &&
+      transaction.removeFrom &&
+      ["sold", "moved", "discarded"].includes(transaction.action) &&
+      !sourceHasItem(transaction.removeFrom, transaction.equipmentItemId)
+    ) {
+      warnings.push("The selected source does not currently have this item.");
+    }
+    return warnings;
   }
 
   return (
@@ -3734,59 +3924,154 @@ function TradingStep({
       <div className="section-heading">
         <div>
           <h3>Trading and equipment</h3>
-          <p>Record purchases, sales, found items and equipment moves as a ledger.</p>
+          <p>Record purchases, sales, found items and stash moves. Gold changes are carried into the Income manual adjustment.</p>
         </div>
-        <button onClick={addTransaction}>
-          <Plus aria-hidden /> Add transaction
-        </button>
+        <div className="button-row">
+          <button onClick={() => addTransaction("bought")}><Plus aria-hidden /> Buy item</button>
+          <button onClick={() => addTransaction("sold")}>Sell item</button>
+          <button onClick={() => addTransaction("moved")}>Move item</button>
+          <button onClick={() => addTransaction("found")}>Found item</button>
+        </div>
       </div>
+      <div className="after-action-cards">
+        <article>
+          <span>Ledger gold</span>
+          <strong>{formatGoldDelta(tradingDelta)}</strong>
+          <p>Included in treasury manual adjustment.</p>
+        </article>
+        <article>
+          <span>Roster equipment</span>
+          <strong>{rosterEffects.length}</strong>
+          <p>Canonical item change{rosterEffects.length === 1 ? "" : "s"} queued for final apply.</p>
+        </article>
+        <article>
+          <span>Rare checks</span>
+          <strong>{pendingRareChecks}</strong>
+          <p>Rare purchases still marked not available or not checked.</p>
+        </article>
+      </div>
+      <PostGameTradingChecklist rosterId={roster.id} />
       <div className="transaction-list">
         {draft.transactions.length === 0 ? (
           <div className="empty-state">No trading transactions recorded.</div>
         ) : (
-          draft.transactions.map((transaction) => (
-            <article className="transaction-row" key={transaction.id}>
-              <label>
-                <span>Action</span>
-                <select value={transaction.action} onChange={(event) => updateTransaction(transaction.id, { action: event.target.value as AfterBattleTransaction["action"] })}>
-                  <option value="bought">Bought</option>
-                  <option value="sold">Sold</option>
-                  <option value="moved">Moved</option>
-                  <option value="discarded">Discarded</option>
-                  <option value="found">Found</option>
-                  <option value="other">Other</option>
-                </select>
-              </label>
-              <label>
-                <span>Item</span>
-                <input value={transaction.itemName} onChange={(event) => updateTransaction(transaction.id, { itemName: event.target.value })} />
-              </label>
-              <NumberField label="Cost / income" value={transaction.value ?? 0} onChange={(value) => updateTransaction(transaction.id, { value })} />
-              <label>
-                <span>Assigned to</span>
-                <select value={transaction.assignedTo ?? ""} onChange={(event) => updateTransaction(transaction.id, { assignedTo: event.target.value })}>
-                  <option value="">Unassigned</option>
-                  <option value="stash">Stash</option>
-                  {roster.members.map((member) => (
-                    <option value={member.id} key={member.id}>
-                      {member.displayName}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Notes / rarity</span>
-                <input value={transaction.notes ?? ""} onChange={(event) => updateTransaction(transaction.id, { notes: event.target.value })} />
-              </label>
-              <button
-                className="icon-danger"
-                aria-label="Remove transaction"
-                onClick={() => onChange((current) => ({ ...current, transactions: current.transactions.filter((entry) => entry.id !== transaction.id) }))}
-              >
-                <Trash2 aria-hidden />
-              </button>
-            </article>
-          ))
+          draft.transactions.map((transaction) => {
+            const item = rulesDb.equipmentItems.find((equipment) => equipment.id === transaction.equipmentItemId);
+            const warnings = transactionWarnings(transaction);
+            const needsSource = ["sold", "moved", "discarded"].includes(transaction.action);
+            const needsDestination = ["bought", "found", "moved", "other"].includes(transaction.action);
+            return (
+              <article className="transaction-row transaction-row-wide" key={transaction.id}>
+                <div className="transaction-row-header">
+                  <strong>{transaction.action.replaceAll("_", " ")} {tradeItemLabel(transaction)}</strong>
+                  <button
+                    className="icon-danger"
+                    aria-label="Remove transaction"
+                    onClick={() => removeTransaction(transaction.id)}
+                  >
+                    <Trash2 aria-hidden />
+                  </button>
+                </div>
+                <label>
+                  <span>Action</span>
+                  <select value={transaction.action} onChange={(event) => selectAction(transaction, event.target.value as AfterBattleTransaction["action"])}>
+                    <option value="bought">Bought</option>
+                    <option value="sold">Sold</option>
+                    <option value="moved">Moved</option>
+                    <option value="discarded">Discarded</option>
+                    <option value="found">Found</option>
+                    <option value="other">Other</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Rules item</span>
+                  <select value={transaction.equipmentItemId ?? ""} onChange={(event) => selectEquipment(transaction, event.target.value)}>
+                    <option value="">Custom / not in data</option>
+                    {equipmentOptions.map((equipment) => (
+                      <option value={equipment.id} key={equipment.id}>
+                        {equipment.name} ({equipment.cost} gc)
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {!transaction.equipmentItemId && (
+                  <label>
+                    <span>Custom item</span>
+                    <input value={transaction.itemName} onChange={(event) => updateTransaction(transaction.id, { itemName: event.target.value })} />
+                  </label>
+                )}
+                <NumberField label="Gold change" value={transaction.value ?? 0} onChange={(value) => updateTransaction(transaction.id, { value })} />
+                {item && (
+                  <button onClick={() => updateTransaction(transaction.id, { value: defaultTradeGoldValue(transaction.action, item) })}>
+                    Use default gold
+                  </button>
+                )}
+                {needsSource && (
+                  <label>
+                    <span>From</span>
+                    <select value={transaction.removeFrom ?? ""} onChange={(event) => updateTransaction(transaction.id, { removeFrom: event.target.value })}>
+                      {sourceOptions(transaction).map((option) => (
+                        <option value={option.value} key={option.value || "empty"}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {needsDestination && (
+                  <label>
+                    <span>To</span>
+                    <select value={transaction.assignedTo ?? ""} onChange={(event) => updateTransaction(transaction.id, { assignedTo: event.target.value })}>
+                      <option value="">Unassigned / note only</option>
+                      <option value="stash">Stash</option>
+                      {activeMembers.map((member) => (
+                        <option value={member.id} key={member.id}>
+                          {member.displayName}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {item?.rarity && (
+                  <>
+                    <NumberField label="Rare roll" value={transaction.rareRoll ?? 0} onChange={(value) => updateTransaction(transaction.id, { rareRoll: value })} />
+                    <label>
+                      <span>Availability</span>
+                      <select value={transaction.availability ?? "not_checked"} onChange={(event) => updateTransaction(transaction.id, { availability: event.target.value as AfterBattleTransaction["availability"] })}>
+                        <option value="not_checked">Not checked</option>
+                        <option value="available">Available</option>
+                        <option value="failed">Failed</option>
+                        <option value="not_required">Not required</option>
+                      </select>
+                    </label>
+                  </>
+                )}
+                <label className="checklist-item transaction-toggle">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(transaction.equipmentItemId && transaction.action !== "other" && transaction.applyToRoster !== false)}
+                    disabled={!transaction.equipmentItemId || transaction.action === "other"}
+                    onChange={(event) => updateTransaction(transaction.id, { applyToRoster: event.target.checked })}
+                  />
+                  <span>Update stash/fighter on final apply</span>
+                </label>
+                <label>
+                  <span>Notes / rarity</span>
+                  <input value={transaction.notes ?? ""} onChange={(event) => updateTransaction(transaction.id, { notes: event.target.value })} />
+                </label>
+                {item && (
+                  <p className="transaction-hint">
+                    {item.category.replaceAll("_", " ")} · {item.cost} gc{item.rarity ? ` · Rare ${item.rarity}` : ""} · {item.sourceDocumentId}{item.pageRef ? ` ${item.pageRef}` : ""}
+                  </p>
+                )}
+                {warnings.length > 0 && (
+                  <div className="transaction-warning">
+                    {warnings.map((warning) => <p key={warning}>{warning}</p>)}
+                  </div>
+                )}
+              </article>
+            );
+          })
         )}
       </div>
     </section>
@@ -3956,6 +4241,8 @@ function ReviewApplyStep({
   const beforeRating = calculateWarbandRating(roster, rulesDb);
   const afterRating = calculateWarbandRating(updatedRoster, rulesDb);
   const blockingMessages = reviewBlockingMessages(draft, roster);
+  const tradingDelta = tradingGoldDelta(draft.transactions);
+  const tradingRosterEffects = previewTradingRosterEffects(roster, draft);
 
   return (
     <section className="after-card">
@@ -3988,7 +4275,7 @@ function ReviewApplyStep({
         <article>
           <span>Campaign gains</span>
           <strong>{draft.exploration.wyrdstoneShards} wyrdstone</strong>
-          <p>{draft.treasury.before} gc to {draft.treasury.after} gc.</p>
+          <p>{draft.treasury.before} gc to {draft.treasury.after} gc, including {formatGoldDelta(tradingDelta)} from trading.</p>
         </article>
         <article>
           <span>Roster impact</span>
@@ -4011,9 +4298,13 @@ function ReviewApplyStep({
         ]} />
         <ReviewBlock title="Treasury" lines={[
           `${draft.treasury.before} gc -> ${draft.treasury.after} gc`,
-          `Wyrdstone sold: ${draft.treasury.wyrdstoneSold}`
+          `Wyrdstone sold: ${draft.treasury.wyrdstoneSold}`,
+          `Trading ledger: ${formatGoldDelta(tradingDelta)}`
         ]} />
-        <ReviewBlock title="Trading" lines={draft.transactions.map((entry) => `${entry.action}: ${entry.itemName || "unnamed item"} ${entry.value ? `(${entry.value} gc)` : ""}`)} />
+        <ReviewBlock title="Trading" lines={[
+          ...draft.transactions.map((entry) => `${entry.action}: ${tradeItemLabel(entry)} ${typeof entry.value === "number" ? `(${formatGoldDelta(entry.value)})` : ""}`),
+          ...tradingRosterEffects.map((line) => `Apply: ${line}`)
+        ]} />
         <ReviewBlock title="Advances" lines={draft.advances.map((entry) => `${entry.fighterName} at ${entry.xpThreshold} XP: ${entry.result || "not selected"}`)} />
         <ReviewBlock title="Roster changes" lines={previewRosterUpdates(roster, draft)} />
         <ReviewBlock title="Warband rating" lines={[`${beforeRating} before`, `${afterRating} after`]} />
@@ -5032,14 +5323,65 @@ function SourceNote({ sourceUrl, label }: { sourceUrl: string; label: string }) 
 function WarbandBadge({ warbandTypeId, size = "normal" }: { warbandTypeId: string; size?: "normal" | "large" }) {
   const warband = rulesDb.warbandTypes.find((item) => item.id === warbandTypeId);
   const meta = warbandBadgeMeta(warbandTypeId, warband);
+  const tokenImage = warbandBadgeImage(warbandTypeId);
   return (
     <span
-      className={`warband-badge badge-${warbandTypeId} ${size === "large" ? "large" : ""}`}
+      className={`warband-badge badge-${warbandTypeId} ${tokenImage ? "has-token-image" : ""} ${size === "large" ? "large" : ""}`}
       aria-label={`${meta.title} badge`}
       title={`${meta.title} badge`}
     >
-      <WarbandBadgeSymbol warbandTypeId={warbandTypeId} fallback={meta.mark} />
+      {tokenImage ? (
+        <picture className="warband-token-picture">
+          <source srcSet={tokenImage.dark} media="(prefers-color-scheme: dark)" />
+          <img src={tokenImage.light} alt="" loading="lazy" decoding="async" />
+        </picture>
+      ) : (
+        <WarbandBadgeSymbol warbandTypeId={warbandTypeId} fallback={meta.mark} />
+      )}
     </span>
+  );
+}
+
+function warbandBadgeImage(warbandTypeId: string): { light: string; dark: string } | undefined {
+  const available = new Set([
+    "witch-hunters",
+    "reiklanders",
+    "middenheimers",
+    "marienburgers",
+    "sisters-of-sigmar",
+    "carnival-of-chaos",
+    "skaven",
+    "skaven-of-clan-pestilens",
+    "undead",
+    "orc-mob",
+    "dwarf-treasure-hunters",
+    "beastmen-raiders",
+    "shadow-warriors",
+    "lizardmen",
+    "forest-goblins",
+    "black-orcs",
+    "averlanders",
+    "cult-of-the-possessed",
+    "kislevites",
+    "ostlanders"
+  ]);
+  if (!available.has(warbandTypeId)) return undefined;
+  return {
+    light: `/warband-icons/light/${warbandTypeId}.png`,
+    dark: `/warband-icons/dark/${warbandTypeId}.png`
+  };
+}
+
+function TokenIcon({ letters, children }: { letters: string; children: ReactNode }) {
+  return (
+    <svg className="token-icon" viewBox="0 0 64 64" aria-hidden>
+      <circle className="token-ring" cx="32" cy="32" r="29" />
+      <circle className="token-inner-ring" cx="32" cy="32" r="24" />
+      <g className="token-art">{children}</g>
+      <text className={`token-letter ${letters.length > 2 ? "token-letter-wide" : ""}`} x="32" y="57" textAnchor="middle">
+        {letters}
+      </text>
+    </svg>
   );
 }
 
@@ -5048,99 +5390,160 @@ function WarbandBadgeSymbol({ warbandTypeId, fallback }: { warbandTypeId: string
   switch (warbandTypeId) {
     case "witch-hunters":
       return (
-        <svg viewBox="0 0 64 64" aria-hidden>
-          <path {...common} d="M32 8v48M17 19h30M21 47l22-22M43 47 21 25" />
-          <path {...common} d="M32 7l6 8-6 8-6-8z" />
-        </svg>
+        <TokenIcon letters={fallback}>
+          <path {...common} d="M32 8v31M18 19h28M21 13l22 22M43 13 21 35" />
+          <path {...common} d="M23 28c0-7 4-11 9-11s9 4 9 11c0 6-3 10-9 10s-9-4-9-10z" />
+          <path {...common} d="M27 39h10M28 29h.5M36 29h.5M30 35h4" />
+        </TokenIcon>
+      );
+    case "reiklanders":
+      return (
+        <TokenIcon letters={fallback}>
+          <path {...common} d="M16 35c8-19 21-25 35-17-7 2-11 6-12 11 5 3 4 9-2 13-6-5-13-7-21-7z" />
+          <path {...common} d="M28 19 21 9M36 18l7-7M22 35l-7 11M34 38l1 10M40 28h.5" />
+          <path {...common} d="M25 26c5 0 9 1 13 4" />
+        </TokenIcon>
+      );
+    case "middenheimers":
+      return (
+        <TokenIcon letters={fallback}>
+          <path {...common} d="M14 34c7-15 16-21 28-18 4 1 7 3 10 7-7 0-12 3-14 8 4 5 1 11-6 14-6-6-12-9-18-11z" />
+          <path {...common} d="M25 19 21 8M37 18l5-9M24 36 16 47M35 39l2 9M40 26h.5" />
+        </TokenIcon>
+      );
+    case "marienburgers":
+      return (
+        <TokenIcon letters={fallback}>
+          <path {...common} d="M16 40h32l-6 8H22zM20 48c5-3 9-3 14 0 5 3 10 3 15 0" />
+          <path {...common} d="M32 12v28M32 15c8 4 12 9 12 18H32zM32 18c-7 4-11 9-11 17h11z" />
+          <path {...common} d="M36 13l9 4" />
+        </TokenIcon>
       );
     case "sisters-of-sigmar":
       return (
-        <svg viewBox="0 0 64 64" aria-hidden>
-          <path {...common} d="M24 14h16l-3 16h-10zM32 30v23M21 39h22" />
-          <path {...common} d="M16 18l4 4M48 18l-4 4M12 32h8M44 32h8" />
-        </svg>
+        <TokenIcon letters={fallback}>
+          <path {...common} d="M32 12c6 5 7 11 0 17-7-6-6-12 0-17zM20 28c-6-4-5-11 2-14 5 5 4 11-2 14zM44 28c6-4 5-11-2-14-5 5-4 11 2 14z" />
+          <path {...common} d="M32 27v19M22 35h20M18 45h28M13 21l6 6M51 21l-6 6" />
+        </TokenIcon>
       );
     case "skaven":
       return (
-        <svg viewBox="0 0 64 64" aria-hidden>
+        <TokenIcon letters={fallback}>
           <path {...common} d="M18 39c2-14 12-24 28-25-7 6-8 13-2 22 3 5 0 12-8 14-8 2-16-2-18-11z" />
-          <path {...common} d="M29 29l-8-13M36 29l11-10M31 41h2" />
-        </svg>
+          <path {...common} d="M29 29l-8-13M36 29l11-10M31 41h2M42 22l10-4M22 34l-11 3" />
+        </TokenIcon>
+      );
+    case "skaven-of-clan-pestilens":
+      return (
+        <TokenIcon letters={fallback}>
+          <path {...common} d="M20 37c2-13 9-20 20-21 4 3 6 8 6 14 0 10-6 17-14 17-6 0-10-3-12-10z" />
+          <path {...common} d="M24 18c1-6 5-10 11-12M40 18l8-7M29 32h.5M38 31h.5M31 40h5" />
+          <path {...common} d="M17 31h10M19 42l-7 7M44 40l8 7" />
+        </TokenIcon>
       );
     case "undead":
       return (
-        <svg viewBox="0 0 64 64" aria-hidden>
-          <path {...common} d="M20 27c0-10 6-17 12-17s12 7 12 17c0 8-4 13-12 13s-12-5-12-13z" />
-          <path {...common} d="M24 47h16M27 40v10M32 41v12M37 40v10M27 28h.5M37 28h.5M29 35h6" />
-        </svg>
+        <TokenIcon letters={fallback}>
+          <path {...common} d="M18 17 46 45M46 17 18 45" />
+          <path {...common} d="M20 28c0-10 6-17 12-17s12 7 12 17c0 8-4 13-12 13s-12-5-12-13z" />
+          <path {...common} d="M24 47h16M27 40v10M32 41v12M37 40v10M27 29h.5M37 29h.5M29 36h6" />
+        </TokenIcon>
       );
     case "carnival-of-chaos":
       return (
-        <svg viewBox="0 0 64 64" aria-hidden>
-          <path {...common} d="M17 22c9-9 21-9 30 0-1 17-6 27-15 30-9-3-14-13-15-30z" />
-          <path {...common} d="M23 31c4-3 8-3 11 0M41 31c-3-3-7-3-11 0M28 41c3 2 6 2 9 0M20 16l-5-7M44 16l5-7" />
-        </svg>
+        <TokenIcon letters={fallback}>
+          <path {...common} d="M32 8v9M32 46v7M13 28h9M42 28h9M18 14l6 7M46 14l-6 7M18 44l6-7M46 44l-6-7" />
+          <path {...common} d="M17 23c9-9 21-9 30 0-1 16-6 25-15 28-9-3-14-12-15-28z" />
+          <path {...common} d="M23 31c4-3 8-3 11 0M41 31c-3-3-7-3-11 0M28 40c3 2 6 2 9 0" />
+        </TokenIcon>
       );
     case "orc-mob":
       return (
-        <svg viewBox="0 0 64 64" aria-hidden>
+        <TokenIcon letters={fallback}>
           <path {...common} d="M17 34c4-13 26-13 30 0-3 12-10 18-15 18s-12-6-15-18z" />
-          <path {...common} d="M21 36l-8-6M43 36l8-6M25 41l4 7M39 41l-4 7M26 31h.5M38 31h.5" />
-        </svg>
+          <path {...common} d="M21 36l-8-6M43 36l8-6M25 41l4 7M39 41l-4 7M26 31h.5M38 31h.5M25 20l-7-8M39 20l7-8" />
+          <path {...common} d="M25 39c5 3 9 3 14 0" />
+        </TokenIcon>
       );
     case "black-orcs":
       return (
-        <svg viewBox="0 0 64 64" aria-hidden>
+        <TokenIcon letters={fallback}>
           <path {...common} d="M15 39c4-15 30-15 34 0-4 10-10 15-17 15S19 49 15 39z" />
           <path {...common} d="M20 35 11 25M44 35l9-10M24 30h.5M40 30h.5M26 42l6 5 6-5" />
-          <path {...common} d="M23 12h18l-4 12H27zM29 12l-3-5M35 12l3-5" />
-        </svg>
+          <path {...common} d="M21 12h22l-5 13H26zM18 23h28M29 12l-3-5M35 12l3-5" />
+        </TokenIcon>
       );
     case "beastmen-raiders":
       return (
-        <svg viewBox="0 0 64 64" aria-hidden>
+        <TokenIcon letters={fallback}>
           <path {...common} d="M20 32c3-10 21-10 24 0 0 12-5 20-12 20s-12-8-12-20z" />
           <path {...common} d="M24 21C16 13 11 13 8 19c8 1 13 5 16 12M40 21c8-8 13-8 16-2-8 1-13 5-16 12" />
-          <path {...common} d="M27 35h.5M37 35h.5M28 43l4 3 4-3M32 19v-8" />
-        </svg>
+          <path {...common} d="M27 35h.5M37 35h.5M28 43l4 3 4-3M32 19v-8M16 44l-7 5M48 44l7 5" />
+        </TokenIcon>
       );
     case "dwarf-treasure-hunters":
       return (
-        <svg viewBox="0 0 64 64" aria-hidden>
-          <path {...common} d="M16 47h32M22 38h20l-4 9H26zM26 20h12l5 10H21z" />
-          <path {...common} d="M18 17 31 30M39 14 25 28M38 14l6 6M19 17l-5 5" />
-          <path {...common} d="M32 8l5 6-5 6-5-6z" />
-        </svg>
+        <TokenIcon letters={fallback}>
+          <path {...common} d="M18 18 31 31M45 17 32 31M44 17l6 6M19 18l-6 6" />
+          <path {...common} d="M18 25h28l-5 13H23zM23 38h18l-4 11H27z" />
+          <path {...common} d="M25 17c4-6 10-6 14 0M27 31h.5M37 31h.5" />
+        </TokenIcon>
       );
     case "forest-goblins":
       return (
-        <svg viewBox="0 0 64 64" aria-hidden>
-          <path {...common} d="M32 21c7 0 12 5 12 12s-5 14-12 14-12-7-12-14 5-12 12-12z" />
-          <path {...common} d="M23 27 12 19M41 27l11-8M22 36 9 39M42 36l13 3M27 21l-3-10M37 21l3-10" />
-        </svg>
+        <TokenIcon letters={fallback}>
+          <path {...common} d="M18 38c4-12 10-19 18-21 6 5 9 11 9 18 0 8-5 13-13 13-6 0-11-3-14-10z" />
+          <path {...common} d="M22 28 10 18M42 29l12-10M24 38 9 43M42 38l13 5M27 32h.5M38 32h.5" />
+          <path {...common} d="M27 17l-3-8M38 19l5-8" />
+        </TokenIcon>
       );
     case "shadow-warriors":
       return (
-        <svg viewBox="0 0 64 64" aria-hidden>
-          <path {...common} d="M42 12c-10 3-18 12-18 23 0 8 5 14 13 17-15-1-25-10-25-23 0-11 9-19 30-17z" />
-          <path {...common} d="M31 35h20M43 27l8 8-8 8" />
-        </svg>
+        <TokenIcon letters={fallback}>
+          <path {...common} d="M20 17c7-8 18-8 25 0l-5 28H25z" />
+          <path {...common} d="M25 29c4-3 10-3 14 0M22 44l20-20M42 44 22 24" />
+          <path {...common} d="M14 17l11 11M50 17 39 28" />
+        </TokenIcon>
       );
     case "lizardmen":
       return (
-        <svg viewBox="0 0 64 64" aria-hidden>
+        <TokenIcon letters={fallback}>
           <path {...common} d="M16 37c12-19 25-23 36-14-6 2-10 5-11 10 4 5 2 11-5 15-8-5-15-8-20-11z" />
-          <path {...common} d="M22 38l-8 11M32 42l-1 12M41 36l10 7M37 25l7-11" />
-        </svg>
+          <path {...common} d="M22 38l-8 11M32 42l-1 12M41 36l10 7M37 25l7-11M27 29h.5" />
+          <path {...common} d="M20 35c7 1 13 3 18 7" />
+        </TokenIcon>
       );
-    case "reiklanders":
-    case "middenheimers":
-    case "marienburgers":
+    case "averlanders":
       return (
-        <svg viewBox="0 0 64 64" aria-hidden>
-          <path {...common} d="M32 9l18 8v15c0 12-7 20-18 24-11-4-18-12-18-24V17z" />
-          <path {...common} d="M32 17v31M21 30h22" />
-        </svg>
+        <TokenIcon letters={fallback}>
+          <path {...common} d="M32 9v10M32 43v9M15 30h10M39 30h10M20 18l7 7M44 18l-7 7M20 44l7-7M44 44l-7-7" />
+          <path {...common} d="M20 25h24v14H20zM32 25v14M20 32h24" />
+          <path {...common} d="M26 16h12M27 45h10" />
+        </TokenIcon>
+      );
+    case "cult-of-the-possessed":
+      return (
+        <TokenIcon letters={fallback}>
+          <path {...common} d="M32 8v9M32 45v8M14 30h9M41 30h9M19 16l7 8M45 16l-7 8M20 45l7-8M44 45l-7-8" />
+          <path {...common} d="M23 41c-4-10 3-17 9-29 7 13 13 20 9 29-2 5-6 8-9 8s-7-3-9-8z" />
+          <path {...common} d="M32 24c3 6 4 10 1 16" />
+        </TokenIcon>
+      );
+    case "kislevites":
+      return (
+        <TokenIcon letters={fallback}>
+          <path {...common} d="M19 26c2-10 9-16 13-16s11 6 13 16l-5 16H24z" />
+          <path {...common} d="M21 25c7 3 15 3 22 0M24 16l-5-6M40 16l5-6M26 34h.5M38 34h.5M28 42h8" />
+          <path {...common} d="M15 34h8M41 34h8M18 47l28-28" />
+        </TokenIcon>
+      );
+    case "ostlanders":
+      return (
+        <TokenIcon letters={fallback}>
+          <path {...common} d="M14 38c11-19 23-23 36-17-6 3-9 6-9 10 5 4 4 10-2 15-8-4-17-6-25-8z" />
+          <path {...common} d="M22 36l-9 11M33 39v12M42 32l11 6M28 24l-5-11M38 23l6-10M25 30h.5" />
+          <path {...common} d="M20 38c8 0 15 2 21 6" />
+        </TokenIcon>
       );
     default:
       return <span>{fallback}</span>;
@@ -5152,15 +5555,20 @@ function warbandBadgeMeta(warbandTypeId: string, warband?: WarbandType): { mark:
     "witch-hunters": { mark: "WH", title: "Witch Hunters" },
     "sisters-of-sigmar": { mark: "SS", title: "Sisters of Sigmar" },
     skaven: { mark: "SK", title: "Skaven" },
-    undead: { mark: "UN", title: "Undead" },
-    "carnival-of-chaos": { mark: "CC", title: "Carnival of Chaos" },
+    undead: { mark: "UD", title: "Undead" },
+    "carnival-of-chaos": { mark: "CoC", title: "Carnival of Chaos" },
     "orc-mob": { mark: "OM", title: "Orc Mob" },
     "black-orcs": { mark: "BO", title: "Black Orcs" },
     "beastmen-raiders": { mark: "BR", title: "Beastmen Raiders" },
-    "dwarf-treasure-hunters": { mark: "DT", title: "Dwarf Treasure Hunters" },
+    "dwarf-treasure-hunters": { mark: "DH", title: "Dwarf Treasure Hunters" },
     "shadow-warriors": { mark: "SW", title: "Shadow Warriors" },
     lizardmen: { mark: "LM", title: "Lizardmen" },
     "forest-goblins": { mark: "FG", title: "Forest Goblins" },
+    "skaven-of-clan-pestilens": { mark: "SP", title: "Skaven of Clan Pestilens" },
+    averlanders: { mark: "AV", title: "Averlanders" },
+    "cult-of-the-possessed": { mark: "CP", title: "Cult of the Possessed" },
+    kislevites: { mark: "KS", title: "Kislevites" },
+    ostlanders: { mark: "OS", title: "Ostlanders" },
     reiklanders: { mark: "RK", title: "Reiklanders" },
     middenheimers: { mark: "MH", title: "Middenheimers" },
     marienburgers: { mark: "MB", title: "Marienburgers" }
@@ -5564,6 +5972,133 @@ function recalculateTreasuryAfter(treasury: AfterBattleDraft["treasury"]) {
   };
 }
 
+function tradingGoldDelta(transactions: AfterBattleTransaction[]) {
+  return transactions.reduce((total, transaction) => total + (Number.isFinite(transaction.value) ? transaction.value ?? 0 : 0), 0);
+}
+
+function formatGoldDelta(value: number) {
+  return `${value >= 0 ? "+" : ""}${value} gc`;
+}
+
+function syncDraftTransactions(current: AfterBattleDraft, transactions: AfterBattleTransaction[]): AfterBattleDraft {
+  const previousTradingDelta = tradingGoldDelta(current.transactions);
+  const nextTradingDelta = tradingGoldDelta(transactions);
+  const manualWithoutTrading = current.treasury.manualAdjustment - previousTradingDelta;
+  return {
+    ...current,
+    transactions,
+    treasury: recalculateTreasuryAfter({
+      ...current.treasury,
+      manualAdjustment: manualWithoutTrading + nextTradingDelta
+    })
+  };
+}
+
+function defaultTradeGoldValue(action: AfterBattleTransaction["action"], item?: EquipmentItem) {
+  if (action === "bought") return -(item?.cost ?? 0);
+  if (action === "sold") return Math.floor((item?.cost ?? 0) / 2);
+  return 0;
+}
+
+function createAfterBattleTransaction(action: AfterBattleTransaction["action"] = "bought", item?: EquipmentItem): AfterBattleTransaction {
+  return {
+    id: id("trade"),
+    action,
+    itemName: item?.name ?? "",
+    equipmentItemId: item?.id,
+    value: defaultTradeGoldValue(action, item),
+    assignedTo: action === "sold" || action === "discarded" ? "" : "stash",
+    removeFrom: "",
+    availability: item?.rarity ? "not_checked" : "not_required",
+    applyToRoster: Boolean(item),
+    notes: ""
+  };
+}
+
+function tradeTargetLabel(roster: Roster, targetId?: string) {
+  if (!targetId) return "Unassigned";
+  if (targetId === "stash") return "Stash";
+  return roster.members.find((member) => member.id === targetId)?.displayName ?? targetId;
+}
+
+function tradeItemLabel(transaction: AfterBattleTransaction) {
+  return transaction.itemName || (transaction.equipmentItemId ? equipmentName(transaction.equipmentItemId) : "unnamed item");
+}
+
+function removeFirstItem(items: string[], itemId: string) {
+  const index = items.indexOf(itemId);
+  if (index < 0) return items;
+  return [...items.slice(0, index), ...items.slice(index + 1)];
+}
+
+function applyTradingEquipmentChanges(
+  roster: Roster,
+  members: RosterMember[],
+  transactions: AfterBattleTransaction[]
+): { members: RosterMember[]; storedEquipment: string[] } {
+  let nextMembers = members;
+  let storedEquipment = [...roster.storedEquipment];
+
+  function removeFromSource(sourceId: string | undefined, itemId: string) {
+    if (!sourceId) return;
+    if (sourceId === "stash") {
+      storedEquipment = removeFirstItem(storedEquipment, itemId);
+      return;
+    }
+    nextMembers = nextMembers.map((member) =>
+      member.id === sourceId ? { ...member, equipment: removeFirstItem(member.equipment, itemId) } : member
+    );
+  }
+
+  function addToDestination(destinationId: string | undefined, itemId: string) {
+    if (!destinationId || destinationId === "stash") {
+      storedEquipment = [...storedEquipment, itemId];
+      return;
+    }
+    nextMembers = nextMembers.map((member) =>
+      member.id === destinationId ? { ...member, equipment: [...member.equipment, itemId] } : member
+    );
+  }
+
+  for (const transaction of transactions) {
+    if (!transaction.equipmentItemId || transaction.applyToRoster === false) continue;
+    if (transaction.action === "bought" || transaction.action === "found") {
+      addToDestination(transaction.assignedTo || "stash", transaction.equipmentItemId);
+    }
+    if (transaction.action === "sold" || transaction.action === "discarded") {
+      removeFromSource(transaction.removeFrom, transaction.equipmentItemId);
+    }
+    if (transaction.action === "moved") {
+      removeFromSource(transaction.removeFrom, transaction.equipmentItemId);
+      addToDestination(transaction.assignedTo || "stash", transaction.equipmentItemId);
+    }
+  }
+
+  return { members: nextMembers, storedEquipment };
+}
+
+function previewTradingRosterEffects(roster: Roster, draft: AfterBattleDraft): string[] {
+  return draft.transactions.flatMap((transaction) => {
+    const itemName = tradeItemLabel(transaction);
+    if (!transaction.equipmentItemId) {
+      return transaction.itemName.trim() ? [`${transaction.action} ${itemName}: logged only, because it is a custom item.`] : [];
+    }
+    if (transaction.applyToRoster === false || transaction.action === "other") {
+      return [`${transaction.action} ${itemName}: logged only.`];
+    }
+    if (transaction.action === "bought" || transaction.action === "found") {
+      return [`${transaction.action} ${itemName}: add to ${tradeTargetLabel(roster, transaction.assignedTo || "stash")}.`];
+    }
+    if (transaction.action === "sold" || transaction.action === "discarded") {
+      return [`${transaction.action} ${itemName}: remove from ${tradeTargetLabel(roster, transaction.removeFrom)}.`];
+    }
+    if (transaction.action === "moved") {
+      return [`moved ${itemName}: ${tradeTargetLabel(roster, transaction.removeFrom)} to ${tradeTargetLabel(roster, transaction.assignedTo || "stash")}.`];
+    }
+    return [];
+  });
+}
+
 function activeWarbandRosterMembers(roster: Roster) {
   return roster.members.filter((member) => {
     if (member.status === "dead" || member.status === "retired") return false;
@@ -5810,7 +6345,7 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
     advancesByMember.set(advance.fighterId, [...(advancesByMember.get(advance.fighterId) ?? []), advance]);
   }
 
-  const members = roster.members.map((member) => {
+  const membersAfterPostBattle = roster.members.map((member) => {
     const xp = xpByMember.get(member.id);
     const injury = injuriesByMember.get(member.id);
     const advances = advancesByMember.get(member.id) ?? [];
@@ -5854,6 +6389,7 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
 
     return next;
   });
+  const tradingApplication = applyTradingEquipmentChanges(roster, membersAfterPostBattle, draft.transactions);
 
   const goldDelta = draft.treasury.after - roster.treasuryGold;
   const wyrdstoneDelta = draft.exploration.wyrdstoneShards - draft.treasury.wyrdstoneSold;
@@ -5870,7 +6406,7 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
     `Injuries: ${draft.injuries.map((entry) => `${entry.fighterName} ${injurySummary(entry)}`).join(", ") || "none"}`,
     `Exploration: dice ${draft.exploration.diceValues.join(", ") || "not recorded"}; ${draft.exploration.wyrdstoneShards} wyrdstone found`,
     `Treasury: ${draft.treasury.before} gc to ${draft.treasury.after} gc`,
-    `Trading: ${draft.transactions.map((entry) => `${entry.action} ${entry.itemName || "unnamed item"}${typeof entry.value === "number" ? ` (${entry.value} gc)` : ""}`).join(", ") || "none"}`,
+    `Trading: ${draft.transactions.map((entry) => `${entry.action} ${tradeItemLabel(entry)}${typeof entry.value === "number" ? ` (${formatGoldDelta(entry.value)})` : ""}`).join(", ") || "none"}`,
     `Roster updates: ${draft.rosterUpdates.map((entry) => entry.description).filter(Boolean).join("; ") || "none"}`
   ].filter(Boolean);
 
@@ -5878,7 +6414,8 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
     ...roster,
     treasuryGold: draft.treasury.after,
     wyrdstoneShards: Math.max(0, roster.wyrdstoneShards + wyrdstoneDelta),
-    members,
+    storedEquipment: tradingApplication.storedEquipment,
+    members: tradingApplication.members,
     campaignLog: [
       campaignLogEntry(roster, {
         type: "post_battle",
@@ -5936,8 +6473,13 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
           transactions: draft.transactions.map((entry) => ({
             action: entry.action,
             itemName: entry.itemName,
+            equipmentItemId: entry.equipmentItemId,
             value: entry.value,
             assignedTo: entry.assignedTo,
+            removeFrom: entry.removeFrom,
+            rareRoll: entry.rareRoll,
+            availability: entry.availability,
+            applyToRoster: entry.applyToRoster,
             notes: entry.notes
           })),
           advances: draft.advances.map((entry) => ({
@@ -5968,6 +6510,7 @@ function previewRosterUpdates(roster: Roster, draft: AfterBattleDraft): string[]
     ...draft.injuries.filter((entry) => entry.result || entry.resolvedOutsideApp).map((entry) => `${entry.fighterName}: ${injurySummary(entry)}`),
     `Treasury: ${roster.treasuryGold} gc to ${draft.treasury.after} gc`,
     `Wyrdstone: ${roster.wyrdstoneShards} to ${Math.max(0, roster.wyrdstoneShards + draft.exploration.wyrdstoneShards - draft.treasury.wyrdstoneSold)}`,
+    ...previewTradingRosterEffects(roster, draft),
     ...draft.rosterUpdates.map((entry) => entry.description).filter(Boolean)
   ];
   return lines.length ? lines : ["No roster updates recorded."];
@@ -5998,6 +6541,9 @@ function reviewBlockingMessages(draft: AfterBattleDraft, roster: Roster): string
   }
   for (const advance of draft.advances) {
     if (!advance.result.trim()) messages.push(`${advance.fighterName} needs an advance result for ${advance.xpThreshold} XP.`);
+  }
+  for (const transaction of draft.transactions) {
+    if (!transaction.equipmentItemId && !transaction.itemName.trim()) messages.push("A trading entry needs an item name.");
   }
   return messages;
 }

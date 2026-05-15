@@ -529,15 +529,19 @@ h3 {
 .warband-badge {
   --badge-bg: var(--accent);
   --badge-edge: var(--accent-strong);
+  --badge-ink: #fff1d4;
   align-items: center;
   aspect-ratio: 1;
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.18), transparent 38%),
+    radial-gradient(circle at 34% 26%, rgba(255, 244, 223, 0.2), transparent 34%),
     linear-gradient(180deg, var(--badge-bg), var(--badge-edge));
   border: 2px solid rgba(255, 244, 223, 0.85);
-  border-radius: 50% 50% 45% 45%;
-  box-shadow: 0 0 0 1px rgba(48, 34, 24, 0.28), 0 6px 12px rgba(36, 29, 25, 0.2);
-  color: #fff7e8;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1px rgba(48, 34, 24, 0.38),
+    0 0 0 4px rgba(42, 30, 21, 0.1),
+    0 6px 12px rgba(36, 29, 25, 0.22);
+  color: var(--badge-ink);
   display: inline-flex;
   flex: 0 0 auto;
   font-family: Georgia, "Times New Roman", serif;
@@ -553,12 +557,45 @@ h3 {
 
 .warband-badge svg {
   fill: none;
-  height: 72%;
+  height: 94%;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 4;
-  width: 72%;
+  stroke-width: 3;
+  width: 94%;
+}
+
+.warband-badge svg.token-icon {
+  overflow: visible;
+}
+
+.token-ring {
+  stroke: rgba(255, 244, 223, 0.9);
+  stroke-width: 2;
+}
+
+.token-inner-ring {
+  stroke: rgba(255, 244, 223, 0.38);
+  stroke-width: 1.5;
+}
+
+.token-art {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.55));
+}
+
+.token-letter {
+  fill: currentColor;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 14px;
+  font-weight: 900;
+  paint-order: stroke;
+  stroke: rgba(29, 20, 14, 0.7);
+  stroke-linejoin: round;
+  stroke-width: 1.8px;
+}
+
+.token-letter-wide {
+  font-size: 11px;
 }
 
 .warband-badge > span {
@@ -570,18 +607,32 @@ h3 {
 }
 
 .warband-badge::after {
-  background: rgba(255, 244, 223, 0.75);
-  bottom: 5px;
-  content: "";
-  height: 2px;
-  left: 11px;
-  position: absolute;
-  right: 11px;
+  display: none;
 }
 
 .warband-badge.large {
   font-size: 1.05rem;
   height: 56px;
+}
+
+.warband-badge.has-token-image {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  overflow: visible;
+  padding: 0;
+}
+
+.warband-token-picture,
+.warband-token-picture img {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.warband-token-picture img {
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(36, 29, 25, 0.28));
 }
 
 .badge-witch-hunters {
@@ -597,6 +648,11 @@ h3 {
 .badge-skaven {
   --badge-bg: #657a2d;
   --badge-edge: #344416;
+}
+
+.badge-skaven-of-clan-pestilens {
+  --badge-bg: #687a35;
+  --badge-edge: #263817;
 }
 
 .badge-undead {
@@ -640,9 +696,37 @@ h3 {
   --badge-edge: #174a4d;
 }
 
-.badge-reiklanders,
-.badge-middenheimers,
+.badge-reiklanders {
+  --badge-bg: #8d2f1d;
+  --badge-edge: #3f1710;
+}
+
+.badge-middenheimers {
+  --badge-bg: #315970;
+  --badge-edge: #142b39;
+}
+
 .badge-marienburgers {
+  --badge-bg: #253d55;
+  --badge-edge: #101c27;
+}
+
+.badge-averlanders {
+  --badge-bg: #a36f18;
+  --badge-edge: #4e3107;
+}
+
+.badge-cult-of-the-possessed {
+  --badge-bg: #8a2d1f;
+  --badge-edge: #34100d;
+}
+
+.badge-kislevites {
+  --badge-bg: #315d74;
+  --badge-edge: #142c3a;
+}
+
+.badge-ostlanders {
   --badge-bg: #865a36;
   --badge-edge: #52331d;
 }
@@ -2147,7 +2231,13 @@ button.blocked,
 .play-card-grid {
   display: grid;
   gap: 0.85rem;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 980px) {
+  .play-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .play-fighter-card {
@@ -2165,6 +2255,16 @@ button.blocked,
   display: grid;
   gap: 0.75rem;
   padding: 0.9rem;
+}
+
+.sr-only {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 .play-fighter-card.status-out_of_action {
@@ -2190,11 +2290,11 @@ button.blocked,
   border-top-color: #4f6a36;
 }
 
-.play-fighter-card header {
+.fighter-card-header {
   align-items: start;
-  display: grid;
+  display: flex;
   gap: 0.75rem;
-  grid-template-columns: minmax(0, 1fr) minmax(150px, 0.75fr);
+  justify-content: space-between;
 }
 
 .play-fighter-card h3 {
@@ -2208,41 +2308,164 @@ button.blocked,
   margin: 0;
 }
 
-.compact-profile {
-  border: 1px solid var(--line-dark);
-  border-radius: 8px;
-  display: grid;
-  grid-template-columns: repeat(9, minmax(28px, 1fr));
-  overflow: hidden;
+.fighter-card-identity {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
-.compact-profile div {
+.fighter-card-identity h3,
+.fighter-card-identity p {
+  overflow-wrap: anywhere;
+}
+
+.fighter-card-icon {
+  align-items: center;
+  background: #f6ecd7;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--accent);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 3rem;
+  justify-content: center;
+  width: 3rem;
+}
+
+.fighter-card-icon svg {
+  height: 1.45rem;
+  width: 1.45rem;
+}
+
+.fighter-status-pill {
+  align-items: center;
+  background: #dfecd9;
+  border: 1px solid rgba(94, 125, 68, 0.22);
+  border-radius: 999px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0 0.35rem;
+}
+
+.fighter-status-pill select {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: #28502a;
+  cursor: pointer;
+  font-weight: 900;
+  min-height: 34px;
+  padding: 0 0.7rem;
+  text-align: center;
+}
+
+.fighter-status-pill.status-hidden {
+  background: #e6edda;
+}
+
+.fighter-status-pill.status-knocked_down,
+.fighter-status-pill.status-stunned {
+  background: #fff2c4;
+  border-color: rgba(184, 132, 36, 0.3);
+}
+
+.fighter-status-pill.status-out_of_action {
+  background: #f5d8cf;
+  border-color: rgba(143, 33, 27, 0.28);
+}
+
+.fighter-stat-grid {
+  border-radius: 8px;
   display: grid;
-  min-height: 44px;
+  gap: 0.3rem;
+  grid-template-columns: repeat(9, minmax(28px, 1fr));
+}
+
+.stat-box {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  min-height: 64px;
+  overflow: hidden;
   place-items: center;
 }
 
-.compact-profile div + div {
-  border-left: 1px solid var(--line-soft);
-}
-
-.compact-profile span {
-  background: #27211c;
+.stat-box span {
+  background: #294d4b;
   color: #f5ead5;
-  font-size: 0.72rem;
-  font-weight: 800;
-  padding: 0.15rem;
+  font-size: 0.74rem;
+  font-weight: 900;
+  padding: 0.28rem 0.15rem;
   text-align: center;
   width: 100%;
 }
 
-.compact-profile strong {
-  font-size: 1rem;
+.stat-box strong {
+  background: rgba(255, 250, 240, 0.7);
+  display: grid;
+  font-size: 1.15rem;
+  min-height: 38px;
+  place-items: center;
+  width: 100%;
 }
 
-.compact-profile strong,
-.profile-table span {
-  background: #f8ecd0;
+.fighter-state-row {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.fighter-small-panel {
+  background: rgba(255, 250, 240, 0.56);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.35rem;
+  min-height: 86px;
+  padding: 0.7rem;
+}
+
+.fighter-small-panel > span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.fighter-small-panel > div {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.fighter-small-panel small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.inline-stepper {
+  align-items: center;
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: 42px minmax(44px, 1fr) 42px;
+  width: 100%;
+}
+
+.inline-stepper button {
+  justify-content: center;
+  min-width: 42px;
+  padding-inline: 0.4rem;
+}
+
+.inline-stepper strong {
+  text-align: center;
+}
+
+.battle-xp-stepper strong {
+  font-size: 1.1rem;
 }
 
 .play-xp-line,
@@ -2295,6 +2518,86 @@ button.blocked,
   justify-content: center;
   min-width: 42px;
   padding-inline: 0.65rem;
+}
+
+.relevant-rules-panel {
+  background: rgba(255, 250, 240, 0.34);
+  border: 2px solid rgba(36, 29, 25, 0.85);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.relevant-rules-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: var(--ink);
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0.85rem;
+  width: 100%;
+}
+
+.relevant-rules-toggle > span {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.45rem;
+}
+
+.relevant-rules-toggle b {
+  background: rgba(36, 29, 25, 0.08);
+  border-radius: 999px;
+  color: var(--muted);
+  display: inline-grid;
+  min-width: 1.6rem;
+  padding: 0.15rem 0.45rem;
+  place-items: center;
+}
+
+.relevant-rules-body {
+  background: rgba(234, 226, 211, 0.55);
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.8rem;
+}
+
+.equipment-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.equipment-tag {
+  background: #efe2c9;
+  border-color: rgba(119, 102, 75, 0.28);
+  border-radius: 999px;
+  min-height: 30px;
+  padding: 0.2rem 0.55rem;
+}
+
+.relevant-rule-grid {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.relevant-rule-button {
+  align-items: start;
+  background: #fffaf0;
+  border-color: var(--line);
+  display: grid;
+  gap: 0.15rem;
+  justify-items: start;
+  min-height: 54px;
+  text-align: left;
+}
+
+.relevant-rule-button span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .play-chip-section {
@@ -2676,6 +2979,46 @@ button.blocked,
   align-items: end;
 }
 
+.transaction-row-wide {
+  align-items: stretch;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.transaction-row-header,
+.transaction-hint,
+.transaction-warning {
+  grid-column: 1 / -1;
+}
+
+.transaction-row-header {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+  justify-content: space-between;
+}
+
+.transaction-hint {
+  color: var(--muted);
+  margin: 0;
+}
+
+.transaction-warning {
+  background: rgba(143, 33, 27, 0.08);
+  border: 1px solid rgba(143, 33, 27, 0.24);
+  border-radius: 8px;
+  color: var(--accent);
+  padding: 0.55rem;
+}
+
+.transaction-warning p {
+  margin: 0.15rem 0;
+}
+
+.transaction-toggle {
+  align-self: end;
+  min-height: 42px;
+}
+
 .automatic-update-list {
   background: rgba(255, 250, 240, 0.5);
   border: 1px solid var(--line);
@@ -2842,17 +3185,25 @@ button.blocked,
     max-width: 92px;
   }
 
-  .play-fighter-card header {
+  .fighter-card-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .fighter-stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .fighter-state-row,
+  .relevant-rule-grid {
     grid-template-columns: 1fr;
   }
 
-  .profile-table,
-  .compact-profile {
+  .profile-table {
     overflow-x: auto;
   }
 
-  .profile-table > div,
-  .compact-profile {
+  .profile-table > div {
     min-width: 378px;
   }
 
@@ -2885,8 +3236,9 @@ button.blocked,
   .play-actions,
   .play-controls,
   .rules-search-panel,
-  .play-fighter-card header label,
-  .battle-xp-controls,
+  .fighter-status-pill,
+  .inline-stepper button,
+  .relevant-rules-toggle,
   .equipment-picker select,
   .equipment-option button,
   .icon-danger,
@@ -3161,8 +3513,9 @@ button.blocked,
 
   .play-summary,
   .play-fighter-card,
-  .compact-profile,
-  .battle-xp-controls,
+  .fighter-stat-grid,
+  .fighter-small-panel,
+  .relevant-rules-panel,
   .play-notes {
     background: #ffffff;
     border-color: #333333;
@@ -3192,9 +3545,8 @@ button.blocked,
     padding: 0.38rem;
   }
 
-  .play-fighter-card header {
+  .fighter-card-header {
     gap: 0.15rem;
-    grid-template-columns: 1fr;
   }
 
   .play-fighter-card h3 {
@@ -3203,47 +3555,56 @@ button.blocked,
   }
 
   .play-fighter-card header p,
-  .play-xp-line span,
-  .wound-tracker span,
+  .fighter-small-panel > span,
   .print-status {
     color: #222222;
   }
 
-  .compact-profile {
+  .fighter-stat-grid {
     border-radius: 0;
+    gap: 0;
   }
 
-  .compact-profile div {
+  .stat-box {
+    border-radius: 0;
     min-height: 28px;
   }
 
-  .compact-profile span {
+  .stat-box span {
     background: #eeeeee;
     color: #111111;
     font-size: 7pt;
     padding: 0.05rem;
   }
 
-  .compact-profile strong {
+  .stat-box strong {
     font-size: 10pt;
+    min-height: 22px;
   }
 
-  .play-xp-line,
-  .wound-tracker {
-    gap: 0.25rem;
+  .fighter-state-row {
+    gap: 0.18rem;
   }
 
-  .wound-tracker button {
-    display: none;
-  }
-
-  .play-xp-line span,
-  .wound-tracker span {
+  .fighter-small-panel {
     background: transparent;
     border: 1px solid #888888;
     border-radius: 0;
     font-size: 8pt;
-    padding: 0.08rem 0.25rem;
+    min-height: 0;
+    padding: 0.15rem 0.25rem;
+  }
+
+  .relevant-rules-body {
+    background: #ffffff;
+    padding: 0.25rem;
+  }
+
+  .relevant-rule-button,
+  .equipment-tag {
+    border-color: #888888;
+    min-height: 0;
+    padding: 0.12rem 0.25rem;
   }
 
   .paper-trackers {

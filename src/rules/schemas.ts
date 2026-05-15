@@ -344,8 +344,13 @@ export const campaignLogDetailsSchema = z.object({
   transactions: z.array(z.object({
     action: z.string(),
     itemName: z.string(),
+    equipmentItemId: z.string().optional(),
     value: z.number().optional(),
     assignedTo: z.string().optional(),
+    removeFrom: z.string().optional(),
+    rareRoll: z.number().optional(),
+    availability: z.string().optional(),
+    applyToRoster: z.boolean().optional(),
     notes: z.string().optional()
   })).default([]),
   advances: z.array(z.object({

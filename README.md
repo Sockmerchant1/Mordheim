@@ -2,7 +2,7 @@
 
 An unofficial local-first Mordheim roster and campaign helper. The app separates canonical rules data from player roster state so rosters reference structured records for fighter types, equipment, skills, special rules, source documents and campaign log entries.
 
-The first fully seeded warbands are **Witch Hunters**, the official **Mercenaries** variants, **Sisters of Sigmar**, **Carnival of Chaos**, **Skaven**, **Skaven of Clan Pestilens**, **Undead**, **Orc Mob**, **Shadow Warriors**, **Lizardmen**, and **Forest Goblins**. The attached workbook was used as a roster layout and data-entry reference only; Broheim-hosted rule documents are treated as the source references.
+The first fully seeded warbands are **Witch Hunters**, the official **Mercenaries** variants, **Sisters of Sigmar**, **Carnival of Chaos**, **Skaven**, **Skaven of Clan Pestilens**, **Undead**, **Orc Mob**, **Dwarf Treasure Hunters**, **Beastmen Raiders**, **Shadow Warriors**, **Lizardmen**, **Forest Goblins**, and **Black Orcs**. The attached workbook was used as a roster layout and data-entry reference only; Broheim-hosted rule documents are treated as the source references.
 
 ## Stack
 
@@ -83,6 +83,8 @@ The Create Warband screen also includes legal starter roster templates for imple
 
 The After Battle flow compares pre-battle XP with final XP using the central advancement threshold helper in `src/rules/engine.ts`, queues one advance slot per crossed threshold, and writes one campaign history entry when updates are applied. Serious injury and exploration steps use the shared dice/table helper in `src/rules/tableDice.ts`, so rolls can fill draft fields while still allowing manual overrides.
 
+The Trading step is a post-battle ledger. Canonical equipment records can be bought, sold, found, moved between stash and fighters, or logged as discarded. Gold changes are folded into the treasury preview, and canonical stash/fighter equipment changes are applied only when the final After Battle review is confirmed. Custom items and unusual trading outcomes can still be logged as notes.
+
 ## Game Scheduler
 
 The Schedule page is separate from local warband storage. It stores the local player profile in browser storage, then uses a scheduler store abstraction in `src/scheduler/store.ts`.
@@ -138,9 +140,14 @@ Hired swords are seeded from local data and can be hired from the Roster Editor.
 - Skaven of Clan Pestilens
 - Undead
 - Orc Mob
+- Dwarf Treasure Hunters
+- Beastmen Raiders
 - Shadow Warriors
 - Lizardmen
 - Forest Goblins
+- Black Orcs
+
+Current Grade 1a official warbands still to seed: Averlanders, Cult of the Possessed, Kislevites, and Ostlanders.
 
 ## Adding A Warband
 

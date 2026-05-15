@@ -2,13 +2,13 @@
 
 - Witch Hunters, the three official Mercenary variants, Sisters of Sigmar, Carnival of Chaos, Skaven, Skaven of Clan Pestilens, Undead, Orc Mob, Dwarf Treasure Hunters, Beastmen Raiders, Shadow Warriors, Lizardmen, Forest Goblins, and Black Orcs are implemented and covered by rules-engine verification.
 - Warband index discovery is implemented, but most discovered warbands are still `not_started`.
-- Trading post rarity, rare item search, campaign discounts and selling rules are not fully automated.
-- Play Mode and the After Battle workflow are implemented. Serious injury and exploration rolls now have dice/table helpers, but trading availability and most roster update details remain manual entry by design.
+- Trading post rarity, rare item search, campaign discounts and exact selling rules are not fully automated.
+- Play Mode and the After Battle workflow are implemented. Serious injury and exploration rolls now have dice/table helpers, and the Trading step can apply canonical equipment changes to stash or fighters after final review. Rare availability, unusual trade results and custom item handling remain manual by design.
 - The Campaign page now summarizes existing roster history, economy, fighter progression and reminders. It does not yet implement full multi-warband campaign standings, territories or automated trading-post upkeep.
 - The Game Scheduler page supports shared scheduling through a Google Apps Script endpoint backed by the campaign Google Sheet. Until `VITE_SCHEDULER_APPS_SCRIPT_URL` is configured, it uses local fallback data on the current device only.
 - Scheduler login is password-protected through Apps Script. This is suitable for a friendly campaign but is not a replacement for full account security, audit logs or role-based admin controls.
 - Google Calendar invite creation is delegated to Apps Script. Updating an existing calendar invite after a game changes is marked as a future improvement; the first pass avoids duplicate event creation.
-- The After Battle flow applies XP, recorded advances, serious injury notes, treasury, wyrdstone and campaign history. Recruiting, equipment moves and other roster edits are captured as review notes for now, then can be handled in the Roster Editor.
+- The After Battle flow applies XP, recorded advances, serious injury notes, treasury, wyrdstone, campaign history and canonical trading equipment changes. Recruiting new warriors, custom items and unusual roster edits are captured as review notes for now, then can be handled in the Roster Editor.
 - The rules lookup drawer uses concise local summaries and placeholder entries where full wording has not been reviewed into the rules data.
 - Serious injury and exploration tables can be rolled from the app and highlighted in rules lookup; less common roll tables still need structured data before they can be automated.
 - Core hired swords can be hired from the Roster Editor. Their fixed equipment is modeled as canonical equipment records and generated hired sword equipment lists, including Elf Bow, Elven Cloak, Lance, Warhorse, Staff, Spiked Gauntlet and the Halfling cooking pot.

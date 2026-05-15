@@ -798,7 +798,7 @@ function errorCodes(roster) {
 }
 
 async function loadRulesDb() {
-  const [sourceDocuments, equipmentItems, skillSeed, specialRules, hiredSwords, ruleReferences, witchHunters, mercenaries, sisters, carnival, skaven, pestilens, undead, orcMob, shadowWarriors, lizardmen, forestGoblins] = await Promise.all([
+  const [sourceDocuments, equipmentItems, skillSeed, specialRules, hiredSwords, ruleReferences, witchHunters, mercenaries, sisters, carnival, skaven, pestilens, undead, orcMob, beastmenRaiders, blackOrcs, dwarfTreasureHunters, shadowWarriors, lizardmen, forestGoblins] = await Promise.all([
     readJson("../src/data/sources.json"),
     readJson("../src/data/equipment.json"),
     readJson("../src/data/skills.json"),
@@ -813,6 +813,9 @@ async function loadRulesDb() {
     readJson("../src/data/warbands/skaven-pestilens.json"),
     readJson("../src/data/warbands/undead.json"),
     readJson("../src/data/warbands/orc-mob.json"),
+    readJson("../src/data/warbands/beastmen-raiders.json"),
+    readJson("../src/data/warbands/black-orcs.json"),
+    readJson("../src/data/warbands/dwarf-treasure-hunters.json"),
     readJson("../src/data/warbands/shadow-warriors.json"),
     readJson("../src/data/warbands/lizardmen.json"),
     readJson("../src/data/warbands/forest-goblins.json")
@@ -824,6 +827,9 @@ async function loadRulesDb() {
   const pestilensSeed = warbandSeedSchema.parse(pestilens);
   const undeadSeed = warbandSeedSchema.parse(undead);
   const orcMobSeed = warbandSeedSchema.parse(orcMob);
+  const beastmenRaidersSeed = warbandSeedSchema.parse(beastmenRaiders);
+  const blackOrcsSeed = warbandSeedSchema.parse(blackOrcs);
+  const dwarfTreasureHuntersSeed = warbandSeedSchema.parse(dwarfTreasureHunters);
   const shadowWarriorsSeed = warbandSeedSchema.parse(shadowWarriors);
   const lizardmenSeed = warbandSeedSchema.parse(lizardmen);
   const forestGoblinsSeed = warbandSeedSchema.parse(forestGoblins);
@@ -874,10 +880,10 @@ async function loadRulesDb() {
     }));
   return rulesDbSchema.parse({
     sourceDocuments,
-    warbandTypes: [warbandSeed.warbandType, sistersSeed.warbandType, carnivalSeed.warbandType, skavenSeed.warbandType, pestilensSeed.warbandType, undeadSeed.warbandType, orcMobSeed.warbandType, shadowWarriorsSeed.warbandType, lizardmenSeed.warbandType, forestGoblinsSeed.warbandType, ...mercenarySeed.warbandTypes],
-    fighterTypes: [...warbandSeed.fighterTypes, ...sistersSeed.fighterTypes, ...carnivalSeed.fighterTypes, ...skavenSeed.fighterTypes, ...pestilensSeed.fighterTypes, ...undeadSeed.fighterTypes, ...orcMobSeed.fighterTypes, ...shadowWarriorsSeed.fighterTypes, ...lizardmenSeed.fighterTypes, ...forestGoblinsSeed.fighterTypes, ...mercenarySeed.fighterTypes, ...hiredSwordFighterTypes],
+    warbandTypes: [warbandSeed.warbandType, sistersSeed.warbandType, carnivalSeed.warbandType, skavenSeed.warbandType, pestilensSeed.warbandType, undeadSeed.warbandType, orcMobSeed.warbandType, beastmenRaidersSeed.warbandType, blackOrcsSeed.warbandType, dwarfTreasureHuntersSeed.warbandType, shadowWarriorsSeed.warbandType, lizardmenSeed.warbandType, forestGoblinsSeed.warbandType, ...mercenarySeed.warbandTypes],
+    fighterTypes: [...warbandSeed.fighterTypes, ...sistersSeed.fighterTypes, ...carnivalSeed.fighterTypes, ...skavenSeed.fighterTypes, ...pestilensSeed.fighterTypes, ...undeadSeed.fighterTypes, ...orcMobSeed.fighterTypes, ...beastmenRaidersSeed.fighterTypes, ...blackOrcsSeed.fighterTypes, ...dwarfTreasureHuntersSeed.fighterTypes, ...shadowWarriorsSeed.fighterTypes, ...lizardmenSeed.fighterTypes, ...forestGoblinsSeed.fighterTypes, ...mercenarySeed.fighterTypes, ...hiredSwordFighterTypes],
     equipmentItems,
-    equipmentLists: [...warbandSeed.equipmentLists, ...sistersSeed.equipmentLists, ...carnivalSeed.equipmentLists, ...skavenSeed.equipmentLists, ...pestilensSeed.equipmentLists, ...undeadSeed.equipmentLists, ...orcMobSeed.equipmentLists, ...shadowWarriorsSeed.equipmentLists, ...lizardmenSeed.equipmentLists, ...forestGoblinsSeed.equipmentLists, ...mercenarySeed.equipmentLists, ...hiredSwordEquipmentLists],
+    equipmentLists: [...warbandSeed.equipmentLists, ...sistersSeed.equipmentLists, ...carnivalSeed.equipmentLists, ...skavenSeed.equipmentLists, ...pestilensSeed.equipmentLists, ...undeadSeed.equipmentLists, ...orcMobSeed.equipmentLists, ...beastmenRaidersSeed.equipmentLists, ...blackOrcsSeed.equipmentLists, ...dwarfTreasureHuntersSeed.equipmentLists, ...shadowWarriorsSeed.equipmentLists, ...lizardmenSeed.equipmentLists, ...forestGoblinsSeed.equipmentLists, ...mercenarySeed.equipmentLists, ...hiredSwordEquipmentLists],
     skillCategories: skillSeed.categories,
     skills: skillSeed.skills,
     specialRules,
