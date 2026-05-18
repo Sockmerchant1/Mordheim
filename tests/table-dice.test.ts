@@ -13,6 +13,13 @@ import {
 const records = rulesLookupSeed as TableLookupRecord[];
 
 describe("smart table dice helpers", () => {
+  it("has a useful Black Orc Animosity lookup record", () => {
+    const animosity = records.find((record) => record.id === "special-black-orc-warband-animosity") as { text?: string } | undefined;
+
+    expect(animosity?.text).toContain("roll again");
+    expect(animosity?.text).toContain("nearest enemy");
+  });
+
   it("matches D66 serious injury rolls to table rows", () => {
     const match = findTableRowForRoll(records, "table-serious-injuries", 31, "Heroes' Serious Injuries");
 

@@ -1,0 +1,217 @@
+{
+  "warbandType": {
+    "id": "cult-of-the-possessed",
+    "name": "Cult of the Possessed",
+    "race": "Chaos Human/Mutant",
+    "broheimGrade": "1a",
+    "sourceCode": "MHR",
+    "sourceDocumentId": "mhr-cult-of-the-possessed",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+    "implementationStatus": "tested",
+    "startingGold": 500,
+    "minWarriors": 3,
+    "maxWarriors": 15,
+    "maxHeroes": 5,
+    "leaderFighterTypeId": "magister",
+    "notes": "Official Cult of the Possessed warband. Mutants must start with at least one mutation; Possessed may buy mutations. Second and later mutations on the same model cost double."
+  },
+  "fighterTypes": [
+    {
+      "id": "magister",
+      "warbandTypeId": "cult-of-the-possessed",
+      "name": "Magister",
+      "category": "hero",
+      "minCount": 1,
+      "maxCount": 1,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 70,
+      "startingExperience": 20,
+      "profile": { "M": 4, "WS": 4, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 8 },
+      "equipmentListIds": ["cult-equipment"],
+      "skillCategoryIds": ["combat", "academic", "speed"],
+      "specialRuleIds": ["leader", "spellcaster", "chaos-rituals"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Required leader and wizard using Chaos Rituals.",
+      "source": {
+        "sourceDocumentId": "mhr-cult-of-the-possessed",
+        "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+        "pageRef": "Cult of the Possessed p. 12",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "possessed",
+      "warbandTypeId": "cult-of-the-possessed",
+      "name": "Possessed",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 90,
+      "startingExperience": 8,
+      "profile": { "M": 5, "WS": 4, "BS": 0, "S": 4, "T": 4, "W": 2, "I": 4, "A": 2, "Ld": 7 },
+      "equipmentListIds": ["cult-mutation-options"],
+      "skillCategoryIds": ["combat", "strength", "speed"],
+      "specialRuleIds": ["fear", "cult-mutations"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Never uses weapons or armour. May start with one or more mutations.",
+      "source": {
+        "sourceDocumentId": "mhr-cult-of-the-possessed",
+        "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+        "pageRef": "Cult of the Possessed p. 12",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "mutant",
+      "warbandTypeId": "cult-of-the-possessed",
+      "name": "Mutant",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 25,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["cult-equipment", "cult-mutation-options"],
+      "skillCategoryIds": ["combat", "speed"],
+      "specialRuleIds": ["cult-mutations"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Must start with one or more mutations.",
+      "validation": {
+        "requiredOneOfEquipmentItemIds": [
+          "mutation-daemon-soul",
+          "mutation-great-claw",
+          "mutation-cloven-hoofs",
+          "mutation-tentacle",
+          "mutation-blackblood",
+          "mutation-spines",
+          "mutation-scorpion-tail",
+          "mutation-extra-arm",
+          "mutation-hideous"
+        ],
+        "warbandMaxWarriorsBonus": 0,
+        "maxCountPerFighterTypeIds": []
+      },
+      "source": {
+        "sourceDocumentId": "mhr-cult-of-the-possessed",
+        "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+        "pageRef": "Cult of the Possessed p. 12 and p. 14",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "cult-brethren",
+      "warbandTypeId": "cult-of-the-possessed",
+      "name": "Brethren",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": null,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 25,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["cult-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": [],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "May be included in any number, subject to overall warband size.",
+      "source": {
+        "sourceDocumentId": "mhr-cult-of-the-possessed",
+        "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+        "pageRef": "Cult of the Possessed p. 13",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "darksoul",
+      "warbandTypeId": "cult-of-the-possessed",
+      "name": "Darksoul",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": 5,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 35,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 2, "BS": 2, "S": 4, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 6 },
+      "equipmentListIds": ["cult-darksoul-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["crazed"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Automatically passes Leadership tests.",
+      "source": {
+        "sourceDocumentId": "mhr-cult-of-the-possessed",
+        "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+        "pageRef": "Cult of the Possessed p. 13",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "cult-beastman",
+      "warbandTypeId": "cult-of-the-possessed",
+      "name": "Beastman",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": 3,
+      "groupMinSize": 1,
+      "groupMaxSize": 3,
+      "hireCost": 45,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 4, "BS": 3, "S": 3, "T": 4, "W": 2, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["cult-darksoul-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": [],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Beastmen Gors use the Darksouls equipment list.",
+      "source": {
+        "sourceDocumentId": "mhr-cult-of-the-possessed",
+        "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+        "pageRef": "Cult of the Possessed p. 13",
+        "label": "Henchmen"
+      }
+    }
+  ],
+  "equipmentLists": [
+    {
+      "id": "cult-equipment",
+      "name": "Cult of the Possessed Equipment List",
+      "warbandTypeId": "cult-of-the-possessed",
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "double-handed-weapon", "spear", "cult-bow", "cult-short-bow", "light-armour", "heavy-armour", "shield", "helmet"],
+      "appliesToFighterTypeIds": ["magister", "mutant", "cult-brethren"],
+      "notes": "Possessed equipment list for Magisters, Mutants and Brethren."
+    },
+    {
+      "id": "cult-darksoul-equipment",
+      "name": "Darksouls Equipment List",
+      "warbandTypeId": "cult-of-the-possessed",
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "double-handed-weapon", "flail", "light-armour", "heavy-armour", "shield", "helmet"],
+      "appliesToFighterTypeIds": ["darksoul", "cult-beastman"],
+      "notes": "Darksouls and Beastmen only. This list has no missile weapons."
+    },
+    {
+      "id": "cult-mutation-options",
+      "name": "Cult Mutation Options",
+      "warbandTypeId": "cult-of-the-possessed",
+      "allowedEquipmentItemIds": ["mutation-daemon-soul", "mutation-great-claw", "mutation-cloven-hoofs", "mutation-tentacle", "mutation-blackblood", "mutation-spines", "mutation-scorpion-tail", "mutation-extra-arm", "mutation-hideous"],
+      "appliesToFighterTypeIds": ["possessed", "mutant"],
+      "notes": "Mutations may be bought for Possessed and Mutants at recruitment. Second and later mutations on the same model cost double."
+    }
+  ]
+}

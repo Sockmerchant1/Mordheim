@@ -26,6 +26,22 @@ export type StarterRosterTemplate = {
 
 export const starterRosterTemplates: StarterRosterTemplate[] = [
   {
+    id: "averlanders-balanced",
+    warbandTypeId: "averlanders",
+    name: "Black Fire Patrol",
+    summary: "A flexible Averland start with Captain, Sergeant, Bergjaeger, Youngblood, Mountainguard, Marksmen and a Halfling.",
+    playStyle: "Strong ranged access, reliable human bodies and a Bergjaeger for trap tricks.",
+    members: [
+      { fighterTypeId: "averland-captain", displayName: "Captain Leitdorf", equipment: ["dagger", "sword"] },
+      { fighterTypeId: "averland-sergeant", displayName: "Sergeant Voss", equipment: ["dagger", "hammer"] },
+      { fighterTypeId: "averland-bergjaeger", displayName: "Klaus", equipment: ["dagger", "bow"] },
+      { fighterTypeId: "averland-youngblood", displayName: "Milo", equipment: ["dagger"] },
+      { fighterTypeId: "mountainguard", displayName: "Black Fire Guard", groupSize: 2, equipment: ["dagger", "mace"] },
+      { fighterTypeId: "averland-marksman", displayName: "Hill Marksmen", groupSize: 2, equipment: ["dagger", "bow"] },
+      { fighterTypeId: "averland-halfling-scout", displayName: "Pip", groupSize: 1, equipment: ["dagger", "bow"] }
+    ]
+  },
+  {
     id: "witch-hunters-balanced",
     warbandTypeId: "witch-hunters",
     name: "Ashen Bell Company",
@@ -43,7 +59,7 @@ export const starterRosterTemplates: StarterRosterTemplate[] = [
   {
     id: "reiklanders-balanced",
     warbandTypeId: "reiklanders",
-    name: "Reikland Company",
+    name: "The Griffon Lanterns",
     summary: "A dependable mercenary crew with all key hero slots and a bow-armed marksman.",
     playStyle: "Reliable leadership, mixed melee and a small shooting base.",
     members: [
@@ -58,7 +74,7 @@ export const starterRosterTemplates: StarterRosterTemplate[] = [
   {
     id: "middenheimers-balanced",
     warbandTypeId: "middenheimers",
-    name: "Middenheim Company",
+    name: "White Wolf Ironsworn",
     summary: "A hard-hitting mercenary band using the same practical core as the Reiklanders.",
     playStyle: "Melee-leaning heroes with enough bodies to avoid early rout pressure.",
     members: [
@@ -73,7 +89,7 @@ export const starterRosterTemplates: StarterRosterTemplate[] = [
   {
     id: "marienburgers-balanced",
     warbandTypeId: "marienburgers",
-    name: "Marienburg Company",
+    name: "The Gilded Gull Company",
     summary: "A wealthy mercenary start with the same broad shape and extra gold left for upgrades.",
     playStyle: "Flexible, forgiving and easy to customise after creation.",
     members: [
@@ -114,9 +130,24 @@ export const starterRosterTemplates: StarterRosterTemplate[] = [
     ]
   },
   {
+    id: "cult-of-the-possessed-balanced",
+    warbandTypeId: "cult-of-the-possessed",
+    name: "The Red Sable",
+    summary: "A legal Cult start with Magister, Possessed, two Mutants, Brethren and a Darksoul.",
+    playStyle: "Mutation-driven heroes with expendable cultists and one reliable Crazed henchman.",
+    members: [
+      { fighterTypeId: "magister", displayName: "Magister Varr", equipment: ["dagger", "sword"] },
+      { fighterTypeId: "possessed", displayName: "The Vessel", equipment: [] },
+      { fighterTypeId: "mutant", displayName: "Ghorst", equipment: ["dagger", "axe", "mutation-hideous"] },
+      { fighterTypeId: "mutant", displayName: "Ilya", equipment: ["dagger", "mace", "mutation-cloven-hoofs"] },
+      { fighterTypeId: "cult-brethren", displayName: "Red Brethren", groupSize: 2, equipment: ["dagger", "mace"] },
+      { fighterTypeId: "darksoul", displayName: "Broken Mask", groupSize: 1, equipment: ["dagger", "axe"] }
+    ]
+  },
+  {
     id: "skaven-balanced",
     warbandTypeId: "skaven",
-    name: "Needle Pack",
+    name: "The Needlefang Pact",
     summary: "A fast Skaven start with Assassin, Sorcerer, Black Skaven, Night Runner and rats.",
     playStyle: "Speed, numbers and cheap shooting with slings.",
     members: [
@@ -175,7 +206,7 @@ export const starterRosterTemplates: StarterRosterTemplate[] = [
   {
     id: "black-orcs-balanced",
     warbandTypeId: "black-orcs",
-    name: "Ironjaw's Bashers",
+    name: "Da Ironjaw Krumpany",
     summary: "A compact Black Orc start with Boss, Black Orc, upgraded Young'un, Boyz, Shootaz and a Nutta.",
     playStyle: "Tough heroes, controlled shooting and one unstable melee threat.",
     members: [
@@ -218,6 +249,38 @@ export const starterRosterTemplates: StarterRosterTemplate[] = [
     ]
   },
   {
+    id: "kislevites-balanced",
+    warbandTypeId: "kislevites",
+    name: "The White Bear Oathband",
+    summary: "A flexible Kislevite start with Captain, Bear Tamer, Esaul, Youths, Warriors, Cossacks and Streltsi.",
+    playStyle: "Brave human heroes, flexible equipment and Streltsi gun-rest tricks, with room to add a bear later.",
+    members: [
+      { fighterTypeId: "druzhina-captain", displayName: "Captain Ivan", equipment: ["dagger", "sword"] },
+      { fighterTypeId: "bear-tamer", displayName: "Mikhail", equipment: ["dagger", "axe"] },
+      { fighterTypeId: "esaul", displayName: "Boris", equipment: ["dagger", "hammer"] },
+      { fighterTypeId: "kislev-youth", displayName: "Yuri", equipment: ["dagger"] },
+      { fighterTypeId: "kislev-warrior", displayName: "Gospodar Warriors", groupSize: 2, equipment: ["dagger", "mace"] },
+      { fighterTypeId: "cossack", displayName: "Steppe Cossacks", groupSize: 2, equipment: ["dagger", "spear"] },
+      { fighterTypeId: "streltsi", displayName: "Erengrad Streltsi", groupSize: 2, equipment: ["dagger", "handgun"] }
+    ]
+  },
+  {
+    id: "ostlanders-balanced",
+    warbandTypeId: "ostlanders",
+    name: "Sable Stag Kinband",
+    summary: "A broad Ostlander start with Elder, Blood-Brothers, Priest of Taal, Kin, Ruffians and a Jaeger.",
+    playStyle: "Large human family warband with unusual morale, Taal prayers and a path toward Jaeger rifles or an Ogre later.",
+    members: [
+      { fighterTypeId: "ostlander-elder", displayName: "Elder Kruger", equipment: ["dagger", "sword"] },
+      { fighterTypeId: "blood-brother", displayName: "Hagen", equipment: ["dagger", "axe"] },
+      { fighterTypeId: "blood-brother", displayName: "Oskar", equipment: ["dagger", "hammer"] },
+      { fighterTypeId: "priest-of-taal", displayName: "Father Ulbrecht", equipment: ["dagger", "mace"] },
+      { fighterTypeId: "ostlander-kin", displayName: "Sable Kin", groupSize: 2, equipment: ["dagger", "mace"] },
+      { fighterTypeId: "ruffian", displayName: "Alehouse Ruffians", groupSize: 2, equipment: ["dagger", "mace"] },
+      { fighterTypeId: "jaeger", displayName: "Hochland Jaeger", groupSize: 1, equipment: ["dagger", "bow"] }
+    ]
+  },
+  {
     id: "shadow-warriors-balanced",
     warbandTypeId: "shadow-warriors",
     name: "Night's Edge",
@@ -234,7 +297,7 @@ export const starterRosterTemplates: StarterRosterTemplate[] = [
   {
     id: "lizardmen-balanced",
     warbandTypeId: "lizardmen",
-    name: "Children of the Sun",
+    name: "Sunscale Cohort",
     summary: "A mixed Lizardmen force with Priest, Totem Warrior, Great Crest, Skinks and Saurus.",
     playStyle: "Durable Saurus backed by mobile Skink shooting.",
     members: [

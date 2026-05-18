@@ -471,6 +471,20 @@ function equipmentOptionFor(
   ) {
     return blocked(item, `${item.name} is restricted to specific fighter types.`, source);
   }
+  const missingRequiredItem = item.validation.requiredEquipmentItemIds.find((itemId) => !member.equipment.includes(itemId));
+  if (missingRequiredItem) {
+    const requiredEquipment = findEquipment(rulesDb, missingRequiredItem);
+    return blocked(item, `${item.name} requires ${requiredEquipment?.name ?? missingRequiredItem}.`, source);
+  }
+  if (
+    item.validation.requiredAnyEquipmentItemIds.length > 0 &&
+    !item.validation.requiredAnyEquipmentItemIds.some((itemId) => member.equipment.includes(itemId))
+  ) {
+    const requiredNames = item.validation.requiredAnyEquipmentItemIds
+      .map((itemId) => findEquipment(rulesDb, itemId)?.name ?? itemId)
+      .join(" or ");
+    return blocked(item, `${item.name} requires ${requiredNames}.`, source);
+  }
   if (
     typeof item.validation.maxCountInWarband === "number" &&
     countEquipmentInRoster(roster, item.id, rulesDb, member.id) >= item.validation.maxCountInWarband &&
@@ -510,6 +524,9 @@ function validateWeaponAndArmourLimits(member: RosterMember, rulesDb: RulesDb, i
         if (item.validation.isShield || item.validation.isBuckler) acc.shieldOrBuckler += 1;
         if (item.validation.isHelmet) acc.helmets += 1;
         if (item.category === "mount") acc.mounts += 1;
+        acc.extraCloseCombatSlots += item.validation.extraCloseCombatSlots;
+        acc.extraCloseCombatSlotsRequireSingleHanded ||= item.validation.extraCloseCombatSlotsRequireSingleHanded;
+        acc.extraShieldOrBucklerSlots += item.validation.extraShieldOrBucklerSlots;
         return acc;
       },
       {
@@ -519,18 +536,29 @@ function validateWeaponAndArmourLimits(member: RosterMember, rulesDb: RulesDb, i
         shieldOrBuckler: 0,
         helmets: 0,
         mounts: 0,
+        extraCloseCombatSlots: 0,
+        extraCloseCombatSlotsRequireSingleHanded: false,
+        extraShieldOrBucklerSlots: 0,
         freeCloseCombatUsed: false
       }
     );
 
     const label = equipmentSets.length > 1 ? ` model ${index + 1}` : "";
     const weaponItems = items.filter((item) => item.category === "close_combat" || item.category === "missile");
+    const closeCombatItems = items.filter((item) => item.category === "close_combat" && item.validation.closeCombatSlots > 0);
     const exclusiveWeapon = weaponItems.find((item) => item.validation.disallowsOtherWeapons);
     const tailFightingAllowsExtraWeapon =
       counts.closeCombat === 3 &&
       member.skills.includes("tail-fighting") &&
       items.some((item) => item.id === "dagger" || item.id === "sword") &&
       !exclusiveWeapon;
+    const extraEquipmentAllowsExtraWeapon =
+      counts.closeCombat > 2 &&
+      counts.extraCloseCombatSlots > 0 &&
+      counts.closeCombat <= 2 + counts.extraCloseCombatSlots &&
+      !exclusiveWeapon &&
+      (!counts.extraCloseCombatSlotsRequireSingleHanded || closeCombatItems.every(isSingleHandedCloseCombatItem));
+    const extraWeaponSlotUsed = counts.closeCombat > 2 && extraEquipmentAllowsExtraWeapon;
     if (exclusiveWeapon && weaponItems.some((item) => item.id !== exclusiveWeapon.id)) {
       issues.push(issue("error", "CANNOT_COMBINE_WEAPONS", `${exclusiveWeapon.name} cannot be combined with other weapons.`, "This weapon is marked as requiring exclusive use in its rules metadata.", member.id, "equipment", sourceForEquipment(exclusiveWeapon), "Remove the other weapons from this fighter."));
     }
@@ -539,8 +567,17 @@ function validateWeaponAndArmourLimits(member: RosterMember, rulesDb: RulesDb, i
       if (missingRequiredItem) {
         issues.push(issue("error", "MISSING_REQUIRED_EQUIPMENT", `${item.name} requires ${findEquipment(rulesDb, missingRequiredItem)?.name ?? missingRequiredItem}.`, "This item has a paired equipment requirement in rules metadata.", member.id, "equipment", sourceForEquipment(item), "Add the required item or remove this item."));
       }
+      if (
+        item.validation.requiredAnyEquipmentItemIds.length > 0 &&
+        !item.validation.requiredAnyEquipmentItemIds.some((requiredId) => equipment.includes(requiredId))
+      ) {
+        const requiredNames = item.validation.requiredAnyEquipmentItemIds
+          .map((requiredId) => findEquipment(rulesDb, requiredId)?.name ?? requiredId)
+          .join(" or ");
+        issues.push(issue("error", "MISSING_REQUIRED_EQUIPMENT", `${item.name} requires ${requiredNames}.`, "This item has an either/or paired equipment requirement in rules metadata.", member.id, "equipment", sourceForEquipment(item), `Add ${requiredNames} or remove this item.`));
+      }
       if (item.validation.disallowsOtherEquipment) {
-        const allowedCompanions = new Set([item.id, ...item.validation.requiredEquipmentItemIds]);
+        const allowedCompanions = new Set([item.id, ...item.validation.requiredEquipmentItemIds, ...item.validation.requiredAnyEquipmentItemIds]);
         const blockedCompanion = equipment.find((itemId) => !allowedCompanions.has(itemId));
         if (blockedCompanion) {
           issues.push(issue("error", "CANNOT_COMBINE_EQUIPMENT", `${item.name} cannot be combined with ${findEquipment(rulesDb, blockedCompanion)?.name ?? blockedCompanion}.`, "This item is marked as excluding other equipment in rules metadata.", member.id, "equipment", sourceForEquipment(item), "Remove the other equipment from this fighter."));
@@ -559,7 +596,7 @@ function validateWeaponAndArmourLimits(member: RosterMember, rulesDb: RulesDb, i
         issues.push(issue("error", "EXCLUSIVE_EQUIPMENT_GROUP", `Choose only one of: ${groupItems.map((item) => item.name).join(", ")}.`, "These items are marked as mutually exclusive in rules metadata.", member.id, "equipment", sourceForEquipment(firstItem), "Remove the extra mutually exclusive item."));
       }
     }
-    if (counts.closeCombat > 2 && !tailFightingAllowsExtraWeapon) {
+    if (counts.closeCombat > 2 && !tailFightingAllowsExtraWeapon && !extraEquipmentAllowsExtraWeapon) {
       issues.push(issue("error", "TOO_MANY_CLOSE_COMBAT_WEAPONS", `This fighter${label} has too many close combat weapons.`, "A warrior may carry up to two close combat weapons in addition to the free dagger.", member.id, "equipment", source, "Remove a close combat weapon."));
     }
     if (counts.missile > 2) {
@@ -568,7 +605,7 @@ function validateWeaponAndArmourLimits(member: RosterMember, rulesDb: RulesDb, i
     if (counts.bodyArmour > 1) {
       issues.push(issue("error", "TOO_MUCH_BODY_ARMOUR", `This fighter${label} has more than one suit of body armour.`, "Only one body armour item can be worn at a time.", member.id, "equipment", source, "Keep one body armour item."));
     }
-    if (counts.shieldOrBuckler > 1) {
+    if (counts.shieldOrBuckler > 1 + (extraWeaponSlotUsed ? 0 : counts.extraShieldOrBucklerSlots)) {
       issues.push(issue("error", "TOO_MANY_SHIELDS", `This fighter${label} has more than one shield or buckler.`, "Only one shield-like item can be used at a time.", member.id, "equipment", source, "Keep either a shield or a buckler."));
     }
     if (counts.helmets > 1) {
@@ -586,6 +623,10 @@ function validateWeaponAndArmourLimits(member: RosterMember, rulesDb: RulesDb, i
       issues.push(issue("error", "DUPLICATE_NON_REPEATABLE_ITEM", `${item.name} cannot be duplicated on the same fighter.`, "The item is marked non-repeatable in rules validation metadata.", member.id, "equipment", sourceForEquipment(item), "Remove the duplicate item."));
     }
   }
+}
+
+function isSingleHandedCloseCombatItem(item: EquipmentItem) {
+  return item.validation.closeCombatSlots === 1 && !item.validation.isTwoHanded && !item.validation.disallowsOtherWeapons;
 }
 
 function validateSkills(member: RosterMember, roster: Roster, rulesDb: RulesDb, issues: ValidationIssue[]) {

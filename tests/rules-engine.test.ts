@@ -42,6 +42,23 @@ import {
   validReiklanders
 } from "./fixtures/mercenaryRosters";
 import {
+  averlandBergjaegerWithHuntingArrows,
+  averlandBergjaegerWithHuntingArrowsNoBow,
+  averlandCaptainWithBattleTongue,
+  averlandHalflingWithLongBow,
+  averlandMarksmanWithHeavyArmour,
+  averlandMountainguardWithHuntingRifle,
+  averlandersNoCaptain,
+  averlandersTwoCaptains,
+  invalidAverlandSkill,
+  tooManyAverlandHalflings,
+  tooManyAverlandSergeants,
+  tooManyAverlandWarriors,
+  tooManyAverlandYoungbloods,
+  tooManyBergjaegers,
+  validAverlanders
+} from "./fixtures/averlanderRosters";
+import {
   augurWithArmour,
   matriarchWithSpecialSkill,
   noviceWithHolyTome,
@@ -67,6 +84,27 @@ import {
   tooManyTaintedOnes,
   validCarnivalOfChaos
 } from "./fixtures/carnivalRosters";
+import {
+  cultNoMagister,
+  cultTwoMagisters,
+  darksoulWithBow,
+  invalidCultSkill,
+  magisterWithChaosRitual,
+  mutantWithExtraArmAndTwoHandedExtraWeapon,
+  mutantWithExtraArmExtraWeapon,
+  mutantWithExtraWeaponWithoutExtraArm,
+  mutantWithTwoMutations,
+  mutantWithoutMutation,
+  possessedWithChaosRitual,
+  possessedWithMutation,
+  possessedWithWeapon,
+  tooManyCultBeastmen,
+  tooManyCultWarriors,
+  tooManyDarksouls,
+  tooManyMutants,
+  tooManyPossessed,
+  validCultOfThePossessed
+} from "./fixtures/cultRosters";
 import {
   fightingClawsWithSword,
   giantRatWithWeapon,
@@ -169,6 +207,52 @@ import {
   tooManyDwarfWarriors,
   validDwarfTreasureHunters
 } from "./fixtures/dwarfTreasureHunterRosters";
+import {
+  bearTamerWithMightyBlow,
+  esaulWithQuickShot,
+  invalidKisleviteSkill,
+  kislevCaptainWithBattleTongue,
+  kislevitesNoCaptain,
+  kislevitesTwoCaptains,
+  streltsiWithGunRestKit,
+  streltsiWithHeavyArmour,
+  tooManyBearTamers,
+  tooManyEsauls,
+  tooManyKisleviteWarriors,
+  tooManyKislevYouths,
+  tooManyStreltsi,
+  tooManyTrainedBears,
+  trainedBearWithWeapon,
+  trainedBearWithoutTamer,
+  validKislevites,
+  validKislevitesWithBear,
+  warriorWithHandgun
+} from "./fixtures/kisleviteRosters";
+import {
+  bloodBrotherWithBloodOath,
+  elderWithTaalPrayer,
+  invalidOstlanderSkill,
+  jaegerWithDoubleBarrelledHuntingRifle,
+  jaegerWithHeavyArmour,
+  kinWithHuntingRifle,
+  ogreWithBow,
+  ostlanderElderWithBloodOath,
+  ostlandersNoElder,
+  ostlandersTwoElders,
+  ostlandersWithOgreBodyguard,
+  ostlandersWithWarlock,
+  priestOfTaalWithHeavyArmour,
+  priestOfTaalWithPrayer,
+  ruffianWithBow,
+  tooManyBloodBrothers,
+  tooManyJaegers,
+  tooManyOstlanderOgres,
+  tooManyOstlanders,
+  tooManyPriestsOfTaal,
+  tooManyRuffians,
+  validOstlanders,
+  validOstlandersWithOgre
+} from "./fixtures/ostlanderRosters";
 import {
   blackOrcWithBossOnlySkill,
   blackOrcsNoBoss,
@@ -574,6 +658,99 @@ describe("rules engine - Carnival of Chaos", () => {
 
     expect(masterRituals.find((option) => option.item.id === "nurgle-buboes")?.allowed).toBe(true);
     expect(bruteRituals.find((option) => option.item.id === "nurgle-buboes")?.allowed).toBe(false);
+  });
+});
+
+describe("rules engine - Cult of the Possessed", () => {
+  it("loads the official Cult of the Possessed warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { officialOnly: true }).map((warband) => warband.id);
+    expect(ids).toContain("cult-of-the-possessed");
+  });
+
+  it("validates a basic starting Cult roster", () => {
+    expect(errorCodes(validCultOfThePossessed())).toEqual([]);
+    expect(calculateRosterCost(validCultOfThePossessed(), rulesDb)).toBe(404);
+    expect(calculateWarbandRating(validCultOfThePossessed(), rulesDb)).toBe(63);
+  });
+
+  it("requires exactly one Magister and enforces fighter caps", () => {
+    expect(codes(cultNoMagister())).toContain("REQUIRED_LEADER");
+    expect(codes(cultTwoMagisters())).toContain("REQUIRED_LEADER");
+    expect(codes(tooManyCultWarriors())).toContain("MAX_WARRIORS");
+    expect(codes(tooManyPossessed())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyMutants())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyDarksouls())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyCultBeastmen())).toContain("FIGHTER_MAX_COUNT");
+  });
+
+  it("requires Mutants to buy mutations and doubles later mutation costs", () => {
+    expect(codes(mutantWithoutMutation())).toContain("REQUIRED_EQUIPMENT_OPTION");
+    expect(errorCodes(mutantWithTwoMutations())).toEqual([]);
+    expect(calculateRosterCost(mutantWithTwoMutations(), rulesDb)).toBe(449);
+  });
+
+  it("allows Extra Arm to carry one extra single-handed close combat weapon", () => {
+    expect(errorCodes(mutantWithExtraArmExtraWeapon())).toEqual([]);
+    expect(codes(mutantWithExtraWeaponWithoutExtraArm())).toContain("TOO_MANY_CLOSE_COMBAT_WEAPONS");
+    expect(codes(mutantWithExtraArmAndTwoHandedExtraWeapon())).toContain("TOO_MANY_CLOSE_COMBAT_WEAPONS");
+
+    const roster = mutantWithExtraArmExtraWeapon();
+    const mutantWithOpenExtraArmSlot = {
+      ...roster.members[2],
+      equipment: ["dagger", "axe", "sword", "mutation-extra-arm"]
+    };
+    const options = getAllowedEquipment(mutantWithOpenExtraArmSlot, roster, rulesDb);
+
+    expect(options.find((option) => option.item.id === "mace")?.allowed).toBe(true);
+    expect(options.find((option) => option.item.id === "double-handed-weapon")?.allowed).toBe(false);
+  });
+
+  it("enforces Cult equipment lists", () => {
+    expect(errorCodes(possessedWithMutation())).toEqual([]);
+    expect(codes(possessedWithWeapon())).toContain("INVALID_EQUIPMENT");
+    expect(codes(darksoulWithBow())).toContain("INVALID_EQUIPMENT");
+
+    const roster = validCultOfThePossessed();
+    const magisterOptions = getAllowedEquipment(roster.members[0], roster, rulesDb);
+    const possessedOptions = getAllowedEquipment(roster.members[1], roster, rulesDb);
+    const darksoulOptions = getAllowedEquipment(roster.members[5], roster, rulesDb);
+
+    expect(magisterOptions.find((option) => option.item.id === "cult-bow")?.allowed).toBe(true);
+    expect(possessedOptions.find((option) => option.item.id === "mutation-great-claw")?.allowed).toBe(true);
+    expect(possessedOptions.find((option) => option.item.id === "dagger")?.allowed).toBe(false);
+    expect(darksoulOptions.find((option) => option.item.id === "flail")?.allowed).toBe(true);
+    expect(darksoulOptions.find((option) => option.item.id === "cult-bow")?.allowed).toBe(false);
+  });
+
+  it("enforces Cult skill tables and Chaos Ritual access", () => {
+    expect(codes(invalidCultSkill())).toContain("INVALID_SKILL");
+    expect(errorCodes(magisterWithChaosRitual())).toEqual([]);
+    expect(codes(possessedWithChaosRitual())).toContain("INVALID_SPECIAL_RULE");
+
+    const roster = validCultOfThePossessed();
+    const magisterSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const possessedSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+    const mutantSkills = getAllowedSkills(roster.members[2], roster, rulesDb);
+    const magisterRituals = getAllowedSpecialRules(roster.members[0], roster, rulesDb);
+    const possessedRituals = getAllowedSpecialRules(roster.members[1], roster, rulesDb);
+
+    expect(magisterSkills.find((option) => option.item.id === "sorcery")?.allowed).toBe(true);
+    expect(possessedSkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(true);
+    expect(mutantSkills.find((option) => option.item.id === "step-aside")?.allowed).toBe(true);
+    expect(mutantSkills.find((option) => option.item.id === "wyrdstone-hunter")?.allowed).toBe(false);
+    expect(magisterRituals.find((option) => option.item.id === "chaos-eye-of-god")?.allowed).toBe(true);
+    expect(possessedRituals.find((option) => option.item.id === "chaos-eye-of-god")?.allowed).toBe(false);
+  });
+
+  it("returns source-backed Cult lookup data", () => {
+    const mutation = rulesDb.equipmentItems.find((item) => item.id === "mutation-daemon-soul");
+    const darksoulRule = rulesDb.specialRules.find((rule) => rule.id === "crazed");
+    const warband = rulesDb.warbandTypes.find((item) => item.id === "cult-of-the-possessed");
+
+    expect(warband?.sourceDocumentId).toBe("mhr-cult-of-the-possessed");
+    expect(mutation?.sourceDocumentId).toBe("mhr-cult-of-the-possessed");
+    expect(mutation?.validation.costGroupSubsequentMultiplier).toBe(2);
+    expect(darksoulRule?.effectSummary).toContain("Leadership tests");
   });
 });
 
@@ -1067,11 +1244,14 @@ describe("rules engine - Black Orcs", () => {
     const choppa = rulesDb.equipmentItems.find((item) => item.id === "black-orc-choppa");
     const naturalArmour = rulesDb.specialRules.find((rule) => rule.id === "black-orc-natural-armour");
     const provenWarrior = rulesDb.skills.find((skill) => skill.id === "proven-warrior");
+    const animosity = rulesDb.specialRules.find((rule) => rule.id === "black-orc-warband-animosity");
 
     expect(choppa?.sourceDocumentId).toBe("nc-black-orcs");
     expect(choppa?.specialRuleIds).toContain("black-orc-choppa-rule");
     expect(naturalArmour?.effectSummary).toContain("6+ armour save");
     expect(provenWarrior?.validation.requiredEquipmentItemIds).toContain("black-orc-blood-upgrade");
+    expect(animosity?.effectSummary).toContain("roll again");
+    expect(animosity?.effectSummary).toContain("nearest enemy");
   });
 });
 
@@ -1144,6 +1324,276 @@ describe("rules engine - Dwarf Treasure Hunters", () => {
     expect(dwarfAxe?.specialRuleIds).toContain("dwarf-axe-parry");
     expect(hardToKill?.effectSummary).toContain("only a 6");
     expect(resourceHunter?.pageRef).toContain("Dwarf Treasure Hunters");
+  });
+});
+
+describe("rules engine - Kislevites", () => {
+  it("loads the official Kislevites warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { officialOnly: true }).map((warband) => warband.id);
+    expect(ids).toContain("kislevites");
+  });
+
+  it("validates a basic starting Kislevite roster", () => {
+    expect(errorCodes(validKislevites())).toEqual([]);
+    expect(calculateRosterCost(validKislevites(), rulesDb)).toBe(419);
+    expect(calculateWarbandRating(validKislevites(), rulesDb)).toBe(86);
+  });
+
+  it("requires exactly one Druzhina Captain and enforces fighter caps", () => {
+    expect(codes(kislevitesNoCaptain())).toContain("REQUIRED_LEADER");
+    expect(codes(kislevitesTwoCaptains())).toContain("REQUIRED_LEADER");
+    expect(codes(tooManyKisleviteWarriors())).toContain("MAX_WARRIORS");
+    expect(codes(tooManyBearTamers())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyEsauls())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyKislevYouths())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyStreltsi())).toContain("FIGHTER_MAX_COUNT");
+  });
+
+  it("enforces Trained Bear limits and Bear Tamer dependency", () => {
+    expect(errorCodes(validKislevitesWithBear())).toEqual([]);
+    expect(calculateRosterCost(validKislevitesWithBear(), rulesDb)).toBe(444);
+    expect(calculateWarbandRating(validKislevitesWithBear(), rulesDb)).toBe(96);
+    expect(codes(trainedBearWithoutTamer())).toContain("FIGHTER_RATIO_LIMIT");
+    expect(codes(tooManyTrainedBears())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(trainedBearWithWeapon())).toContain("INVALID_EQUIPMENT");
+  });
+
+  it("enforces Kislevite equipment lists", () => {
+    expect(codes(streltsiWithHeavyArmour())).toContain("INVALID_EQUIPMENT");
+    expect(codes(warriorWithHandgun())).toContain("INVALID_EQUIPMENT");
+    expect(errorCodes(streltsiWithGunRestKit())).toEqual([]);
+
+    const roster = validKislevites();
+    const captainOptions = getAllowedEquipment(roster.members[0], roster, rulesDb);
+    const warriorOptions = getAllowedEquipment(roster.members[4], roster, rulesDb);
+    const streltsiOptions = getAllowedEquipment(roster.members[6], roster, rulesDb);
+    const bearRoster = validKislevitesWithBear();
+    const bearOptions = getAllowedEquipment(bearRoster.members[7], bearRoster, rulesDb);
+
+    expect(captainOptions.find((option) => option.item.id === "brace-of-duelling-pistols")?.allowed).toBe(true);
+    expect(warriorOptions.find((option) => option.item.id === "throwing-knives")?.allowed).toBe(true);
+    expect(warriorOptions.find((option) => option.item.id === "handgun")?.allowed).toBe(false);
+    expect(streltsiOptions.find((option) => option.item.id === "handgun")?.allowed).toBe(true);
+    expect(streltsiOptions.find((option) => option.item.id === "heavy-armour")?.allowed).toBe(false);
+    expect(bearOptions.find((option) => option.item.id === "dagger")?.allowed).toBe(false);
+  });
+
+  it("enforces Kislevite skill tables", () => {
+    expect(codes(invalidKisleviteSkill())).toContain("INVALID_SKILL");
+    expect(errorCodes(kislevCaptainWithBattleTongue())).toEqual([]);
+    expect(errorCodes(bearTamerWithMightyBlow())).toEqual([]);
+    expect(errorCodes(esaulWithQuickShot())).toEqual([]);
+
+    const roster = validKislevites();
+    const captainSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const tamerSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+    const esaulSkills = getAllowedSkills(roster.members[2], roster, rulesDb);
+    const youthSkills = getAllowedSkills(roster.members[3], roster, rulesDb);
+
+    expect(captainSkills.find((option) => option.item.id === "battle-tongue")?.allowed).toBe(true);
+    expect(tamerSkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(true);
+    expect(tamerSkills.find((option) => option.item.id === "quick-shot")?.allowed).toBe(false);
+    expect(esaulSkills.find((option) => option.item.id === "quick-shot")?.allowed).toBe(true);
+    expect(youthSkills.find((option) => option.item.id === "quick-shot")?.allowed).toBe(false);
+  });
+
+  it("supports Kislevite hired sword availability", () => {
+    const roster = validKislevites();
+    const freelancerType = rulesDb.fighterTypes.find((fighterType) => fighterType.id === "hired-sword-freelancer");
+    expect(freelancerType).toBeTruthy();
+
+    roster.members.push(createRosterMemberFromType(freelancerType!, roster.id, "hired_sword", "Sir Aleksei"));
+
+    expect(errorCodes(roster)).toEqual([]);
+    expect(calculateRosterCost(roster, rulesDb)).toBe(469);
+    expect(calculateWarbandRating(roster, rulesDb)).toBe(107);
+  });
+
+  it("returns source-backed Kislevite lookup data", () => {
+    const warband = rulesDb.warbandTypes.find((item) => item.id === "kislevites");
+    const inheritance = rulesDb.specialRules.find((rule) => rule.id === "inheritance");
+    const gunRest = rulesDb.specialRules.find((rule) => rule.id === "gun-rest");
+    const bearHug = rulesDb.specialRules.find((rule) => rule.id === "bear-hug");
+    const vodka = rulesDb.equipmentItems.find((item) => item.id === "vodka");
+    const bearClawNecklace = rulesDb.equipmentItems.find((item) => item.id === "bear-claw-necklace");
+
+    expect(warband?.sourceDocumentId).toBe("mhr-kislevites");
+    expect(inheritance?.effectSummary).toContain("half cost");
+    expect(gunRest?.effectSummary).toContain("+1 to hit");
+    expect(bearHug?.effectSummary).toContain("automatic wound");
+    expect(vodka?.sourceDocumentId).toBe("mhr-kislevites");
+    expect(bearClawNecklace?.specialRuleIds).toContain("bear-claw-necklace-frenzy");
+  });
+});
+
+describe("rules engine - Ostlanders", () => {
+  it("loads the official Ostlanders warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { officialOnly: true }).map((warband) => warband.id);
+    expect(ids).toContain("ostlanders");
+  });
+
+  it("validates a basic starting Ostlander roster", () => {
+    expect(errorCodes(validOstlanders())).toEqual([]);
+    expect(calculateRosterCost(validOstlanders(), rulesDb)).toBe(343);
+    expect(calculateWarbandRating(validOstlanders(), rulesDb)).toBe(101);
+  });
+
+  it("requires exactly one Elder and enforces fighter caps", () => {
+    expect(codes(ostlandersNoElder())).toContain("REQUIRED_LEADER");
+    expect(codes(ostlandersTwoElders())).toContain("REQUIRED_LEADER");
+    expect(codes(tooManyOstlanders())).toContain("MAX_WARRIORS");
+    expect(codes(tooManyBloodBrothers())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyPriestsOfTaal())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyRuffians())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyJaegers())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyOstlanderOgres())).toContain("FIGHTER_MAX_COUNT");
+  });
+
+  it("supports the Ostlander Ogre and large-creature rating", () => {
+    expect(errorCodes(validOstlandersWithOgre())).toEqual([]);
+    expect(calculateRosterCost(validOstlandersWithOgre(), rulesDb)).toBe(478);
+    expect(calculateWarbandRating(validOstlandersWithOgre(), rulesDb)).toBe(116);
+    expect(codes(ogreWithBow())).toContain("INVALID_EQUIPMENT");
+  });
+
+  it("enforces Ostlander equipment lists", () => {
+    expect(codes(priestOfTaalWithHeavyArmour())).toContain("INVALID_EQUIPMENT");
+    expect(codes(ruffianWithBow())).toContain("INVALID_EQUIPMENT");
+    expect(codes(kinWithHuntingRifle())).toContain("INVALID_EQUIPMENT");
+    expect(codes(jaegerWithHeavyArmour())).toContain("INVALID_EQUIPMENT");
+    expect(errorCodes(jaegerWithDoubleBarrelledHuntingRifle())).toEqual([]);
+
+    const roster = validOstlanders();
+    const elderOptions = getAllowedEquipment(roster.members[0], roster, rulesDb);
+    const priestOptions = getAllowedEquipment(roster.members[3], roster, rulesDb);
+    const ruffianOptions = getAllowedEquipment(roster.members[5], roster, rulesDb);
+    const jaegerOptions = getAllowedEquipment(roster.members[6], roster, rulesDb);
+    const ogreRoster = validOstlandersWithOgre();
+    const ogreOptions = getAllowedEquipment(ogreRoster.members[7], ogreRoster, rulesDb);
+
+    expect(elderOptions.find((option) => option.item.id === "pistol")?.allowed).toBe(true);
+    expect(elderOptions.find((option) => option.item.id === "hunting-rifle")?.allowed).toBe(false);
+    expect(priestOptions.find((option) => option.item.id === "heavy-armour")?.allowed).toBe(false);
+    expect(ruffianOptions.find((option) => option.item.id === "bow")?.allowed).toBe(false);
+    expect(jaegerOptions.find((option) => option.item.id === "double-barrelled-pistol")?.allowed).toBe(true);
+    expect(jaegerOptions.find((option) => option.item.id === "double-barrelled-hunting-rifle")?.allowed).toBe(true);
+    expect(ogreOptions.find((option) => option.item.id === "club")?.allowed).toBe(true);
+    expect(ogreOptions.find((option) => option.item.id === "bow")?.allowed).toBe(false);
+  });
+
+  it("enforces Ostlander skill and prayer access", () => {
+    expect(codes(invalidOstlanderSkill())).toContain("INVALID_SKILL");
+    expect(errorCodes(ostlanderElderWithBloodOath())).toEqual([]);
+    expect(codes(bloodBrotherWithBloodOath())).toContain("INVALID_SKILL");
+    expect(errorCodes(priestOfTaalWithPrayer())).toEqual([]);
+    expect(codes(elderWithTaalPrayer())).toContain("INVALID_SPECIAL_RULE");
+
+    const roster = validOstlanders();
+    const elderSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const brotherSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+    const priestSkills = getAllowedSkills(roster.members[3], roster, rulesDb);
+    const priestPrayers = getAllowedSpecialRules(roster.members[3], roster, rulesDb);
+
+    expect(elderSkills.find((option) => option.item.id === "blood-oath")?.allowed).toBe(true);
+    expect(brotherSkills.find((option) => option.item.id === "quick-shot")?.allowed).toBe(false);
+    expect(brotherSkills.find((option) => option.item.id === "bull-rush")?.allowed).toBe(true);
+    expect(priestSkills.find((option) => option.item.id === "taunt")?.allowed).toBe(true);
+    expect(priestPrayers.find((option) => option.item.id === "taal-stags-leap")?.allowed).toBe(true);
+    expect(priestPrayers.find((option) => option.item.id === "taal-summon-squirrels")?.allowed).toBe(true);
+  });
+
+  it("enforces Ostlander Self-Sufficient hired sword availability", () => {
+    expect(errorCodes(ostlandersWithOgreBodyguard())).toEqual([]);
+    expect(calculateRosterCost(ostlandersWithOgreBodyguard(), rulesDb)).toBe(423);
+    expect(calculateWarbandRating(ostlandersWithOgreBodyguard(), rulesDb)).toBe(126);
+    expect(codes(ostlandersWithWarlock())).toContain("HIRED_SWORD_NOT_AVAILABLE");
+  });
+
+  it("returns source-backed Ostlander lookup data", () => {
+    const warband = rulesDb.warbandTypes.find((item) => item.id === "ostlanders");
+    const doubleBarrelledGun = rulesDb.specialRules.find((rule) => rule.id === "double-barrelled-gun");
+    const stagsLeap = rulesDb.specialRules.find((rule) => rule.id === "taal-stags-leap");
+    const bullRush = rulesDb.skills.find((skill) => skill.id === "bull-rush");
+    const rifle = rulesDb.equipmentItems.find((item) => item.id === "double-barrelled-hunting-rifle");
+
+    expect(warband?.sourceDocumentId).toBe("mhr-ostlanders");
+    expect(doubleBarrelledGun?.effectSummary).toContain("two hits");
+    expect(stagsLeap?.validation.selectableAs).toBe("prayer");
+    expect(bullRush?.sourceDocumentId).toBe("mhr-ostlanders");
+    expect(rifle?.specialRuleIds).toContain("double-barrelled-gun");
+  });
+});
+
+describe("rules engine - Averlanders", () => {
+  it("loads the official Averlanders warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { officialOnly: true }).map((warband) => warband.id);
+    expect(ids).toContain("averlanders");
+  });
+
+  it("validates a basic starting Averlander roster", () => {
+    expect(errorCodes(validAverlanders())).toEqual([]);
+    expect(calculateRosterCost(validAverlanders(), rulesDb)).toBe(334);
+    expect(calculateWarbandRating(validAverlanders(), rulesDb)).toBe(77);
+  });
+
+  it("requires exactly one Averland Captain and enforces fighter caps", () => {
+    expect(codes(averlandersNoCaptain())).toContain("REQUIRED_LEADER");
+    expect(codes(averlandersTwoCaptains())).toContain("REQUIRED_LEADER");
+    expect(codes(tooManyAverlandWarriors())).toContain("MAX_WARRIORS");
+    expect(codes(tooManyAverlandSergeants())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyBergjaegers())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyAverlandYoungbloods())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyAverlandHalflings())).toContain("FIGHTER_MAX_COUNT");
+  });
+
+  it("enforces Averland equipment lists", () => {
+    expect(codes(averlandMarksmanWithHeavyArmour())).toContain("INVALID_EQUIPMENT");
+    expect(codes(averlandHalflingWithLongBow())).toContain("INVALID_EQUIPMENT");
+    expect(codes(averlandMountainguardWithHuntingRifle())).toContain("INVALID_EQUIPMENT");
+    expect(codes(averlandBergjaegerWithHuntingArrowsNoBow())).toContain("MISSING_REQUIRED_EQUIPMENT");
+    expect(errorCodes(averlandBergjaegerWithHuntingArrows())).toEqual([]);
+
+    const roster = validAverlanders();
+    const captainOptions = getAllowedEquipment(roster.members[0], roster, rulesDb);
+    const bergjaegerOptions = getAllowedEquipment(roster.members[2], roster, rulesDb);
+    const marksmanOptions = getAllowedEquipment(roster.members[5], roster, rulesDb);
+    const halflingOptions = getAllowedEquipment(roster.members[6], roster, rulesDb);
+
+    expect(captainOptions.find((option) => option.item.id === "brace-of-duelling-pistols")?.allowed).toBe(true);
+    expect(bergjaegerOptions.find((option) => option.item.id === "hunting-arrows")?.allowed).toBe(true);
+    expect(bergjaegerOptions.find((option) => option.item.id === "blunderbuss")?.allowed).toBe(false);
+    expect(marksmanOptions.find((option) => option.item.id === "hunting-rifle")?.allowed).toBe(true);
+    expect(halflingOptions.find((option) => option.item.id === "long-bow")?.allowed).toBe(false);
+  });
+
+  it("enforces Averland skill tables", () => {
+    expect(codes(invalidAverlandSkill())).toContain("INVALID_SKILL");
+    expect(errorCodes(averlandCaptainWithBattleTongue())).toEqual([]);
+
+    const roster = validAverlanders();
+    const captainSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const sergeantSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+    const bergjaegerSkills = getAllowedSkills(roster.members[2], roster, rulesDb);
+    const youngbloodSkills = getAllowedSkills(roster.members[3], roster, rulesDb);
+
+    expect(captainSkills.find((option) => option.item.id === "battle-tongue")?.allowed).toBe(true);
+    expect(sergeantSkills.find((option) => option.item.id === "quick-shot")?.allowed).toBe(false);
+    expect(bergjaegerSkills.find((option) => option.item.id === "quick-shot")?.allowed).toBe(true);
+    expect(bergjaegerSkills.find((option) => option.item.id === "step-aside")?.allowed).toBe(true);
+    expect(bergjaegerSkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(false);
+    expect(youngbloodSkills.find((option) => option.item.id === "quick-shot")?.allowed).toBe(true);
+  });
+
+  it("returns source-backed Averland lookup data", () => {
+    const huntingArrows = rulesDb.equipmentItems.find((item) => item.id === "hunting-arrows");
+    const setTraps = rulesDb.specialRules.find((rule) => rule.id === "set-traps");
+    const halflingPromotion = rulesDb.specialRules.find((rule) => rule.id === "halfling-promotion");
+    const warband = rulesDb.warbandTypes.find((item) => item.id === "averlanders");
+
+    expect(warband?.sourceDocumentId).toBe("mhr-averlanders");
+    expect(huntingArrows?.specialRuleIds).toContain("hunting-arrows-injury");
+    expect(setTraps?.effectSummary).toContain("Strength 4 hit");
+    expect(halflingPromotion?.effectSummary).toContain("may not choose Strength");
   });
 });
 

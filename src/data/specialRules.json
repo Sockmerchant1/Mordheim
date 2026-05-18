@@ -807,12 +807,12 @@
   {
     "id": "black-orc-warband-animosity",
     "name": "Animosity",
-    "effectSummary": "Black Orc warbands use the standard Orc Mob Animosity rules for listed Orc henchmen.",
+    "effectSummary": "At the start of the Orc player's turn, roll D6 for each listed Orc or Goblin henchman not in hand-to-hand combat. On 1, roll again: 1 charges or shoots the nearest eligible friendly Orc/Goblin henchman or hired sword; 2-5 does nothing except defend itself; 6 moves as fast as possible toward the nearest enemy and may still move again in the Movement phase.",
     "appliesTo": "Black Orc warband Orc Boyz and Orc Shootaz.",
     "sourceDocumentId": "nc-black-orcs",
     "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
-    "pageRef": "Black Orcs p. 1, 4",
-    "restrictions": "Applies to Black Orc warband henchmen that list Animosity.",
+    "pageRef": "Black Orcs p. 1, 4; Orc Mob Animosity p. 8",
+    "restrictions": "Applies to Black Orc warband henchmen that list Animosity. Black Orcs themselves are not subject to Animosity.",
     "relatedRuleIds": ["animosity"]
   },
   {
@@ -983,12 +983,12 @@
   {
     "id": "chaos-rituals",
     "name": "Chaos Rituals",
-    "effectSummary": "The Beastman Shaman uses the Chaos Rituals magic list.",
-    "appliesTo": "Beastman Shaman.",
+    "effectSummary": "The fighter uses the Chaos Rituals magic list.",
+    "appliesTo": "Magisters and Beastman Shamans.",
     "sourceDocumentId": "eif-beastmen-raiders",
     "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Beastmen%2C%20Errata%27d.pdf",
     "pageRef": "Beastmen Raiders p. 8-9",
-    "restrictions": "Beastman Shaman only in the current seeded warbands.",
+    "restrictions": "Magisters and Beastman Shamans in the current seeded warbands.",
     "relatedRuleIds": ["spellcaster", "chaos-vision-of-torment", "chaos-eye-of-god", "chaos-dark-blood", "chaos-lure-of-chaos", "chaos-wings-of-darkness", "chaos-word-of-pain"]
   },
   {
@@ -999,9 +999,9 @@
     "sourceDocumentId": "eif-beastmen-raiders",
     "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Beastmen%2C%20Errata%27d.pdf",
     "pageRef": "Beastmen Raiders p. 8",
-    "restrictions": "Beastman Shaman with Chaos Rituals.",
+    "restrictions": "Magister or Beastman Shaman with Chaos Rituals.",
     "relatedRuleIds": ["chaos-rituals", "battle-stunned", "battle-knocked-down"],
-    "validation": { "selectableAs": "ritual", "allowedFighterTypeIds": ["beastman-shaman"], "requiredSpecialRuleIds": ["chaos-rituals"] }
+    "validation": { "selectableAs": "ritual", "allowedFighterTypeIds": ["beastman-shaman", "magister"], "requiredSpecialRuleIds": ["chaos-rituals"] }
   },
   {
     "id": "chaos-eye-of-god",
@@ -1011,9 +1011,9 @@
     "sourceDocumentId": "eif-beastmen-raiders",
     "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Beastmen%2C%20Errata%27d.pdf",
     "pageRef": "Beastmen Raiders p. 8",
-    "restrictions": "Beastman Shaman with Chaos Rituals. Use successfully only once per battle.",
+    "restrictions": "Magister or Beastman Shaman with Chaos Rituals. Use successfully only once per battle.",
     "relatedRuleIds": ["chaos-rituals", "battle-out-of-action"],
-    "validation": { "selectableAs": "ritual", "allowedFighterTypeIds": ["beastman-shaman"], "requiredSpecialRuleIds": ["chaos-rituals"] }
+    "validation": { "selectableAs": "ritual", "allowedFighterTypeIds": ["beastman-shaman", "magister"], "requiredSpecialRuleIds": ["chaos-rituals"] }
   },
   {
     "id": "chaos-dark-blood",
@@ -1023,9 +1023,9 @@
     "sourceDocumentId": "eif-beastmen-raiders",
     "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Beastmen%2C%20Errata%27d.pdf",
     "pageRef": "Beastmen Raiders p. 8",
-    "restrictions": "Beastman Shaman with Chaos Rituals.",
+    "restrictions": "Magister or Beastman Shaman with Chaos Rituals.",
     "relatedRuleIds": ["chaos-rituals", "injury-table"],
-    "validation": { "selectableAs": "ritual", "allowedFighterTypeIds": ["beastman-shaman"], "requiredSpecialRuleIds": ["chaos-rituals"] }
+    "validation": { "selectableAs": "ritual", "allowedFighterTypeIds": ["beastman-shaman", "magister"], "requiredSpecialRuleIds": ["chaos-rituals"] }
   },
   {
     "id": "chaos-lure-of-chaos",
@@ -1035,9 +1035,9 @@
     "sourceDocumentId": "eif-beastmen-raiders",
     "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Beastmen%2C%20Errata%27d.pdf",
     "pageRef": "Beastmen Raiders p. 8",
-    "restrictions": "Beastman Shaman with Chaos Rituals. Controlled models cannot commit suicide.",
+    "restrictions": "Magister or Beastman Shaman with Chaos Rituals. Controlled models cannot commit suicide.",
     "relatedRuleIds": ["chaos-rituals"],
-    "validation": { "selectableAs": "ritual", "allowedFighterTypeIds": ["beastman-shaman"], "requiredSpecialRuleIds": ["chaos-rituals"] }
+    "validation": { "selectableAs": "ritual", "allowedFighterTypeIds": ["beastman-shaman", "magister"], "requiredSpecialRuleIds": ["chaos-rituals"] }
   },
   {
     "id": "chaos-wings-of-darkness",
@@ -1047,9 +1047,9 @@
     "sourceDocumentId": "eif-beastmen-raiders",
     "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Beastmen%2C%20Errata%27d.pdf",
     "pageRef": "Beastmen Raiders p. 8-9",
-    "restrictions": "Beastman Shaman with Chaos Rituals.",
+    "restrictions": "Magister or Beastman Shaman with Chaos Rituals.",
     "relatedRuleIds": ["chaos-rituals", "charge"],
-    "validation": { "selectableAs": "ritual", "allowedFighterTypeIds": ["beastman-shaman"], "requiredSpecialRuleIds": ["chaos-rituals"] }
+    "validation": { "selectableAs": "ritual", "allowedFighterTypeIds": ["beastman-shaman", "magister"], "requiredSpecialRuleIds": ["chaos-rituals"] }
   },
   {
     "id": "chaos-word-of-pain",
@@ -1059,9 +1059,31 @@
     "sourceDocumentId": "eif-beastmen-raiders",
     "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Beastmen%2C%20Errata%27d.pdf",
     "pageRef": "Beastmen Raiders p. 9",
-    "restrictions": "Beastman Shaman with Chaos Rituals.",
+    "restrictions": "Magister or Beastman Shaman with Chaos Rituals.",
     "relatedRuleIds": ["chaos-rituals"],
-    "validation": { "selectableAs": "ritual", "allowedFighterTypeIds": ["beastman-shaman"], "requiredSpecialRuleIds": ["chaos-rituals"] }
+    "validation": { "selectableAs": "ritual", "allowedFighterTypeIds": ["beastman-shaman", "magister"], "requiredSpecialRuleIds": ["chaos-rituals"] }
+  },
+  {
+    "id": "cult-mutations",
+    "name": "Mutations",
+    "effectSummary": "Mutations may be bought for Mutants or Possessed at recruitment. The first mutation costs its listed amount; second and later mutations on the same model cost double.",
+    "appliesTo": "Cult of the Possessed Mutants and Possessed.",
+    "sourceDocumentId": "mhr-cult-of-the-possessed",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+    "pageRef": "Cult of the Possessed p. 14",
+    "restrictions": "Mutants must start with one or more mutations. Possessed may start with one or more mutations. The app validates starting choices; post-recruitment mutation timing remains a rules note.",
+    "relatedRuleIds": ["mutation-daemon-soul", "mutation-great-claw", "mutation-cloven-hoofs", "mutation-tentacle", "mutation-blackblood", "mutation-spines", "mutation-scorpion-tail", "mutation-extra-arm", "mutation-hideous"]
+  },
+  {
+    "id": "crazed",
+    "name": "Crazed",
+    "effectSummary": "Darksouls automatically pass any Leadership tests they are required to take.",
+    "appliesTo": "Darksouls.",
+    "sourceDocumentId": "mhr-cult-of-the-possessed",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+    "pageRef": "Cult of the Possessed p. 13",
+    "restrictions": "Darksouls only.",
+    "relatedRuleIds": ["leadership-tests"]
   },
   {
     "id": "centigor-drunken",
@@ -2714,5 +2736,332 @@
     "pageRef": "Dwarf Treasure Hunters p. 21",
     "restrictions": "Dwarf Warrior equipment list at warband creation.",
     "relatedRuleIds": ["dwarf-armour"]
+  },
+  {
+    "id": "set-traps",
+    "name": "Set Traps",
+    "effectSummary": "If a Bergjaeger spends a turn doing nothing else, place a trap marker in base contact. The first model moving within 2 inches triggers it on 3+ and suffers a Strength 4 hit; remove the marker after resolving.",
+    "appliesTo": "Averland Bergjaegers.",
+    "sourceDocumentId": "mhr-averlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Averland%20Mercenaries.pdf",
+    "pageRef": "Averland Mercenaries p. 37",
+    "restrictions": "A Bergjaeger cannot set a trap if he has just recovered from being knocked down.",
+    "relatedRuleIds": ["battle-knocked-down", "battle-stunned"]
+  },
+  {
+    "id": "halfling-promotion",
+    "name": "Promotion",
+    "effectSummary": "If an Averland Halfling Scout becomes a hero through The Lad's Got Talent, he may not choose Strength as one of his two skill lists.",
+    "appliesTo": "Averland Halfling Scouts.",
+    "sourceDocumentId": "mhr-averlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Averland%20Mercenaries.pdf",
+    "pageRef": "Averland Mercenaries p. 38",
+    "restrictions": "Applies only after a Halfling Scout is promoted to hero.",
+    "relatedRuleIds": ["experience-advances"]
+  },
+  {
+    "id": "hunting-arrows-injury",
+    "name": "Hunting Arrows",
+    "effectSummary": "A model using a bow or long bow with Hunting Arrows adds +1 to Injury rolls from those shots.",
+    "appliesTo": "Hunting Arrows.",
+    "sourceDocumentId": "mhr-averlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Averland%20Mercenaries.pdf",
+    "pageRef": "Averland Mercenaries p. 36",
+    "restrictions": "Averland Bergjaeger purchase in the current seeded warband.",
+    "relatedRuleIds": ["bow", "long-bow"]
+  },
+  {
+    "id": "ancient-enemies",
+    "name": "Ancient Enemies",
+    "effectSummary": "Kislevite warbands may never ally with Chaos-aligned warbands such as Possessed, Beastmen, Skaven, Dark Elves, Chaos Dwarfs or other groups the players judge sufficiently Chaotic.",
+    "appliesTo": "Kislevite warbands.",
+    "sourceDocumentId": "mhr-kislevites",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Kislevites.pdf",
+    "pageRef": "Kislevites p. 76-77",
+    "restrictions": "Use for multiplayer alliance decisions.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "inheritance",
+    "name": "Inheritance",
+    "effectSummary": "At warband creation the Druzhina Captain may buy one item from the Kislevite Warrior equipment list at half cost. If that heirloom is lost, replacing it costs 150% of normal price; until replaced, the Captain suffers -1 to all tests and rolls to hit.",
+    "appliesTo": "Druzhina Captain.",
+    "sourceDocumentId": "mhr-kislevites",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Kislevites.pdf",
+    "pageRef": "Kislevites p. 79",
+    "restrictions": "Discount/replacement accounting is currently a campaign note.",
+    "relatedRuleIds": ["trading-post"]
+  },
+  {
+    "id": "bear-handler",
+    "name": "Bear Handler",
+    "effectSummary": "A Kislevite warband with a Bear Tamer may buy a Trained Bear. A Trained Bear automatically passes Stupidity tests while within 6 inches of its Bear Tamer, even if the Tamer is knocked down or stunned.",
+    "appliesTo": "Bear Tamer and Trained Bear.",
+    "sourceDocumentId": "mhr-kislevites",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Kislevites.pdf",
+    "pageRef": "Kislevites p. 80-82",
+    "restrictions": "A Trained Bear cannot be included without a Bear Tamer.",
+    "relatedRuleIds": ["stupidity", "trained-bear"]
+  },
+  {
+    "id": "hate-chaos",
+    "name": "Hate Chaos",
+    "effectSummary": "Cossacks are subject to Hatred against forces of Chaos, using the same judgement as the Ancient Enemies rule.",
+    "appliesTo": "Cossacks.",
+    "sourceDocumentId": "mhr-kislevites",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Kislevites.pdf",
+    "pageRef": "Kislevites p. 81",
+    "restrictions": "Applies against Chaos-aligned enemies.",
+    "relatedRuleIds": ["hatred", "ancient-enemies"]
+  },
+  {
+    "id": "gun-rest",
+    "name": "Gun-Rest",
+    "effectSummary": "A Streltsi armed with both a halberd and handgun may use the halberd as a gun-rest. If he did not move that turn, he receives +1 to hit with the handgun.",
+    "appliesTo": "Streltsi.",
+    "sourceDocumentId": "mhr-kislevites",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Kislevites.pdf",
+    "pageRef": "Kislevites p. 81",
+    "restrictions": "Requires both halberd and handgun, and the Streltsi must not move that turn.",
+    "relatedRuleIds": ["handgun", "halberd"]
+  },
+  {
+    "id": "trained-bear",
+    "name": "Trained",
+    "effectSummary": "A Trained Bear is subject to Stupidity, never uses the warband leader's Leadership, and may only use the Bear Tamer's Leadership within 6 inches. It cannot be used in a game where the Bear Tamer does not take part.",
+    "appliesTo": "Trained Bear.",
+    "sourceDocumentId": "mhr-kislevites",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Kislevites.pdf",
+    "pageRef": "Kislevites p. 82",
+    "restrictions": "Requires a Bear Tamer.",
+    "relatedRuleIds": ["bear-handler", "stupidity"]
+  },
+  {
+    "id": "bear-hug",
+    "name": "Bear Hug",
+    "effectSummary": "If the Trained Bear hits the same enemy with both attacks in the same combat round, it may make one Bear Hug instead. Each player rolls D6 and adds Strength; if the Bear ties or wins, the enemy takes one automatic wound with no armour save.",
+    "appliesTo": "Trained Bear.",
+    "sourceDocumentId": "mhr-kislevites",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Kislevites.pdf",
+    "pageRef": "Kislevites p. 82",
+    "restrictions": "Only after both bear attacks hit the same enemy in one round.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "fiercely-loyal",
+    "name": "Fiercely Loyal",
+    "effectSummary": "If the Trained Bear is not taken out of action, its Bear Tamer treats Sold to the Pits, Robbed and Captured serious injury results as Full Recovery.",
+    "appliesTo": "Bear Tamer with active Trained Bear.",
+    "sourceDocumentId": "mhr-kislevites",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Kislevites.pdf",
+    "pageRef": "Kislevites p. 82",
+    "restrictions": "The bear must not be out of action.",
+    "relatedRuleIds": ["table-serious-injuries"]
+  },
+  {
+    "id": "vodka-courage",
+    "name": "Vodka",
+    "effectSummary": "Before a game, a Kislevite Hero may use Vodka to give every warrior +1 Leadership for that battle, maximum 10. Each warrior must test Toughness before the game; failures suffer -1 Initiative for the battle.",
+    "appliesTo": "Vodka.",
+    "sourceDocumentId": "mhr-kislevites",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Kislevites.pdf",
+    "pageRef": "Kislevites p. 77",
+    "restrictions": "One-use item, Kislevite Heroes only.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "bear-claw-necklace-frenzy",
+    "name": "Bear-Claw Necklace",
+    "effectSummary": "A warrior wearing a Bear-Claw Necklace is subject to Frenzy.",
+    "appliesTo": "Bear-Claw Necklace.",
+    "sourceDocumentId": "mhr-kislevites",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Kislevites.pdf",
+    "pageRef": "Kislevites p. 77",
+    "restrictions": "Kislevite Heroes only.",
+    "relatedRuleIds": ["frenzy"]
+  },
+  {
+    "id": "self-sufficient",
+    "name": "Self-Sufficient",
+    "effectSummary": "Ostlanders may not hire outside mercenaries except Ogres. The app enforces this by allowing the Ogre Bodyguard and blocking other core Hired Swords.",
+    "appliesTo": "Ostlander warbands.",
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 40",
+    "restrictions": "Campaign hiring restriction.",
+    "relatedRuleIds": ["hired-swords"]
+  },
+  {
+    "id": "prayers-of-taal",
+    "name": "Prayers of Taal",
+    "effectSummary": "A Priest of Taal uses Prayers of Taal, chosen and resolved like priestly prayers. The app exposes the six Taal prayers as selectable prayer rules for the Priest.",
+    "appliesTo": "Priest of Taal.",
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 43 and p. 47",
+    "restrictions": "Priest of Taal only.",
+    "relatedRuleIds": ["taal-stags-leap", "taal-blessed-ale", "taal-bears-paw", "taal-earthshudder", "taal-tanglefoot", "taal-summon-squirrels"]
+  },
+  {
+    "id": "strictures",
+    "name": "Strictures",
+    "effectSummary": "A Priest of Taal may never wear heavy armour. Light armour, shields and helmets remain available through the warband entry clarification.",
+    "appliesTo": "Priest of Taal.",
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 43",
+    "restrictions": "Priest of Taal only.",
+    "relatedRuleIds": ["heavy-armour"]
+  },
+  {
+    "id": "taal-stags-leap",
+    "name": "Stag's Leap",
+    "effectSummary": "Difficulty 7. The Priest immediately moves up to 9 inches, including into combat. If he reaches an enemy, he counts as charging and gains +1 Strength in the first round.",
+    "appliesTo": "Priest of Taal prayer.",
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 47",
+    "restrictions": "Priest of Taal only.",
+    "relatedRuleIds": ["prayers-of-taal"],
+    "validation": {
+      "selectableAs": "prayer",
+      "allowedFighterTypeIds": ["priest-of-taal"],
+      "requiredSpecialRuleIds": ["prayers-of-taal"]
+    }
+  },
+  {
+    "id": "taal-blessed-ale",
+    "name": "Blessed Ale",
+    "effectSummary": "Difficulty 5. Heals one model within 2 inches to full Wounds. Living enemies within 2 inches lose 1 Attack in the next combat round; Undead and Possessed are not affected by the fumes.",
+    "appliesTo": "Priest of Taal prayer.",
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 47",
+    "restrictions": "Priest of Taal only.",
+    "relatedRuleIds": ["prayers-of-taal"],
+    "validation": {
+      "selectableAs": "prayer",
+      "allowedFighterTypeIds": ["priest-of-taal"],
+      "requiredSpecialRuleIds": ["prayers-of-taal"]
+    }
+  },
+  {
+    "id": "taal-bears-paw",
+    "name": "Bear's Paw",
+    "effectSummary": "Difficulty 7. The Priest or one friendly model within 6 inches gains +2 Strength until the Priest's next turn.",
+    "appliesTo": "Priest of Taal prayer.",
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 47",
+    "restrictions": "Priest of Taal only.",
+    "relatedRuleIds": ["prayers-of-taal"],
+    "validation": {
+      "selectableAs": "prayer",
+      "allowedFighterTypeIds": ["priest-of-taal"],
+      "requiredSpecialRuleIds": ["prayers-of-taal"]
+    }
+  },
+  {
+    "id": "taal-earthshudder",
+    "name": "Earthshudder",
+    "effectSummary": "Difficulty 9. Target one building within 4 inches. Enemies touching it suffer one Strength 3 hit; the building collapses and models on it count as falling.",
+    "appliesTo": "Priest of Taal prayer.",
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 47",
+    "restrictions": "Priest of Taal only; terrain removal and falling damage are resolved at the table.",
+    "relatedRuleIds": ["prayers-of-taal"],
+    "validation": {
+      "selectableAs": "prayer",
+      "allowedFighterTypeIds": ["priest-of-taal"],
+      "requiredSpecialRuleIds": ["prayers-of-taal"]
+    }
+  },
+  {
+    "id": "taal-tanglefoot",
+    "name": "Tanglefoot",
+    "effectSummary": "Difficulty 8. Until the next shooting phase, models within 12 inches of the Priest move at half speed. Ostlander Jaegers are exempt.",
+    "appliesTo": "Priest of Taal prayer.",
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 47",
+    "restrictions": "Priest of Taal only.",
+    "relatedRuleIds": ["prayers-of-taal"],
+    "validation": {
+      "selectableAs": "prayer",
+      "allowedFighterTypeIds": ["priest-of-taal"],
+      "requiredSpecialRuleIds": ["prayers-of-taal"]
+    }
+  },
+  {
+    "id": "taal-summon-squirrels",
+    "name": "Summon Squirrels",
+    "effectSummary": "Difficulty 7. One enemy within 12 inches suffers 2D6 Strength 1 hits with no armour saves.",
+    "appliesTo": "Priest of Taal prayer.",
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 47",
+    "restrictions": "Priest of Taal only.",
+    "relatedRuleIds": ["prayers-of-taal"],
+    "validation": {
+      "selectableAs": "prayer",
+      "allowedFighterTypeIds": ["priest-of-taal"],
+      "requiredSpecialRuleIds": ["prayers-of-taal"]
+    }
+  },
+  {
+    "id": "drunk",
+    "name": "Drunk",
+    "effectSummary": "Ruffians automatically pass Leadership-based tests.",
+    "appliesTo": "Ostlander Ruffians.",
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 44",
+    "restrictions": "Ruffians only.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "no-respect",
+    "name": "No Respect",
+    "effectSummary": "Ruffians may never become the warband leader.",
+    "appliesTo": "Ostlander Ruffians.",
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 44",
+    "restrictions": "Ruffians only.",
+    "relatedRuleIds": ["leader"]
+  },
+  {
+    "id": "ostlander-ogre-skills",
+    "name": "Skills",
+    "effectSummary": "If an Ostlander Ogre becomes a Hero through The Lad's Got Talent, it may choose from Combat and Strength skills.",
+    "appliesTo": "Ostlander Ogre.",
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 45",
+    "restrictions": "Only after promotion.",
+    "relatedRuleIds": ["experience-advances"]
+  },
+  {
+    "id": "slow-witted",
+    "name": "Slow Witted",
+    "effectSummary": "Ogres gain experience but advance at half the normal rate, requiring twice as much experience as other warriors to earn each advance.",
+    "appliesTo": "Ostlander Ogre.",
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 45",
+    "restrictions": "The app records this as a rules lookup/manual campaign note; the default XP threshold helper is not replaced yet.",
+    "relatedRuleIds": ["experience-advances"]
+  },
+  {
+    "id": "double-barrelled-gun",
+    "name": "Double-barrelled Gun",
+    "effectSummary": "A double-barrelled gun is treated like the normal weapon except each successful hit causes two hits. Each barrel takes a full turn to reload; a brace of double-barrelled pistols fires every other round.",
+    "appliesTo": "Double-barrelled pistol, brace of double-barrelled pistols and double-barrelled hunting rifle.",
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 41",
+    "restrictions": "Jaeger equipment list in the current seed data.",
+    "relatedRuleIds": ["pistol", "hunting-rifle"]
   }
 ]

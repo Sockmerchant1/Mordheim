@@ -11,7 +11,7 @@
       "isOfficial": true,
       "sourceCode": "A02",
       "sourceUrl": "https://broheim.net/downloads/warbands/official/Averland%20Mercenaries.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "beastmen-raiders",
@@ -44,7 +44,7 @@
       "isOfficial": true,
       "sourceCode": "MHR",
       "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "dwarf-treasure-hunters",
@@ -66,7 +66,7 @@
       "isOfficial": true,
       "sourceCode": "A02",
       "sourceUrl": "https://broheim.net/downloads/warbands/official/Kislevites.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "marienburgers",
@@ -110,7 +110,7 @@
       "isOfficial": true,
       "sourceCode": "A02",
       "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "reiklanders",

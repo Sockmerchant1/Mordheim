@@ -79,6 +79,11 @@
       "id": "troll-slayer-special",
       "name": "Troll Slayer Special",
       "skillIds": ["troll-slayer-ferocious-charge", "troll-slayer-monster-slayer", "troll-slayer-berserker"]
+    },
+    {
+      "id": "ostlander-special",
+      "name": "Ostlander Special",
+      "skillIds": ["bull-rush", "foul-odour", "taunt", "animal-friendship", "blood-oath"]
     }
   ],
   "skills": [
@@ -890,6 +895,81 @@
       "relatedRuleIds": ["deathwish"],
       "validation": {
         "allowedFighterTypeIds": ["dwarf-troll-slayer"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "bull-rush",
+      "name": "Bull Rush",
+      "categoryId": "ostlander-special",
+      "effectSummary": "When charging, the Hero may replace normal attacks with one to-hit roll at +1. If it hits, the enemy is Knocked Down with no wound roll.",
+      "restrictions": "Ostlander Heroes with access to the Ostlander Special skill list.",
+      "sourceDocumentId": "mhr-ostlanders",
+      "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+      "pageRef": "Ostlanders p. 46",
+      "relatedRuleIds": ["battle-knocked-down"],
+      "validation": {
+        "allowedFighterTypeIds": ["ostlander-elder", "blood-brother", "priest-of-taal"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "foul-odour",
+      "name": "Foul Odour",
+      "categoryId": "ostlander-special",
+      "effectSummary": "Living enemies, excluding Undead and Possessed, suffer -1 to hit this warrior in hand-to-hand combat. The warrior cannot carry open flames, and fire attacks against him are resolved at +1 Strength.",
+      "restrictions": "Ostlander Heroes with access to the Ostlander Special skill list.",
+      "sourceDocumentId": "mhr-ostlanders",
+      "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+      "pageRef": "Ostlanders p. 46",
+      "relatedRuleIds": [],
+      "validation": {
+        "allowedFighterTypeIds": ["ostlander-elder", "blood-brother", "priest-of-taal"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "taunt",
+      "name": "Taunt",
+      "categoryId": "ostlander-special",
+      "effectSummary": "In the Shooting phase, the Hero may taunt one visible enemy instead of shooting or casting. If the target fails a Leadership test, it must try to reach the taunting warrior in its next Movement phase.",
+      "restrictions": "Ostlander Heroes with access to the Ostlander Special skill list.",
+      "sourceDocumentId": "mhr-ostlanders",
+      "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+      "pageRef": "Ostlanders p. 46",
+      "relatedRuleIds": ["leadership-tests"],
+      "validation": {
+        "allowedFighterTypeIds": ["ostlander-elder", "blood-brother", "priest-of-taal"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "animal-friendship",
+      "name": "Animal Friendship",
+      "categoryId": "ostlander-special",
+      "effectSummary": "Normal animals never attack this warrior. Up to two wardogs owned by the warrior do not count against the warband's maximum size.",
+      "restrictions": "Ostlander Heroes with access to the Ostlander Special skill list. Wardog ownership is recorded manually in the current app.",
+      "sourceDocumentId": "mhr-ostlanders",
+      "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+      "pageRef": "Ostlanders p. 46",
+      "relatedRuleIds": ["animals"],
+      "validation": {
+        "allowedFighterTypeIds": ["ostlander-elder", "blood-brother", "priest-of-taal"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "blood-oath",
+      "name": "Blood Oath",
+      "categoryId": "ostlander-special",
+      "effectSummary": "Leader only. Once per game, the warband leader may re-roll a single Rout test.",
+      "restrictions": "Ostlander Elder only.",
+      "sourceDocumentId": "mhr-ostlanders",
+      "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+      "pageRef": "Ostlanders p. 46",
+      "relatedRuleIds": ["rout-tests"],
+      "validation": {
+        "allowedFighterTypeIds": ["ostlander-elder"],
         "requiredSpecialRuleIds": []
       }
     }

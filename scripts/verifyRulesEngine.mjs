@@ -43,6 +43,69 @@ import {
   validReiklanders
 } from "../tests/fixtures/mercenaryRosters.ts";
 import {
+  averlandBergjaegerWithHuntingArrows,
+  averlandBergjaegerWithHuntingArrowsNoBow,
+  averlandCaptainWithBattleTongue,
+  averlandHalflingWithLongBow,
+  averlandMarksmanWithHeavyArmour,
+  averlandMountainguardWithHuntingRifle,
+  averlandersNoCaptain,
+  averlandersTwoCaptains,
+  invalidAverlandSkill,
+  tooManyAverlandHalflings,
+  tooManyAverlandSergeants,
+  tooManyAverlandWarriors,
+  tooManyAverlandYoungbloods,
+  tooManyBergjaegers,
+  validAverlanders
+} from "../tests/fixtures/averlanderRosters.ts";
+import {
+  bearTamerWithMightyBlow,
+  esaulWithQuickShot,
+  invalidKisleviteSkill,
+  kislevCaptainWithBattleTongue,
+  kislevitesNoCaptain,
+  kislevitesTwoCaptains,
+  streltsiWithGunRestKit,
+  streltsiWithHeavyArmour,
+  tooManyBearTamers,
+  tooManyEsauls,
+  tooManyKisleviteWarriors,
+  tooManyKislevYouths,
+  tooManyStreltsi,
+  tooManyTrainedBears,
+  trainedBearWithWeapon,
+  trainedBearWithoutTamer,
+  validKislevites,
+  validKislevitesWithBear,
+  warriorWithHandgun
+} from "../tests/fixtures/kisleviteRosters.ts";
+import {
+  bloodBrotherWithBloodOath,
+  elderWithTaalPrayer,
+  invalidOstlanderSkill,
+  jaegerWithDoubleBarrelledHuntingRifle,
+  jaegerWithHeavyArmour,
+  kinWithHuntingRifle,
+  ogreWithBow,
+  ostlanderElderWithBloodOath,
+  ostlandersNoElder,
+  ostlandersTwoElders,
+  ostlandersWithOgreBodyguard,
+  ostlandersWithWarlock,
+  priestOfTaalWithHeavyArmour,
+  priestOfTaalWithPrayer,
+  ruffianWithBow,
+  tooManyBloodBrothers,
+  tooManyJaegers,
+  tooManyOstlanderOgres,
+  tooManyOstlanders,
+  tooManyPriestsOfTaal,
+  tooManyRuffians,
+  validOstlanders,
+  validOstlandersWithOgre
+} from "../tests/fixtures/ostlanderRosters.ts";
+import {
   augurWithArmour,
   matriarchWithSpecialSkill,
   noviceWithHolyTome,
@@ -68,6 +131,27 @@ import {
   tooManyTaintedOnes,
   validCarnivalOfChaos
 } from "../tests/fixtures/carnivalRosters.ts";
+import {
+  cultNoMagister,
+  cultTwoMagisters,
+  darksoulWithBow,
+  invalidCultSkill,
+  magisterWithChaosRitual,
+  mutantWithExtraArmAndTwoHandedExtraWeapon,
+  mutantWithExtraArmExtraWeapon,
+  mutantWithExtraWeaponWithoutExtraArm,
+  mutantWithTwoMutations,
+  mutantWithoutMutation,
+  possessedWithChaosRitual,
+  possessedWithMutation,
+  possessedWithWeapon,
+  tooManyCultBeastmen,
+  tooManyCultWarriors,
+  tooManyDarksouls,
+  tooManyMutants,
+  tooManyPossessed,
+  validCultOfThePossessed
+} from "../tests/fixtures/cultRosters.ts";
 import {
   fightingClawsWithSword,
   giantRatWithWeapon,
@@ -197,6 +281,10 @@ assert.ok(rulesLookup.some((rule) => rule.id === "special-sigmar-healing-hand" &
 assert.ok(rulesLookup.some((rule) => rule.id === "injury-leg-wound" && rule.text.includes("-1 Movement")));
 assert.ok(rulesLookup.some((rule) => rule.id === "table-serious-injuries" && rule.text.includes("D66")));
 assert.ok(rulesLookup.some((rule) => rule.id === "table-exploration" && rule.tables?.some((table) => table.rows.some((row) => row.includes("36+")))));
+assert.ok(rulesLookup.some((rule) => rule.id === "special-set-traps" && rule.text.includes("Strength 4")));
+assert.ok(rulesLookup.some((rule) => rule.id === "equipment-hunting-arrows" && rule.text.includes("+1")));
+assert.ok(rulesLookup.some((rule) => rule.id === "special-bear-hug" && rule.text.includes("automatic wound")));
+assert.ok(rulesLookup.some((rule) => rule.id === "equipment-vodka" && rule.text.includes("+1 Leadership")));
 assert.ok(!rulesLookup.some((rule) => /Placeholder injury entry|Rule text not available yet/i.test(rule.text)));
 
 assert.deepEqual(getPendingAdvances(1, 4), [2, 4]);
@@ -309,6 +397,169 @@ assert.equal(middenheimChampionSkills.find((option) => option.item.id === "step-
 assert.equal(marienburgChampionSkills.find((option) => option.item.id === "mighty-blow")?.allowed, false);
 assert.equal(marienburgChampionSkills.find((option) => option.item.id === "step-aside")?.allowed, true);
 
+assert.ok(allowedOfficialWarbands.includes("averlanders"));
+assert.deepEqual(errorCodes(validAverlanders()), []);
+assert.equal(calculateRosterCost(validAverlanders(), rulesDb), 334);
+assert.equal(calculateWarbandRating(validAverlanders(), rulesDb), 77);
+assert.ok(codes(averlandersNoCaptain()).includes("REQUIRED_LEADER"));
+assert.ok(codes(averlandersTwoCaptains()).includes("REQUIRED_LEADER"));
+assert.ok(codes(tooManyAverlandWarriors()).includes("MAX_WARRIORS"));
+assert.ok(codes(tooManyAverlandSergeants()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyBergjaegers()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyAverlandYoungbloods()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyAverlandHalflings()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(averlandMarksmanWithHeavyArmour()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(averlandHalflingWithLongBow()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(averlandMountainguardWithHuntingRifle()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(averlandBergjaegerWithHuntingArrowsNoBow()).includes("MISSING_REQUIRED_EQUIPMENT"));
+assert.deepEqual(errorCodes(averlandBergjaegerWithHuntingArrows()), []);
+assert.ok(codes(invalidAverlandSkill()).includes("INVALID_SKILL"));
+assert.deepEqual(errorCodes(averlandCaptainWithBattleTongue()), []);
+
+const averlandRoster = validAverlanders();
+const averlandCaptainOptions = getAllowedEquipment(averlandRoster.members[0], averlandRoster, rulesDb);
+const bergjaegerOptions = getAllowedEquipment(averlandRoster.members[2], averlandRoster, rulesDb);
+const averlandMarksmanOptions = getAllowedEquipment(averlandRoster.members[5], averlandRoster, rulesDb);
+const halflingScoutOptions = getAllowedEquipment(averlandRoster.members[6], averlandRoster, rulesDb);
+assert.equal(averlandCaptainOptions.find((option) => option.item.id === "brace-of-duelling-pistols")?.allowed, true);
+assert.equal(bergjaegerOptions.find((option) => option.item.id === "hunting-arrows")?.allowed, true);
+assert.equal(bergjaegerOptions.find((option) => option.item.id === "blunderbuss")?.allowed, false);
+assert.equal(averlandMarksmanOptions.find((option) => option.item.id === "hunting-rifle")?.allowed, true);
+assert.equal(halflingScoutOptions.find((option) => option.item.id === "long-bow")?.allowed, false);
+const averlandCaptainSkills = getAllowedSkills(averlandRoster.members[0], averlandRoster, rulesDb);
+const averlandSergeantSkills = getAllowedSkills(averlandRoster.members[1], averlandRoster, rulesDb);
+const bergjaegerSkills = getAllowedSkills(averlandRoster.members[2], averlandRoster, rulesDb);
+assert.equal(averlandCaptainSkills.find((option) => option.item.id === "battle-tongue")?.allowed, true);
+assert.equal(averlandSergeantSkills.find((option) => option.item.id === "quick-shot")?.allowed, false);
+assert.equal(bergjaegerSkills.find((option) => option.item.id === "quick-shot")?.allowed, true);
+assert.equal(bergjaegerSkills.find((option) => option.item.id === "mighty-blow")?.allowed, false);
+assert.equal(rulesDb.equipmentItems.find((item) => item.id === "hunting-arrows")?.specialRuleIds.includes("hunting-arrows-injury"), true);
+assert.equal(rulesDb.specialRules.find((rule) => rule.id === "set-traps")?.sourceDocumentId, "mhr-averlanders");
+
+assert.ok(allowedOfficialWarbands.includes("kislevites"));
+assert.deepEqual(errorCodes(validKislevites()), []);
+assert.equal(calculateRosterCost(validKislevites(), rulesDb), 419);
+assert.equal(calculateWarbandRating(validKislevites(), rulesDb), 86);
+assert.ok(codes(kislevitesNoCaptain()).includes("REQUIRED_LEADER"));
+assert.ok(codes(kislevitesTwoCaptains()).includes("REQUIRED_LEADER"));
+assert.ok(codes(tooManyKisleviteWarriors()).includes("MAX_WARRIORS"));
+assert.ok(codes(tooManyBearTamers()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyEsauls()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyKislevYouths()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyStreltsi()).includes("FIGHTER_MAX_COUNT"));
+assert.deepEqual(errorCodes(validKislevitesWithBear()), []);
+assert.equal(calculateRosterCost(validKislevitesWithBear(), rulesDb), 444);
+assert.equal(calculateWarbandRating(validKislevitesWithBear(), rulesDb), 96);
+assert.ok(codes(trainedBearWithoutTamer()).includes("FIGHTER_RATIO_LIMIT"));
+assert.ok(codes(tooManyTrainedBears()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(trainedBearWithWeapon()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(streltsiWithHeavyArmour()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(warriorWithHandgun()).includes("INVALID_EQUIPMENT"));
+assert.deepEqual(errorCodes(streltsiWithGunRestKit()), []);
+assert.ok(codes(invalidKisleviteSkill()).includes("INVALID_SKILL"));
+assert.deepEqual(errorCodes(kislevCaptainWithBattleTongue()), []);
+assert.deepEqual(errorCodes(bearTamerWithMightyBlow()), []);
+assert.deepEqual(errorCodes(esaulWithQuickShot()), []);
+
+const kislevRoster = validKislevites();
+const kislevCaptainOptions = getAllowedEquipment(kislevRoster.members[0], kislevRoster, rulesDb);
+const kislevWarriorOptions = getAllowedEquipment(kislevRoster.members[4], kislevRoster, rulesDb);
+const kislevStreltsiOptions = getAllowedEquipment(kislevRoster.members[6], kislevRoster, rulesDb);
+const kislevBearRoster = validKislevitesWithBear();
+const kislevBearOptions = getAllowedEquipment(kislevBearRoster.members[7], kislevBearRoster, rulesDb);
+assert.equal(kislevCaptainOptions.find((option) => option.item.id === "brace-of-duelling-pistols")?.allowed, true);
+assert.equal(kislevWarriorOptions.find((option) => option.item.id === "throwing-knives")?.allowed, true);
+assert.equal(kislevWarriorOptions.find((option) => option.item.id === "handgun")?.allowed, false);
+assert.equal(kislevStreltsiOptions.find((option) => option.item.id === "handgun")?.allowed, true);
+assert.equal(kislevStreltsiOptions.find((option) => option.item.id === "heavy-armour")?.allowed, false);
+assert.equal(kislevBearOptions.find((option) => option.item.id === "dagger")?.allowed, false);
+
+const kislevCaptainSkills = getAllowedSkills(kislevRoster.members[0], kislevRoster, rulesDb);
+const kislevTamerSkills = getAllowedSkills(kislevRoster.members[1], kislevRoster, rulesDb);
+const kislevEsaulSkills = getAllowedSkills(kislevRoster.members[2], kislevRoster, rulesDb);
+const kislevYouthSkills = getAllowedSkills(kislevRoster.members[3], kislevRoster, rulesDb);
+assert.equal(kislevCaptainSkills.find((option) => option.item.id === "battle-tongue")?.allowed, true);
+assert.equal(kislevTamerSkills.find((option) => option.item.id === "mighty-blow")?.allowed, true);
+assert.equal(kislevTamerSkills.find((option) => option.item.id === "quick-shot")?.allowed, false);
+assert.equal(kislevEsaulSkills.find((option) => option.item.id === "quick-shot")?.allowed, true);
+assert.equal(kislevYouthSkills.find((option) => option.item.id === "quick-shot")?.allowed, false);
+const kislevFreelancerRoster = validKislevites();
+const kislevFreelancerType = rulesDb.fighterTypes.find((fighterType) => fighterType.id === "hired-sword-freelancer");
+assert.ok(kislevFreelancerType);
+kislevFreelancerRoster.members.push(createRosterMemberFromType(kislevFreelancerType, kislevFreelancerRoster.id, "hired_sword", "Sir Aleksei"));
+assert.deepEqual(errorCodes(kislevFreelancerRoster), []);
+assert.equal(calculateRosterCost(kislevFreelancerRoster, rulesDb), 469);
+assert.equal(calculateWarbandRating(kislevFreelancerRoster, rulesDb), 107);
+assert.equal(rulesDb.warbandTypes.find((warband) => warband.id === "kislevites")?.sourceDocumentId, "mhr-kislevites");
+assert.equal(rulesDb.specialRules.find((rule) => rule.id === "inheritance")?.sourceDocumentId, "mhr-kislevites");
+assert.match(rulesDb.specialRules.find((rule) => rule.id === "gun-rest")?.effectSummary ?? "", /\+1 to hit/);
+assert.match(rulesDb.specialRules.find((rule) => rule.id === "bear-hug")?.effectSummary ?? "", /automatic wound/);
+assert.equal(rulesDb.equipmentItems.find((item) => item.id === "vodka")?.sourceDocumentId, "mhr-kislevites");
+assert.ok(rulesDb.equipmentItems.find((item) => item.id === "bear-claw-necklace")?.specialRuleIds.includes("bear-claw-necklace-frenzy"));
+
+assert.ok(allowedOfficialWarbands.includes("ostlanders"));
+assert.deepEqual(errorCodes(validOstlanders()), []);
+assert.equal(calculateRosterCost(validOstlanders(), rulesDb), 343);
+assert.equal(calculateWarbandRating(validOstlanders(), rulesDb), 101);
+assert.ok(codes(ostlandersNoElder()).includes("REQUIRED_LEADER"));
+assert.ok(codes(ostlandersTwoElders()).includes("REQUIRED_LEADER"));
+assert.ok(codes(tooManyOstlanders()).includes("MAX_WARRIORS"));
+assert.ok(codes(tooManyBloodBrothers()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyPriestsOfTaal()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyRuffians()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyJaegers()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyOstlanderOgres()).includes("FIGHTER_MAX_COUNT"));
+assert.deepEqual(errorCodes(validOstlandersWithOgre()), []);
+assert.equal(calculateRosterCost(validOstlandersWithOgre(), rulesDb), 478);
+assert.equal(calculateWarbandRating(validOstlandersWithOgre(), rulesDb), 116);
+assert.ok(codes(ogreWithBow()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(priestOfTaalWithHeavyArmour()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(ruffianWithBow()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(kinWithHuntingRifle()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(jaegerWithHeavyArmour()).includes("INVALID_EQUIPMENT"));
+assert.deepEqual(errorCodes(jaegerWithDoubleBarrelledHuntingRifle()), []);
+assert.ok(codes(invalidOstlanderSkill()).includes("INVALID_SKILL"));
+assert.deepEqual(errorCodes(ostlanderElderWithBloodOath()), []);
+assert.ok(codes(bloodBrotherWithBloodOath()).includes("INVALID_SKILL"));
+assert.deepEqual(errorCodes(priestOfTaalWithPrayer()), []);
+assert.ok(codes(elderWithTaalPrayer()).includes("INVALID_SPECIAL_RULE"));
+assert.deepEqual(errorCodes(ostlandersWithOgreBodyguard()), []);
+assert.equal(calculateRosterCost(ostlandersWithOgreBodyguard(), rulesDb), 423);
+assert.equal(calculateWarbandRating(ostlandersWithOgreBodyguard(), rulesDb), 126);
+assert.ok(codes(ostlandersWithWarlock()).includes("HIRED_SWORD_NOT_AVAILABLE"));
+
+const ostlanderRoster = validOstlanders();
+const ostlanderElderOptions = getAllowedEquipment(ostlanderRoster.members[0], ostlanderRoster, rulesDb);
+const ostlanderPriestOptions = getAllowedEquipment(ostlanderRoster.members[3], ostlanderRoster, rulesDb);
+const ostlanderRuffianOptions = getAllowedEquipment(ostlanderRoster.members[5], ostlanderRoster, rulesDb);
+const ostlanderJaegerOptions = getAllowedEquipment(ostlanderRoster.members[6], ostlanderRoster, rulesDb);
+const ostlanderOgreRoster = validOstlandersWithOgre();
+const ostlanderOgreOptions = getAllowedEquipment(ostlanderOgreRoster.members[7], ostlanderOgreRoster, rulesDb);
+assert.equal(ostlanderElderOptions.find((option) => option.item.id === "pistol")?.allowed, true);
+assert.equal(ostlanderElderOptions.find((option) => option.item.id === "hunting-rifle")?.allowed, false);
+assert.equal(ostlanderPriestOptions.find((option) => option.item.id === "heavy-armour")?.allowed, false);
+assert.equal(ostlanderRuffianOptions.find((option) => option.item.id === "bow")?.allowed, false);
+assert.equal(ostlanderJaegerOptions.find((option) => option.item.id === "double-barrelled-pistol")?.allowed, true);
+assert.equal(ostlanderJaegerOptions.find((option) => option.item.id === "double-barrelled-hunting-rifle")?.allowed, true);
+assert.equal(ostlanderOgreOptions.find((option) => option.item.id === "club")?.allowed, true);
+assert.equal(ostlanderOgreOptions.find((option) => option.item.id === "bow")?.allowed, false);
+
+const ostlanderElderSkills = getAllowedSkills(ostlanderRoster.members[0], ostlanderRoster, rulesDb);
+const ostlanderBrotherSkills = getAllowedSkills(ostlanderRoster.members[1], ostlanderRoster, rulesDb);
+const ostlanderPriestSkills = getAllowedSkills(ostlanderRoster.members[3], ostlanderRoster, rulesDb);
+const ostlanderPriestPrayers = getAllowedSpecialRules(ostlanderRoster.members[3], ostlanderRoster, rulesDb);
+assert.equal(ostlanderElderSkills.find((option) => option.item.id === "blood-oath")?.allowed, true);
+assert.equal(ostlanderBrotherSkills.find((option) => option.item.id === "quick-shot")?.allowed, false);
+assert.equal(ostlanderBrotherSkills.find((option) => option.item.id === "bull-rush")?.allowed, true);
+assert.equal(ostlanderPriestSkills.find((option) => option.item.id === "taunt")?.allowed, true);
+assert.equal(ostlanderPriestPrayers.find((option) => option.item.id === "taal-stags-leap")?.allowed, true);
+assert.equal(ostlanderPriestPrayers.find((option) => option.item.id === "taal-summon-squirrels")?.allowed, true);
+assert.equal(rulesDb.warbandTypes.find((warband) => warband.id === "ostlanders")?.sourceDocumentId, "mhr-ostlanders");
+assert.match(rulesDb.specialRules.find((rule) => rule.id === "double-barrelled-gun")?.effectSummary ?? "", /two hits/);
+assert.equal(rulesDb.specialRules.find((rule) => rule.id === "taal-stags-leap")?.validation.selectableAs, "prayer");
+assert.equal(rulesDb.skills.find((skill) => skill.id === "bull-rush")?.sourceDocumentId, "mhr-ostlanders");
+assert.ok(rulesDb.equipmentItems.find((item) => item.id === "double-barrelled-hunting-rifle")?.specialRuleIds.includes("double-barrelled-gun"));
+
 assert.ok(allowedOfficialWarbands.includes("sisters-of-sigmar"));
 assert.deepEqual(errorCodes(validSistersOfSigmar()), []);
 assert.equal(calculateRosterCost(validSistersOfSigmar(), rulesDb), 249);
@@ -391,6 +642,57 @@ const masterRituals = getAllowedSpecialRules(carnivalRoster.members[0], carnival
 const bruteRituals = getAllowedSpecialRules(carnivalRoster.members[1], carnivalRoster, rulesDb);
 assert.equal(masterRituals.find((option) => option.item.id === "nurgle-buboes")?.allowed, true);
 assert.equal(bruteRituals.find((option) => option.item.id === "nurgle-buboes")?.allowed, false);
+
+assert.ok(allowedOfficialWarbands.includes("cult-of-the-possessed"));
+assert.deepEqual(errorCodes(validCultOfThePossessed()), []);
+assert.equal(calculateRosterCost(validCultOfThePossessed(), rulesDb), 404);
+assert.equal(calculateWarbandRating(validCultOfThePossessed(), rulesDb), 63);
+assert.ok(codes(cultNoMagister()).includes("REQUIRED_LEADER"));
+assert.ok(codes(cultTwoMagisters()).includes("REQUIRED_LEADER"));
+assert.ok(codes(tooManyCultWarriors()).includes("MAX_WARRIORS"));
+assert.ok(codes(tooManyPossessed()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyMutants()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyDarksouls()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyCultBeastmen()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(mutantWithoutMutation()).includes("REQUIRED_EQUIPMENT_OPTION"));
+assert.deepEqual(errorCodes(mutantWithTwoMutations()), []);
+assert.equal(calculateRosterCost(mutantWithTwoMutations(), rulesDb), 449);
+assert.deepEqual(errorCodes(mutantWithExtraArmExtraWeapon()), []);
+assert.ok(codes(mutantWithExtraWeaponWithoutExtraArm()).includes("TOO_MANY_CLOSE_COMBAT_WEAPONS"));
+assert.ok(codes(mutantWithExtraArmAndTwoHandedExtraWeapon()).includes("TOO_MANY_CLOSE_COMBAT_WEAPONS"));
+assert.deepEqual(errorCodes(possessedWithMutation()), []);
+assert.ok(codes(possessedWithWeapon()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(darksoulWithBow()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(invalidCultSkill()).includes("INVALID_SKILL"));
+assert.deepEqual(errorCodes(magisterWithChaosRitual()), []);
+assert.ok(codes(possessedWithChaosRitual()).includes("INVALID_SPECIAL_RULE"));
+
+const cultRoster = validCultOfThePossessed();
+const magisterOptions = getAllowedEquipment(cultRoster.members[0], cultRoster, rulesDb);
+const possessedOptions = getAllowedEquipment(cultRoster.members[1], cultRoster, rulesDb);
+const darksoulOptions = getAllowedEquipment(cultRoster.members[5], cultRoster, rulesDb);
+assert.equal(magisterOptions.find((option) => option.item.id === "cult-bow")?.allowed, true);
+assert.equal(possessedOptions.find((option) => option.item.id === "mutation-great-claw")?.allowed, true);
+assert.equal(possessedOptions.find((option) => option.item.id === "dagger")?.allowed, false);
+assert.equal(darksoulOptions.find((option) => option.item.id === "flail")?.allowed, true);
+assert.equal(darksoulOptions.find((option) => option.item.id === "cult-bow")?.allowed, false);
+const extraArmRoster = mutantWithExtraArmExtraWeapon();
+const extraArmOptions = getAllowedEquipment({ ...extraArmRoster.members[2], equipment: ["dagger", "axe", "sword", "mutation-extra-arm"] }, extraArmRoster, rulesDb);
+assert.equal(extraArmOptions.find((option) => option.item.id === "mace")?.allowed, true);
+assert.equal(extraArmOptions.find((option) => option.item.id === "double-handed-weapon")?.allowed, false);
+const magisterSkills = getAllowedSkills(cultRoster.members[0], cultRoster, rulesDb);
+const possessedSkills = getAllowedSkills(cultRoster.members[1], cultRoster, rulesDb);
+const mutantSkills = getAllowedSkills(cultRoster.members[2], cultRoster, rulesDb);
+const magisterRituals = getAllowedSpecialRules(cultRoster.members[0], cultRoster, rulesDb);
+const possessedRituals = getAllowedSpecialRules(cultRoster.members[1], cultRoster, rulesDb);
+assert.equal(magisterSkills.find((option) => option.item.id === "sorcery")?.allowed, true);
+assert.equal(possessedSkills.find((option) => option.item.id === "mighty-blow")?.allowed, true);
+assert.equal(mutantSkills.find((option) => option.item.id === "step-aside")?.allowed, true);
+assert.equal(mutantSkills.find((option) => option.item.id === "wyrdstone-hunter")?.allowed, false);
+assert.equal(magisterRituals.find((option) => option.item.id === "chaos-eye-of-god")?.allowed, true);
+assert.equal(possessedRituals.find((option) => option.item.id === "chaos-eye-of-god")?.allowed, false);
+assert.equal(rulesDb.equipmentItems.find((item) => item.id === "mutation-daemon-soul")?.sourceDocumentId, "mhr-cult-of-the-possessed");
+assert.equal(rulesDb.specialRules.find((rule) => rule.id === "crazed")?.sourceDocumentId, "mhr-cult-of-the-possessed");
 
 assert.ok(allowedOfficialWarbands.includes("skaven"));
 assert.deepEqual(errorCodes(validSkaven()), []);
@@ -798,7 +1100,7 @@ function errorCodes(roster) {
 }
 
 async function loadRulesDb() {
-  const [sourceDocuments, equipmentItems, skillSeed, specialRules, hiredSwords, ruleReferences, witchHunters, mercenaries, sisters, carnival, skaven, pestilens, undead, orcMob, beastmenRaiders, blackOrcs, dwarfTreasureHunters, shadowWarriors, lizardmen, forestGoblins] = await Promise.all([
+  const [sourceDocuments, equipmentItems, skillSeed, specialRules, hiredSwords, ruleReferences, witchHunters, mercenaries, averlanders, kislevites, ostlanders, sisters, carnival, cultOfThePossessed, skaven, pestilens, undead, orcMob, beastmenRaiders, blackOrcs, dwarfTreasureHunters, shadowWarriors, lizardmen, forestGoblins] = await Promise.all([
     readJson("../src/data/sources.json"),
     readJson("../src/data/equipment.json"),
     readJson("../src/data/skills.json"),
@@ -807,8 +1109,12 @@ async function loadRulesDb() {
     readJson("../src/data/ruleReferences.json"),
     readJson("../src/data/warbands/witch-hunters.json"),
     readJson("../src/data/warbands/mercenaries.json"),
+    readJson("../src/data/warbands/averlanders.json"),
+    readJson("../src/data/warbands/kislevites.json"),
+    readJson("../src/data/warbands/ostlanders.json"),
     readJson("../src/data/warbands/sisters-of-sigmar.json"),
     readJson("../src/data/warbands/carnival-of-chaos.json"),
+    readJson("../src/data/warbands/cult-of-the-possessed.json"),
     readJson("../src/data/warbands/skaven.json"),
     readJson("../src/data/warbands/skaven-pestilens.json"),
     readJson("../src/data/warbands/undead.json"),
@@ -821,8 +1127,12 @@ async function loadRulesDb() {
     readJson("../src/data/warbands/forest-goblins.json")
   ]);
   const warbandSeed = warbandSeedSchema.parse(witchHunters);
+  const averlandersSeed = warbandSeedSchema.parse(averlanders);
+  const kislevitesSeed = warbandSeedSchema.parse(kislevites);
+  const ostlandersSeed = warbandSeedSchema.parse(ostlanders);
   const sistersSeed = warbandSeedSchema.parse(sisters);
   const carnivalSeed = warbandSeedSchema.parse(carnival);
+  const cultOfThePossessedSeed = warbandSeedSchema.parse(cultOfThePossessed);
   const skavenSeed = warbandSeedSchema.parse(skaven);
   const pestilensSeed = warbandSeedSchema.parse(pestilens);
   const undeadSeed = warbandSeedSchema.parse(undead);
@@ -880,10 +1190,10 @@ async function loadRulesDb() {
     }));
   return rulesDbSchema.parse({
     sourceDocuments,
-    warbandTypes: [warbandSeed.warbandType, sistersSeed.warbandType, carnivalSeed.warbandType, skavenSeed.warbandType, pestilensSeed.warbandType, undeadSeed.warbandType, orcMobSeed.warbandType, beastmenRaidersSeed.warbandType, blackOrcsSeed.warbandType, dwarfTreasureHuntersSeed.warbandType, shadowWarriorsSeed.warbandType, lizardmenSeed.warbandType, forestGoblinsSeed.warbandType, ...mercenarySeed.warbandTypes],
-    fighterTypes: [...warbandSeed.fighterTypes, ...sistersSeed.fighterTypes, ...carnivalSeed.fighterTypes, ...skavenSeed.fighterTypes, ...pestilensSeed.fighterTypes, ...undeadSeed.fighterTypes, ...orcMobSeed.fighterTypes, ...beastmenRaidersSeed.fighterTypes, ...blackOrcsSeed.fighterTypes, ...dwarfTreasureHuntersSeed.fighterTypes, ...shadowWarriorsSeed.fighterTypes, ...lizardmenSeed.fighterTypes, ...forestGoblinsSeed.fighterTypes, ...mercenarySeed.fighterTypes, ...hiredSwordFighterTypes],
+    warbandTypes: [warbandSeed.warbandType, averlandersSeed.warbandType, kislevitesSeed.warbandType, ostlandersSeed.warbandType, sistersSeed.warbandType, carnivalSeed.warbandType, cultOfThePossessedSeed.warbandType, skavenSeed.warbandType, pestilensSeed.warbandType, undeadSeed.warbandType, orcMobSeed.warbandType, beastmenRaidersSeed.warbandType, blackOrcsSeed.warbandType, dwarfTreasureHuntersSeed.warbandType, shadowWarriorsSeed.warbandType, lizardmenSeed.warbandType, forestGoblinsSeed.warbandType, ...mercenarySeed.warbandTypes],
+    fighterTypes: [...warbandSeed.fighterTypes, ...averlandersSeed.fighterTypes, ...kislevitesSeed.fighterTypes, ...ostlandersSeed.fighterTypes, ...sistersSeed.fighterTypes, ...carnivalSeed.fighterTypes, ...cultOfThePossessedSeed.fighterTypes, ...skavenSeed.fighterTypes, ...pestilensSeed.fighterTypes, ...undeadSeed.fighterTypes, ...orcMobSeed.fighterTypes, ...beastmenRaidersSeed.fighterTypes, ...blackOrcsSeed.fighterTypes, ...dwarfTreasureHuntersSeed.fighterTypes, ...shadowWarriorsSeed.fighterTypes, ...lizardmenSeed.fighterTypes, ...forestGoblinsSeed.fighterTypes, ...mercenarySeed.fighterTypes, ...hiredSwordFighterTypes],
     equipmentItems,
-    equipmentLists: [...warbandSeed.equipmentLists, ...sistersSeed.equipmentLists, ...carnivalSeed.equipmentLists, ...skavenSeed.equipmentLists, ...pestilensSeed.equipmentLists, ...undeadSeed.equipmentLists, ...orcMobSeed.equipmentLists, ...beastmenRaidersSeed.equipmentLists, ...blackOrcsSeed.equipmentLists, ...dwarfTreasureHuntersSeed.equipmentLists, ...shadowWarriorsSeed.equipmentLists, ...lizardmenSeed.equipmentLists, ...forestGoblinsSeed.equipmentLists, ...mercenarySeed.equipmentLists, ...hiredSwordEquipmentLists],
+    equipmentLists: [...warbandSeed.equipmentLists, ...averlandersSeed.equipmentLists, ...kislevitesSeed.equipmentLists, ...ostlandersSeed.equipmentLists, ...sistersSeed.equipmentLists, ...carnivalSeed.equipmentLists, ...cultOfThePossessedSeed.equipmentLists, ...skavenSeed.equipmentLists, ...pestilensSeed.equipmentLists, ...undeadSeed.equipmentLists, ...orcMobSeed.equipmentLists, ...beastmenRaidersSeed.equipmentLists, ...blackOrcsSeed.equipmentLists, ...dwarfTreasureHuntersSeed.equipmentLists, ...shadowWarriorsSeed.equipmentLists, ...lizardmenSeed.equipmentLists, ...forestGoblinsSeed.equipmentLists, ...mercenarySeed.equipmentLists, ...hiredSwordEquipmentLists],
     skillCategories: skillSeed.categories,
     skills: skillSeed.skills,
     specialRules,

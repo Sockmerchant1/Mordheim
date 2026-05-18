@@ -4,14 +4,18 @@ import ruleReferences from "./ruleReferences.json";
 import skillsSeed from "./skills.json";
 import sourceDocuments from "./sources.json";
 import specialRules from "./specialRules.json";
+import averlanders from "./warbands/averlanders.json";
 import beastmenRaiders from "./warbands/beastmen-raiders.json";
 import blackOrcs from "./warbands/black-orcs.json";
 import carnivalOfChaos from "./warbands/carnival-of-chaos.json";
+import cultOfThePossessed from "./warbands/cult-of-the-possessed.json";
 import dwarfTreasureHunters from "./warbands/dwarf-treasure-hunters.json";
 import forestGoblins from "./warbands/forest-goblins.json";
+import kislevites from "./warbands/kislevites.json";
 import lizardmen from "./warbands/lizardmen.json";
 import mercenaries from "./warbands/mercenaries.json";
 import orcMob from "./warbands/orc-mob.json";
+import ostlanders from "./warbands/ostlanders.json";
 import shadowWarriors from "./warbands/shadow-warriors.json";
 import sistersOfSigmar from "./warbands/sisters-of-sigmar.json";
 import skaven from "./warbands/skaven.json";
@@ -23,15 +27,19 @@ import { hiredSwordSchema, rulesDbSchema, warbandSeedCollectionSchema, warbandSe
 import type { EquipmentList, FighterType, RulesDb } from "../rules/types";
 
 const warbandSeeds = [
+  warbandSeedSchema.parse(averlanders),
   warbandSeedSchema.parse(witchHunters),
   warbandSeedSchema.parse(sistersOfSigmar),
   warbandSeedSchema.parse(carnivalOfChaos),
+  warbandSeedSchema.parse(cultOfThePossessed),
   warbandSeedSchema.parse(skaven),
   warbandSeedSchema.parse(undead),
   warbandSeedSchema.parse(orcMob),
   warbandSeedSchema.parse(beastmenRaiders),
   warbandSeedSchema.parse(blackOrcs),
   warbandSeedSchema.parse(dwarfTreasureHunters),
+  warbandSeedSchema.parse(kislevites),
+  warbandSeedSchema.parse(ostlanders),
   warbandSeedSchema.parse(shadowWarriors),
   warbandSeedSchema.parse(lizardmen),
   warbandSeedSchema.parse(forestGoblins),

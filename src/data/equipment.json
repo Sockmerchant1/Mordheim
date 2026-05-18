@@ -104,7 +104,7 @@
     "sourceDocumentId": "mordheim-core-rules",
     "sourceUrl": "https://www.broheim.net/downloads/rules/Mordheim%20Core%20Rules%20Printable.pdf",
     "pageRef": "Witch Hunters p. 16",
-    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "isTwoHanded": true, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
     "id": "spear",
@@ -142,7 +142,7 @@
     "sourceUrl": "https://mordheimer.net/docs/weapons-armour/close-combat",
     "pageRef": "Lance",
     "restrictions": "Mounted warriors only; the current seeded fixed user is the Freelancer.",
-    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "requiredEquipmentItemIds": ["warhorse"], "allowedFighterTypeIds": ["hired-sword-freelancer"] }
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "isTwoHanded": true, "nonRepeatable": true, "grantsWeaponUse": [], "requiredEquipmentItemIds": ["warhorse"], "allowedFighterTypeIds": ["hired-sword-freelancer"] }
   },
   {
     "id": "halberd",
@@ -154,7 +154,7 @@
     "sourceDocumentId": "mhr-mercenaries",
     "sourceUrl": "https://broheim.net/downloads/warbands/official/Mercenaries.pdf",
     "pageRef": "Mercenaries p. 8",
-    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "isTwoHanded": true, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
     "id": "dwarf-axe",
@@ -246,7 +246,7 @@
     "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
     "pageRef": "Dwarf Treasure Hunters p. 21",
     "restrictions": "Dwarf Warrior equipment list at warband creation; later campaign purchases use the normal trading chart.",
-    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "isTwoHanded": true, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
     "id": "gromril-spear",
@@ -272,7 +272,7 @@
     "sourceUrl": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
     "pageRef": "Dwarf Treasure Hunters p. 21",
     "restrictions": "Dwarf Warrior equipment list at warband creation; later campaign purchases use the normal trading chart.",
-    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "isTwoHanded": true, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
     "id": "weeping-blades",
@@ -328,19 +328,19 @@
     "sourceUrl": "https://mordheimer.net/docs/weapons-armour/close-combat",
     "pageRef": "Censer / Town Cryer #29",
     "restrictions": "Skaven of Clan Pestilens heroes equipment list only.",
-    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "isTwoHanded": true, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
     "id": "flail",
     "name": "Flail",
     "category": "close_combat",
     "cost": 15,
-    "rulesSummary": "Flagellant close combat weapon.",
+    "rulesSummary": "Common two-handed close combat weapon available from several warband equipment lists.",
     "specialRuleIds": [],
     "sourceDocumentId": "mordheim-core-rules",
     "sourceUrl": "https://www.broheim.net/downloads/rules/Mordheim%20Core%20Rules%20Printable.pdf",
     "pageRef": "Witch Hunters p. 16",
-    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "isTwoHanded": true, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
     "id": "carnival-flail",
@@ -353,7 +353,7 @@
     "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
     "pageRef": "Empire in Flames p. 61",
     "restrictions": "Carnival of Chaos Brutes only through the Brute equipment list.",
-    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "isTwoHanded": true, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
     "id": "steel-whip",
@@ -432,6 +432,19 @@
     "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
+    "id": "cult-bow",
+    "name": "Bow",
+    "category": "missile",
+    "cost": 15,
+    "rulesSummary": "Bow bought from the Cult of the Possessed equipment list at its listed recruitment cost.",
+    "specialRuleIds": [],
+    "sourceDocumentId": "mhr-cult-of-the-possessed",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+    "pageRef": "Cult of the Possessed p. 11",
+    "restrictions": "Cult of the Possessed equipment list only.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+  },
+  {
     "id": "sling",
     "name": "Sling",
     "category": "missile",
@@ -475,11 +488,11 @@
     "name": "Short Bow",
     "category": "missile",
     "cost": 5,
-    "rulesSummary": "Common missile weapon available to Zealots in the Witch Hunter list.",
+    "rulesSummary": "Common short-ranged missile weapon available in several warband equipment lists.",
     "specialRuleIds": [],
     "sourceDocumentId": "mordheim-core-rules",
     "sourceUrl": "https://www.broheim.net/downloads/rules/Mordheim%20Core%20Rules%20Printable.pdf",
-    "pageRef": "Witch Hunters p. 16",
+    "pageRef": "Core equipment lists and individual warband entries",
     "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
@@ -493,6 +506,19 @@
     "sourceUrl": "https://broheim.net/downloads/rules/Empire%20In%20Flames.pdf",
     "pageRef": "Empire in Flames p. 61",
     "restrictions": "Carnival of Chaos equipment list only.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+  },
+  {
+    "id": "cult-short-bow",
+    "name": "Short Bow",
+    "category": "missile",
+    "cost": 10,
+    "rulesSummary": "Short bow bought from the Cult of the Possessed equipment list at its listed recruitment cost.",
+    "specialRuleIds": [],
+    "sourceDocumentId": "mhr-cult-of-the-possessed",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+    "pageRef": "Cult of the Possessed p. 11",
+    "restrictions": "Cult of the Possessed equipment list only.",
     "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
@@ -642,6 +668,19 @@
     "sourceUrl": "https://broheim.net/downloads/warbands/official/Mercenaries.pdf",
     "pageRef": "Mercenaries p. 8",
     "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+  },
+  {
+    "id": "hunting-arrows",
+    "name": "Hunting Arrows",
+    "category": "miscellaneous",
+    "cost": 35,
+    "rulesSummary": "A Bergjaeger using a bow or long bow adds +1 to Injury rolls caused by those arrows.",
+    "specialRuleIds": ["hunting-arrows-injury"],
+    "sourceDocumentId": "mhr-averlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Averland%20Mercenaries.pdf",
+    "pageRef": "Averland Mercenaries p. 36",
+    "restrictions": "Bergjaeger only from the Scout equipment list.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "requiredAnyEquipmentItemIds": ["bow", "long-bow"], "allowedFighterTypeIds": ["averland-bergjaeger"] }
   },
   {
     "id": "light-armour",
@@ -859,6 +898,123 @@
     "pageRef": "Empire in Flames p. 66",
     "restrictions": "Tainted Ones only, bought at recruitment. Second and later Blessings cost double.",
     "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "costGroupId": "nurgle-blessing", "costGroupSubsequentMultiplier": 2 }
+  },
+  {
+    "id": "mutation-daemon-soul",
+    "name": "Daemon Soul",
+    "category": "miscellaneous",
+    "cost": 20,
+    "rulesSummary": "Mutation. The warrior has a 4+ save against the effects of spells or prayers.",
+    "specialRuleIds": ["cult-mutations"],
+    "sourceDocumentId": "mhr-cult-of-the-possessed",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+    "pageRef": "Cult of the Possessed p. 14",
+    "restrictions": "Mutants and Possessed only, bought at recruitment. Second and later mutations on the same model cost double.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "allowedFighterTypeIds": ["possessed", "mutant"], "costGroupId": "possessed-mutation", "costGroupSubsequentMultiplier": 2 }
+  },
+  {
+    "id": "mutation-great-claw",
+    "name": "Great Claw",
+    "category": "miscellaneous",
+    "cost": 50,
+    "rulesSummary": "Mutation. One arm becomes a claw that cannot carry a weapon; the warrior gains an extra hand-to-hand attack with +1 Strength.",
+    "specialRuleIds": ["cult-mutations"],
+    "sourceDocumentId": "mhr-cult-of-the-possessed",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+    "pageRef": "Cult of the Possessed p. 14",
+    "restrictions": "Mutants and Possessed only, bought at recruitment. Second and later mutations on the same model cost double.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "allowedFighterTypeIds": ["possessed", "mutant"], "costGroupId": "possessed-mutation", "costGroupSubsequentMultiplier": 2 }
+  },
+  {
+    "id": "mutation-cloven-hoofs",
+    "name": "Cloven Hoofs",
+    "category": "miscellaneous",
+    "cost": 40,
+    "rulesSummary": "Mutation. The warrior gains +1 Movement.",
+    "specialRuleIds": ["cult-mutations"],
+    "sourceDocumentId": "mhr-cult-of-the-possessed",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+    "pageRef": "Cult of the Possessed p. 14",
+    "restrictions": "Mutants and Possessed only, bought at recruitment. Second and later mutations on the same model cost double.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "allowedFighterTypeIds": ["possessed", "mutant"], "costGroupId": "possessed-mutation", "costGroupSubsequentMultiplier": 2 }
+  },
+  {
+    "id": "mutation-tentacle",
+    "name": "Tentacle",
+    "category": "miscellaneous",
+    "cost": 35,
+    "rulesSummary": "Mutation. In close combat the warrior can reduce one opponent's Attacks by 1, to a minimum of 1, choosing which attack is lost.",
+    "specialRuleIds": ["cult-mutations"],
+    "sourceDocumentId": "mhr-cult-of-the-possessed",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+    "pageRef": "Cult of the Possessed p. 14",
+    "restrictions": "Mutants and Possessed only, bought at recruitment. Second and later mutations on the same model cost double.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "allowedFighterTypeIds": ["possessed", "mutant"], "costGroupId": "possessed-mutation", "costGroupSubsequentMultiplier": 2 }
+  },
+  {
+    "id": "mutation-blackblood",
+    "name": "Blackblood",
+    "category": "miscellaneous",
+    "cost": 30,
+    "rulesSummary": "Mutation. If the warrior loses a wound in close combat, each model in base contact suffers a Strength 3 hit; these hits cannot cause critical hits.",
+    "specialRuleIds": ["cult-mutations"],
+    "sourceDocumentId": "mhr-cult-of-the-possessed",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+    "pageRef": "Cult of the Possessed p. 14",
+    "restrictions": "Mutants and Possessed only, bought at recruitment. Second and later mutations on the same model cost double.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "allowedFighterTypeIds": ["possessed", "mutant"], "costGroupId": "possessed-mutation", "costGroupSubsequentMultiplier": 2 }
+  },
+  {
+    "id": "mutation-spines",
+    "name": "Spines",
+    "category": "miscellaneous",
+    "cost": 35,
+    "rulesSummary": "Mutation. At the beginning of each close combat phase, every model in base contact suffers an automatic Strength 1 hit; these hits cannot cause critical hits.",
+    "specialRuleIds": ["cult-mutations"],
+    "sourceDocumentId": "mhr-cult-of-the-possessed",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+    "pageRef": "Cult of the Possessed p. 14",
+    "restrictions": "Mutants and Possessed only, bought at recruitment. Second and later mutations on the same model cost double.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "allowedFighterTypeIds": ["possessed", "mutant"], "costGroupId": "possessed-mutation", "costGroupSubsequentMultiplier": 2 }
+  },
+  {
+    "id": "mutation-scorpion-tail",
+    "name": "Scorpion Tail",
+    "category": "miscellaneous",
+    "cost": 40,
+    "rulesSummary": "Mutation. The warrior makes an extra Strength 5 hand-to-hand attack each close combat phase; against poison-immune targets this tail attack is Strength 2.",
+    "specialRuleIds": ["cult-mutations"],
+    "sourceDocumentId": "mhr-cult-of-the-possessed",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+    "pageRef": "Cult of the Possessed p. 14",
+    "restrictions": "Mutants and Possessed only, bought at recruitment. Second and later mutations on the same model cost double.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "allowedFighterTypeIds": ["possessed", "mutant"], "costGroupId": "possessed-mutation", "costGroupSubsequentMultiplier": 2 }
+  },
+  {
+    "id": "mutation-extra-arm",
+    "name": "Extra Arm",
+    "category": "miscellaneous",
+    "cost": 40,
+    "rulesSummary": "Mutation. The warrior may use an extra single-handed weapon for +1 Attack, or carry a shield or buckler in the extra arm. A Possessed still cannot carry weapons.",
+    "specialRuleIds": ["cult-mutations"],
+    "sourceDocumentId": "mhr-cult-of-the-possessed",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+    "pageRef": "Cult of the Possessed p. 14",
+    "restrictions": "Mutants and Possessed only, bought at recruitment. Second and later mutations on the same model cost double.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "extraCloseCombatSlots": 1, "extraCloseCombatSlotsRequireSingleHanded": true, "extraShieldOrBucklerSlots": 1, "grantsWeaponUse": [], "allowedFighterTypeIds": ["possessed", "mutant"], "costGroupId": "possessed-mutation", "costGroupSubsequentMultiplier": 2 }
+  },
+  {
+    "id": "mutation-hideous",
+    "name": "Hideous",
+    "category": "miscellaneous",
+    "cost": 40,
+    "rulesSummary": "Mutation. The warrior causes Fear.",
+    "specialRuleIds": ["cult-mutations", "fear"],
+    "sourceDocumentId": "mhr-cult-of-the-possessed",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+    "pageRef": "Cult of the Possessed p. 14",
+    "restrictions": "Mutants and Possessed only, bought at recruitment. Second and later mutations on the same model cost double.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "allowedFighterTypeIds": ["possessed", "mutant"], "costGroupId": "possessed-mutation", "costGroupSubsequentMultiplier": 2 }
   },
   {
     "id": "squig-prodder",
@@ -1112,12 +1268,11 @@
     "name": "Throwing Knives",
     "category": "missile",
     "cost": 15,
-    "rulesSummary": "Skink missile weapon from the Lizardmen equipment list.",
+    "rulesSummary": "Thrown missile weapon available in selected warband equipment lists.",
     "specialRuleIds": [],
-    "sourceDocumentId": "tc11-lizardmen",
-    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Lizardmen.pdf",
-    "pageRef": "Lizardmen p. 23",
-    "restrictions": "Skinks equipment list only.",
+    "sourceDocumentId": "mordheim-core-rules",
+    "sourceUrl": "https://www.broheim.net/downloads/rules/Mordheim%20Core%20Rules%20Printable.pdf",
+    "pageRef": "Core trading post and individual warband entries",
     "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
@@ -1453,5 +1608,75 @@
     "pageRef": "Forest Goblins p. 2",
     "restrictions": "Goblin spider mount; full mounted-rider handling remains manual.",
     "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [] }
+  },
+  {
+    "id": "double-barrelled-pistol",
+    "name": "Double-barrelled Pistol",
+    "category": "missile",
+    "cost": 30,
+    "rarity": "Rare 10, Ostlander Jaegers",
+    "rulesSummary": "Blackpowder pistol variant. Each successful shot causes two Strength 4 hits, but each barrel takes a full turn to reload.",
+    "specialRuleIds": ["double-barrelled-gun"],
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 41-42",
+    "restrictions": "Jaeger equipment list only in the current seeded warbands.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [], "allowedFighterTypeIds": ["jaeger"] }
+  },
+  {
+    "id": "brace-of-double-barrelled-pistols",
+    "name": "Brace of Double-barrelled Pistols",
+    "category": "missile",
+    "cost": 60,
+    "rarity": "Rare 10, Ostlander Jaegers",
+    "rulesSummary": "A pair of double-barrelled pistols. Each successful shot causes two Strength 4 hits; with a brace, the warrior may fire them every other round because both barrels still reload separately.",
+    "specialRuleIds": ["double-barrelled-gun"],
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 41-42",
+    "restrictions": "Jaeger equipment list only in the current seeded warbands.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "allowedFighterTypeIds": ["jaeger"] }
+  },
+  {
+    "id": "double-barrelled-hunting-rifle",
+    "name": "Double-barrelled Hunting Rifle",
+    "category": "missile",
+    "cost": 300,
+    "rarity": "Rare 12, Ostlander Jaegers",
+    "rulesSummary": "Hunting rifle variant. Each successful shot causes two hits instead of one, but each barrel takes a full turn to reload.",
+    "specialRuleIds": ["double-barrelled-gun"],
+    "sourceDocumentId": "mhr-ostlanders",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "pageRef": "Ostlanders p. 41-42",
+    "restrictions": "Jaeger equipment list only in the current seeded warbands.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "allowedFighterTypeIds": ["jaeger"] }
+  },
+  {
+    "id": "vodka",
+    "name": "Vodka",
+    "category": "drug",
+    "cost": 35,
+    "rarity": "Rare 8, 35+2D6 gc",
+    "rulesSummary": "One-use Kislevite Hero item used before a game. The warband gains +1 Leadership for the battle, max 10, but each member tests Toughness or suffers -1 Initiative for the battle.",
+    "specialRuleIds": ["vodka-courage"],
+    "sourceDocumentId": "mhr-kislevites",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Kislevites.pdf",
+    "pageRef": "Kislevites p. 77",
+    "restrictions": "Kislevite Heroes only; bought from the Trading Post, not the starting equipment list. Cost is base 35 gc plus 2D6 gc.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [], "allowedFighterTypeIds": ["druzhina-captain", "bear-tamer", "esaul", "kislev-youth"] }
+  },
+  {
+    "id": "bear-claw-necklace",
+    "name": "Bear-Claw Necklace",
+    "category": "miscellaneous",
+    "cost": 75,
+    "rarity": "Rare 9, 75+3D6 gc",
+    "rulesSummary": "Kislevite Hero item. The wearer is subject to Frenzy.",
+    "specialRuleIds": ["bear-claw-necklace-frenzy"],
+    "sourceDocumentId": "mhr-kislevites",
+    "sourceUrl": "https://broheim.net/downloads/warbands/official/Kislevites.pdf",
+    "pageRef": "Kislevites p. 77",
+    "restrictions": "Kislevite Heroes only; bought from the Trading Post, not the starting equipment list. Cost is base 75 gc plus 3D6 gc.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "allowedFighterTypeIds": ["druzhina-captain", "bear-tamer", "esaul", "kislev-youth"] }
   }
 ]

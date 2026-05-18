@@ -24,6 +24,14 @@
     "notes": "Official Broheim-hosted Mercenaries PDF covering Reiklanders, Middenheimers and Marienburgers."
   },
   {
+    "id": "mhr-averlanders",
+    "title": "Averland Mercenaries",
+    "url": "https://broheim.net/downloads/warbands/official/Averland%20Mercenaries.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1a",
+    "notes": "Official Broheim-hosted Averland Mercenaries PDF from Town Cryer #10 / Mordheim Annual material. The app stores concise rules summaries and page references."
+  },
+  {
     "id": "mhr-sisters-of-sigmar",
     "title": "Sisters of Sigmar",
     "url": "https://broheim.net/downloads/warbands/official/Sisters%20of%20Sigmar.pdf",
@@ -56,12 +64,36 @@
     "notes": "Official Broheim-hosted Orc Mob warband PDF from Mordheim Annual material."
   },
   {
+    "id": "mhr-cult-of-the-possessed",
+    "title": "Cult of the Possessed",
+    "url": "https://broheim.net/downloads/warbands/official/Cult%20of%20the%20Possessed.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1a",
+    "notes": "Official Broheim-hosted Cult of the Possessed warband PDF from the Mordheim rulebook set. The app stores concise rules summaries and page references."
+  },
+  {
     "id": "mhr-dwarf-treasure-hunters",
     "title": "Dwarf Treasure Hunters",
     "url": "https://broheim.net/downloads/warbands/official/Dwarf%20Treasure%20Hunters.pdf",
     "type": "warband_pdf",
     "broheimGrade": "1a",
     "notes": "Official Broheim-hosted Dwarf Treasure Hunters warband PDF from Mordheim Annual material. The app stores concise rules summaries and page references."
+  },
+  {
+    "id": "mhr-kislevites",
+    "title": "Kislevites",
+    "url": "https://broheim.net/downloads/warbands/official/Kislevites.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1a",
+    "notes": "Official Broheim-hosted Kislevites warband PDF from Town Cryer #16 / Mordheim Annual material. The app stores concise rules summaries and page references."
+  },
+  {
+    "id": "mhr-ostlanders",
+    "title": "Ostlander Mercenaries",
+    "url": "https://broheim.net/downloads/warbands/official/Ostlanders.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1a",
+    "notes": "Official Broheim-hosted Ostlanders warband PDF from Town Cryer #11 / Mordheim Annual material. The app stores concise rules summaries and page references."
   },
   {
     "id": "eif-beastmen-raiders",

@@ -4772,11 +4772,14 @@ function RequiredEquipmentOptionPicker({
   const allowedOptions = getAllowedEquipment(member, roster, rulesDb)
     .filter((option) => requiredIds.includes(option.item.id) && option.allowed && !member.equipment.includes(option.item.id));
   const isNurgleBlessing = requiredItems.some((item) => item.validation.costGroupId === "nurgle-blessing");
-  const title = isNurgleBlessing ? "Blessings of Nurgle" : "Required options";
-  const placeholder = isNurgleBlessing ? "Add Blessing of Nurgle" : "Add required option";
+  const isCultMutation = requiredItems.some((item) => item.validation.costGroupId === "possessed-mutation");
+  const title = isNurgleBlessing ? "Blessings of Nurgle" : isCultMutation ? "Mutations" : "Required options";
+  const placeholder = isNurgleBlessing ? "Add Blessing of Nurgle" : isCultMutation ? "Add mutation" : "Add required option";
   const helpText = isNurgleBlessing
     ? "Tainted Ones must start with at least one Blessing. Additional Blessings are allowed and their paid cost is included in the roster total."
-    : "This fighter type must include at least one of these paid options.";
+    : isCultMutation
+      ? "Mutants must start with at least one mutation. Additional mutations are allowed and later mutation costs are doubled in the roster total."
+      : "This fighter type must include at least one of these paid options.";
 
   function removeItem(itemId: string) {
     onChange({ ...member, equipment: member.equipment.filter((id, index) => id !== itemId || index !== member.equipment.indexOf(itemId)) });
