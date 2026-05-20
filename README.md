@@ -21,6 +21,12 @@ On Netlify, roster data is saved in each player's browser storage. No paid datab
 
 See `NETLIFY_DEPLOY.md` for step-by-step setup and the GitHub upload checklist.
 
+## Installable App
+
+The Netlify site is configured as an installable web app. On iPhone or iPad, open the site in Safari, tap Share, then choose Add to Home Screen. On Mac Safari, use File, then Add to Dock.
+
+App icon files live in `public/pwa-icon-192.png`, `public/pwa-icon-512.png`, and `public/apple-touch-icon.png`. Replace those files with the final app icon artwork before publishing if you want a different icon.
+
 ## Run Locally
 
 Requires Node 24+ because the local SQLite API uses `node:sqlite`. The Netlify deployment does not run that local API; it uses browser storage instead.

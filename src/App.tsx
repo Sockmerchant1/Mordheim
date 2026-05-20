@@ -228,6 +228,10 @@ type WyrdstoneIncomeRow = {
   "13-15": number;
   "16+": number;
 };
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+};
 
 const rulesLookupRecords = buildRulesLookupRecords();
 const AFTER_BATTLE_STEPS = [
@@ -383,6 +387,8 @@ export default function App() {
         </nav>
       </header>
 
+      <InstallAppPrompt />
+
       {mode === "list" && (
         <WarbandList
           rosters={rosters}
@@ -493,6 +499,76 @@ export default function App() {
         }}
       />
     </div>
+  );
+}
+
+function InstallAppPrompt() {
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem("mordheim-install-prompt-dismissed") === "true";
+  });
+  const [canShowAppleHelp, setCanShowAppleHelp] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => {
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+    setIsStandalone(standalone);
+
+    const userAgent = navigator.userAgent;
+    const isAppleDevice = /iPad|iPhone|iPod|Macintosh/i.test(userAgent);
+    const isSafari = /Safari/i.test(userAgent) && !/Chrome|CriOS|FxiOS|Edg|OPR/i.test(userAgent);
+    setCanShowAppleHelp(isAppleDevice && isSafari && !standalone);
+
+    function onBeforeInstallPrompt(event: Event) {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    }
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+  }, []);
+
+  if (dismissed || isStandalone || (!installPrompt && !canShowAppleHelp)) return null;
+
+  async function install() {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+    setDismissed(true);
+    window.localStorage.setItem("mordheim-install-prompt-dismissed", "true");
+  }
+
+  function dismiss() {
+    setDismissed(true);
+    window.localStorage.setItem("mordheim-install-prompt-dismissed", "true");
+  }
+
+  return (
+    <section className="install-app-prompt no-print" aria-label="Install app prompt">
+      <div className="install-app-copy">
+        <Download aria-hidden />
+        <div>
+          <strong>Install Mordheim Helper</strong>
+          <p>
+            {installPrompt
+              ? "Add it to your device for a faster app-style launch at the table."
+              : "On iPhone or iPad, open Safari Share and choose Add to Home Screen. On Mac Safari, use File and Add to Dock."}
+          </p>
+        </div>
+      </div>
+      <div className="install-app-actions">
+        {installPrompt && (
+          <button className="primary" onClick={() => void install()}>
+            Install
+          </button>
+        )}
+        <button onClick={dismiss}>Not now</button>
+      </div>
+    </section>
   );
 }
 

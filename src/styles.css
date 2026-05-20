@@ -341,6 +341,53 @@ h3 {
   color: #fff4df;
 }
 
+.install-app-prompt {
+  align-items: center;
+  background:
+    linear-gradient(180deg, rgba(255, 244, 223, 0.1), rgba(255, 244, 223, 0.02)),
+    linear-gradient(90deg, #1e1814, #2d2019);
+  border: 1px solid rgba(217, 201, 168, 0.38);
+  border-radius: 8px;
+  box-shadow: var(--shadow-soft);
+  color: #fff4df;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin: 0.85rem auto 0;
+  max-width: 1250px;
+  padding: 0.75rem 1rem;
+  width: calc(100% - 2rem);
+}
+
+.install-app-copy {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.install-app-copy svg {
+  color: #d9c9a8;
+  flex: 0 0 auto;
+  height: 1.35rem;
+  width: 1.35rem;
+}
+
+.install-app-copy strong {
+  display: block;
+}
+
+.install-app-copy p {
+  color: #d9c9a8;
+  margin: 0.1rem 0 0;
+}
+
+.install-app-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .list-page,
 .workspace {
   background:
@@ -3113,6 +3160,11 @@ button.blocked,
   .calendar-day {
     min-height: 76px;
   }
+
+  .install-app-prompt {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 560px) {
@@ -3137,8 +3189,18 @@ button.blocked,
 
   .button-row,
   .action-strip,
-  .after-step-actions {
+  .after-step-actions,
+  .install-app-actions {
     width: 100%;
+  }
+
+  .install-app-prompt {
+    width: calc(100% - 1rem);
+  }
+
+  .install-app-actions button {
+    flex: 1 1 0;
+    justify-content: center;
   }
 
   .after-step-actions {
