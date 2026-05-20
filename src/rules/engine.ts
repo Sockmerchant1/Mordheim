@@ -362,6 +362,7 @@ export function createRosterMemberFromType(
     equipment: [],
     skills: [],
     specialRules: [...fighterType.specialRuleIds],
+    castableDifficultyAdjustments: [],
     notes: "",
     status: "active"
   };

@@ -1607,6 +1607,7 @@ describe("rules engine - Hired Sword equipment", () => {
     expect(freelancer?.equipmentItemIds).toEqual(["heavy-armour", "shield", "lance", "sword", "warhorse"]);
     expect(pitFighter?.equipmentItemIds).toContain("spiked-gauntlet");
     expect(warlock?.equipmentItemIds).toContain("staff");
+    expect(warlock?.specialRuleIds).toContain("lesser-magic");
     expect(halfling?.equipmentItemIds).toContain("cooking-pot-helmet");
     expect(rulesDb.equipmentItems.find((item) => item.id === "spiked-gauntlet")?.validation.isBuckler).toBe(true);
     expect(rulesDb.equipmentItems.find((item) => item.id === "cooking-pot-helmet")?.validation.isHelmet).toBe(true);
@@ -1628,13 +1629,16 @@ describe("rules engine - Hired Sword equipment", () => {
     const freelancerOptions = getAllowedEquipment(freelancerMember, roster, rulesDb);
     const mountedFreelancerOptions = getAllowedEquipment({ ...freelancerMember, equipment: ["warhorse"] }, roster, rulesDb);
     const pitFighterOptions = getAllowedEquipment(createRosterMemberFromType(pitFighterType, roster.id, "hired_sword", "Pit Fighter"), roster, rulesDb);
-    const warlockOptions = getAllowedEquipment(createRosterMemberFromType(warlockType, roster.id, "hired_sword", "Warlock"), roster, rulesDb);
+    const warlockMember = createRosterMemberFromType(warlockType, roster.id, "hired_sword", "Warlock");
+    const warlockOptions = getAllowedEquipment(warlockMember, roster, rulesDb);
+    const warlockSpells = getAllowedSpecialRules(warlockMember, roster, rulesDb);
 
     expect(freelancerOptions.find((option) => option.item.id === "warhorse")?.allowed).toBe(true);
     expect(freelancerOptions.find((option) => option.item.id === "lance")?.allowed).toBe(false);
     expect(mountedFreelancerOptions.find((option) => option.item.id === "lance")?.allowed).toBe(true);
     expect(pitFighterOptions.find((option) => option.item.id === "spiked-gauntlet")?.allowed).toBe(true);
     expect(warlockOptions.find((option) => option.item.id === "staff")?.allowed).toBe(true);
+    expect(warlockSpells.filter((option) => option.allowed && option.item.validation.requiredSpecialRuleIds.includes("lesser-magic"))).toHaveLength(6);
     expect(calculateWarbandRating({ ...roster, members: [{ ...freelancerMember, equipment: ["heavy-armour", "shield", "lance", "sword", "warhorse"] }] }, rulesDb)).toBe(21);
   });
 });

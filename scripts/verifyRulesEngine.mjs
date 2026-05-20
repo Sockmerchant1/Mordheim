@@ -949,6 +949,7 @@ const halflingScout = rulesDb.hiredSwords.find((hiredSword) => hiredSword.id ===
 assert.deepEqual(freelancer?.equipmentItemIds, ["heavy-armour", "shield", "lance", "sword", "warhorse"]);
 assert.ok(pitFighter?.equipmentItemIds.includes("spiked-gauntlet"));
 assert.ok(warlockHiredSword?.equipmentItemIds.includes("staff"));
+assert.ok(warlockHiredSword?.specialRuleIds.includes("lesser-magic"));
 assert.ok(halflingScout?.equipmentItemIds.includes("cooking-pot-helmet"));
 assert.equal(rulesDb.equipmentItems.find((item) => item.id === "lance")?.sourceDocumentId, "mordheim-core-rules");
 assert.equal(rulesDb.equipmentItems.find((item) => item.id === "spiked-gauntlet")?.validation.isBuckler, true);
@@ -966,12 +967,15 @@ const freelancerMember = createRosterMemberFromType(freelancerType, hiredSwordRo
 const freelancerOptions = getAllowedEquipment(freelancerMember, hiredSwordRoster, rulesDb);
 const mountedFreelancerOptions = getAllowedEquipment({ ...freelancerMember, equipment: ["warhorse"] }, hiredSwordRoster, rulesDb);
 const pitFighterOptions = getAllowedEquipment(createRosterMemberFromType(pitFighterType, hiredSwordRoster.id, "hired_sword", "Pit Fighter"), hiredSwordRoster, rulesDb);
-const warlockOptions = getAllowedEquipment(createRosterMemberFromType(warlockType, hiredSwordRoster.id, "hired_sword", "Warlock"), hiredSwordRoster, rulesDb);
+const warlockMember = createRosterMemberFromType(warlockType, hiredSwordRoster.id, "hired_sword", "Warlock");
+const warlockOptions = getAllowedEquipment(warlockMember, hiredSwordRoster, rulesDb);
+const warlockSpells = getAllowedSpecialRules(warlockMember, hiredSwordRoster, rulesDb);
 assert.equal(freelancerOptions.find((option) => option.item.id === "warhorse")?.allowed, true);
 assert.equal(freelancerOptions.find((option) => option.item.id === "lance")?.allowed, false);
 assert.equal(mountedFreelancerOptions.find((option) => option.item.id === "lance")?.allowed, true);
 assert.equal(pitFighterOptions.find((option) => option.item.id === "spiked-gauntlet")?.allowed, true);
 assert.equal(warlockOptions.find((option) => option.item.id === "staff")?.allowed, true);
+assert.equal(warlockSpells.filter((option) => option.allowed && option.item.validation.requiredSpecialRuleIds.includes("lesser-magic")).length, 6);
 assert.equal(calculateWarbandRating({ ...hiredSwordRoster, members: [{ ...freelancerMember, equipment: freelancer.equipmentItemIds }] }, rulesDb), 21);
 
 assert.ok(getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).some((warband) => warband.id === "lizardmen"));

@@ -888,6 +888,18 @@ h3 {
   margin: 0.15rem 0 0.45rem;
 }
 
+.roster-name-field {
+  gap: 0.25rem;
+  min-width: min(100%, 280px);
+}
+
+.roster-name-field input {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.45rem;
+  font-weight: 800;
+  min-height: 44px;
+}
+
 .source-note {
   align-items: center;
   display: inline-flex;
@@ -1291,6 +1303,42 @@ button.blocked,
 .skill-picker {
   display: grid;
   gap: 0.5rem;
+}
+
+.castable-roll-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.castable-roll-hint,
+.spell-roll-result {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.duplicate-spell-choice {
+  background: rgba(255, 244, 210, 0.86);
+  border: 1px solid rgba(166, 102, 37, 0.36);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.65rem;
+}
+
+.duplicate-spell-choice p {
+  color: var(--muted-strong);
+  font-size: 0.9rem;
+  margin: 0.2rem 0 0;
+}
+
+.spell-roll-result {
+  background: rgba(255, 250, 240, 0.58);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  color: var(--muted-strong);
+  padding: 0.55rem 0.65rem;
 }
 
 .member-issues {
@@ -2986,6 +3034,31 @@ button.blocked,
   font-weight: 900;
 }
 
+.henchman-injury-box {
+  background: rgba(255, 250, 240, 0.5);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.75rem;
+}
+
+.henchman-injury-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.henchman-injury-row {
+  align-items: end;
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(180px, 1.4fr);
+}
+
+.henchman-casualty-summary {
+  margin: 0;
+}
+
 .resolution-flow {
   counter-reset: resolution;
   display: grid;
@@ -3273,6 +3346,7 @@ button.blocked,
   .play-metrics,
   .after-report-metrics,
   .resolution-flow,
+  .henchman-injury-row,
   .review-grid {
     grid-template-columns: 1fr;
   }

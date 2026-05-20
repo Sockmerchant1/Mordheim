@@ -300,6 +300,14 @@ export const rosterMemberSchema = z.object({
   perModelEquipment: z.array(z.array(z.string())).optional(),
   skills: z.array(z.string()).default([]),
   specialRules: z.array(z.string()).default([]),
+  castableDifficultyAdjustments: z.array(z.object({
+    id: z.string(),
+    ruleId: z.string(),
+    modifier: z.number(),
+    source: z.string().optional(),
+    date: z.string().optional(),
+    notes: z.string().optional()
+  })).optional(),
   notes: z.string().default(""),
   status: memberStatusSchema
 });
@@ -330,6 +338,14 @@ export const campaignLogDetailsSchema = z.object({
     permanentEffect: z.string().optional(),
     notes: z.string().optional(),
     casualties: z.number().optional(),
+    henchmanInjuries: z.array(z.object({
+      modelIndex: z.number(),
+      modelName: z.string(),
+      result: z.string(),
+      rollLabel: z.string().optional(),
+      effect: z.string().optional(),
+      notes: z.string().optional()
+    })).optional(),
     followUps: z.array(z.object({
       result: z.string(),
       effect: z.string().optional(),

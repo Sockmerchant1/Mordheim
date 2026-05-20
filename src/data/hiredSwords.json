@@ -126,7 +126,7 @@
     "hireFee": 30,
     "upkeep": 15,
     "availabilitySummary": "Any warband except Witch Hunters and Sisters of Sigmar may hire a Warlock.",
-    "effectSummary": "Spellcasting Hired Sword. Does not count towards warband size or hero limits. Starts with two Lesser Magic spells generated manually.",
+    "effectSummary": "Spellcasting Hired Sword. Does not count towards warband size or hero limits. Starts with two randomly generated Lesser Magic spells.",
     "sourceDocumentId": "mordheim-core-rules",
     "sourceUrl": "https://mordheimer.net/docs/campaigns/hired-swords/grade-1a",
     "pageRef": "Warlock",
@@ -137,7 +137,7 @@
     "profile": { "M": 4, "WS": 2, "BS": 2, "S": 3, "T": 3, "W": 1, "I": 4, "A": 1, "Ld": 8 },
     "equipmentItemIds": ["staff"],
     "skillCategoryIds": ["academic"],
-    "specialRuleIds": ["spellcaster"],
-    "notes": "Staff is modeled as fixed equipment. Lesser Magic spells are not yet fully seeded as selectable records."
+    "specialRuleIds": ["spellcaster", "lesser-magic"],
+    "notes": "Staff is modeled as fixed equipment. When hired through the app, two Lesser Magic spells are rolled automatically with duplicate results re-rolled."
   }
 ]

@@ -176,8 +176,18 @@ type AfterBattleInjuryEntry = {
   notes?: string;
   resolvedOutsideApp?: boolean;
   casualties?: number;
+  henchmanInjuries?: AfterBattleHenchmanInjury[];
   multipleInjuriesCountRoll?: number;
   followUpInjuries?: AfterBattleFollowUpInjury[];
+};
+type AfterBattleHenchmanInjury = {
+  id: string;
+  modelIndex: number;
+  modelName: string;
+  result: string;
+  rollLabel?: string;
+  effect?: string;
+  notes?: string;
 };
 type AfterBattleFollowUpInjury = {
   id: string;
@@ -1060,7 +1070,7 @@ function RosterView({
     <div className="two-column">
       <section className="primary-flow print-sheet">
         <PrintableRosterSheet roster={roster} />
-        <RosterHeader roster={roster} />
+        <RosterHeader roster={roster} onNameChange={(name) => onRosterChange((current) => ({ ...current, name }))} />
         <div className="action-strip no-print">
           <label className="toggle">
             <input type="checkbox" checked={showIllegalOptions} onChange={(event) => onToggleIllegal(event.target.checked)} />
@@ -2768,7 +2778,7 @@ function fighterTypeForHiredSword(hiredSword: HiredSword) {
 
 function createHiredSwordMember(hiredSword: HiredSword, fighterType: FighterType, rosterId: string): RosterMember {
   const member = createRosterMemberFromType(fighterType, rosterId, "hired_sword", hiredSword.name);
-  return {
+  const hiredMember = {
     ...member,
     equipment: [...hiredSword.equipmentItemIds],
     skills: [],
@@ -2778,6 +2788,19 @@ function createHiredSwordMember(hiredSword: HiredSword, fighterType: FighterType
       hiredSword.availabilitySummary,
       hiredSword.notes
     ].filter(Boolean).join("\n")
+  };
+  if (hiredSword.id !== "warlock") return hiredMember;
+
+  const spellRolls = rollRandomCastableRules(hiredMember, undefined, 2);
+  return {
+    ...hiredMember,
+    specialRules: unique([...hiredMember.specialRules, ...spellRolls.map((roll) => roll.rule.id)]),
+    notes: appendUniqueNote(
+      hiredMember.notes,
+      spellRolls.length
+        ? spellRolls.map(spellRollSummary).join("\n")
+        : "Warlock should start with two Lesser Magic spells, but no legal Lesser Magic spell data was available."
+    )
   };
 }
 
@@ -3162,6 +3185,7 @@ function SeriousInjuriesStep({
         <div className="injury-grid">
           {draft.injuries.map((entry) => {
             const member = roster.members.find((item) => item.id === entry.fighterId);
+            const isHenchmanGroup = member?.kind === "henchman_group";
             const simpleFollowUp = simpleInjuryFollowUpFor(entry.result);
             const needsFollowUp = entry.result === "Multiple Injuries" || entry.result === "Bitter Enmity" || Boolean(simpleFollowUp) || entry.result === "Sold To The Pits";
             const hasFollowUps = (
@@ -3186,28 +3210,42 @@ function SeriousInjuriesStep({
                   <li className={isResolved ? "done" : "muted"}>Confirm final effect</li>
                 </ol>
                 <SmartTableRoller
-                  title={member?.kind === "henchman_group" ? "Henchman casualty roll" : "Hero serious injury roll"}
-                  rollKind={member?.kind === "henchman_group" ? "d6" : "d66"}
-                  recordId={member?.kind === "henchman_group" ? "table-henchmen-injuries" : "table-serious-injuries"}
-                  tableCaption={member?.kind === "henchman_group" ? "Henchmen Injuries" : "Heroes' Serious Injuries"}
+                  title={isHenchmanGroup ? "Henchman casualty roll" : "Hero serious injury roll"}
+                  rollKind={isHenchmanGroup ? "d6" : "d66"}
+                  recordId={isHenchmanGroup ? "table-henchmen-injuries" : "table-serious-injuries"}
+                  tableCaption={isHenchmanGroup ? "Henchmen Injuries" : "Heroes' Serious Injuries"}
                   autoApply
                   showFollowUpDice={false}
-                  helperText={member?.kind === "henchman_group" ? "Rolls D6 and applies the group casualty result." : "Rolls D66 and applies the serious injury result."}
+                  helperText={isHenchmanGroup ? "Rolls D6 and applies the result to the next unresolved model in the group." : "Rolls D66 and applies the serious injury result."}
                   onLookup={onLookup}
-                  onUseResult={(roll) => updateInjury(entry.fighterId, injuryPatchFromRoll(entry, roll, member?.kind === "henchman_group"))}
+                  onUseResult={(roll) => updateInjury(
+                    entry.fighterId,
+                    isHenchmanGroup && member ? henchmanInjuryPatchFromRoll(entry, roll, member) : injuryPatchFromRoll(entry, roll, false)
+                  )}
                 />
-                {member?.kind === "henchman_group" && (
-                  <NumberField label="Casualties / group size reduction" value={entry.casualties ?? 0} onChange={(value) => updateInjury(entry.fighterId, { casualties: Math.max(0, value) })} />
+                {isHenchmanGroup && member && (
+                  <HenchmanInjuryAssignments
+                    entry={entry}
+                    member={member}
+                    onChange={(patch) => updateInjury(entry.fighterId, patch)}
+                  />
                 )}
-                <label>
-                  <span>Final injury result</span>
-                  <select value={entry.result} onChange={(event) => updateInjury(entry.fighterId, injuryResultPatch(entry, event.target.value))}>
-                    <option value="">Select or mark resolved</option>
-                    {SERIOUS_INJURY_RESULTS.map((result) => (
-                      <option key={result}>{result}</option>
-                    ))}
-                  </select>
-                </label>
+                {isHenchmanGroup ? (
+                  <label>
+                    <span>Group result summary</span>
+                    <input value={entry.result || "Not resolved"} readOnly />
+                  </label>
+                ) : (
+                  <label>
+                    <span>Final injury result</span>
+                    <select value={entry.result} onChange={(event) => updateInjury(entry.fighterId, injuryResultPatch(entry, event.target.value))}>
+                      <option value="">Select or mark resolved</option>
+                      {SERIOUS_INJURY_RESULTS.map((result) => (
+                        <option key={result}>{result}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 {member?.kind !== "henchman_group" && entry.result === "Multiple Injuries" && (
                   <MultipleInjuriesResolver
                     entry={entry}
@@ -3269,6 +3307,88 @@ function SeriousInjuriesStep({
           })}
         </div>
       )}
+    </section>
+  );
+}
+
+function HenchmanInjuryAssignments({
+  entry,
+  member,
+  onChange
+}: {
+  entry: AfterBattleInjuryEntry;
+  member: RosterMember;
+  onChange: (patch: Partial<AfterBattleInjuryEntry>) => void;
+}) {
+  const assignments = normaliseHenchmanInjuries(entry, member);
+
+  function setAssignments(nextAssignments: AfterBattleHenchmanInjury[]) {
+    onChange(henchmanAssignmentsPatch(nextAssignments));
+  }
+
+  function updateAssignment(assignmentId: string, patch: Partial<AfterBattleHenchmanInjury>) {
+    setAssignments(assignments.map((assignment) => {
+      if (assignment.id !== assignmentId) return assignment;
+      const modelIndex = patch.modelIndex ?? assignment.modelIndex;
+      return {
+        ...assignment,
+        ...patch,
+        modelIndex,
+        modelName: patch.modelName ?? henchmanModelLabel(member, modelIndex)
+      };
+    }));
+  }
+
+  return (
+    <section className="henchman-injury-box">
+      <div className="section-heading compact">
+        <div>
+          <h4>Affected henchmen</h4>
+          <p>Choose the exact model in the group for each injury roll.</p>
+        </div>
+        <NumberField
+          label="Models to resolve"
+          value={assignments.length}
+          onChange={(value) => setAssignments(resizeHenchmanInjuries(assignments, value, member))}
+        />
+      </div>
+      <div className="henchman-injury-list">
+        {assignments.map((assignment, index) => (
+          <div className="henchman-injury-row" key={assignment.id}>
+            <label>
+              <span>Model</span>
+              <select
+                value={assignment.modelIndex}
+                onChange={(event) => updateAssignment(assignment.id, { modelIndex: Number(event.target.value) })}
+              >
+                {Array.from({ length: Math.max(1, member.groupSize) }, (_, modelIndex) => modelIndex + 1).map((modelIndex) => (
+                  <option value={modelIndex} key={modelIndex}>{henchmanModelLabel(member, modelIndex)}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Result</span>
+              <select value={assignment.result} onChange={(event) => updateAssignment(assignment.id, { result: event.target.value })}>
+                <option value="">Select result</option>
+                {HENCHMAN_INJURY_RESULTS.map((result) => (
+                  <option key={result}>{result}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Notes</span>
+              <input
+                value={assignment.notes ?? ""}
+                onChange={(event) => updateAssignment(assignment.id, { notes: event.target.value })}
+                placeholder={assignment.rollLabel ? `${assignment.rollLabel}${assignment.effect ? `: ${assignment.effect}` : ""}` : `Injury ${index + 1}`}
+              />
+            </label>
+          </div>
+        ))}
+      </div>
+      <p className="henchman-casualty-summary">
+        Casualties applied on final confirmation: <strong>{henchmanCasualtyCount({ ...entry, henchmanInjuries: assignments })}</strong>
+      </p>
     </section>
   );
 }
@@ -4492,7 +4612,7 @@ function PrintableMemberBlock({ roster, member }: { roster: Roster; member: Rost
   const specialRules = unique([...fighterType.specialRuleIds, ...member.specialRules])
     .map((ruleId) => rulesDb.specialRules.find((rule) => rule.id === ruleId))
     .filter((rule): rule is SpecialRule => Boolean(rule));
-  const castableRules = specialRules.filter((rule) => rule.validation.selectableAs).map((rule) => rule.name);
+  const castableRules = specialRules.filter((rule) => rule.validation.selectableAs).map((rule) => castableRuleDisplayName(member, rule));
   const passiveRules = specialRules.filter((rule) => !rule.validation.selectableAs).map((rule) => rule.name);
   const memberCost = calculateRosterCost({ ...roster, members: [member] }, rulesDb);
   const startingXp = member.startingXp ?? fighterType.startingExperience;
@@ -4610,7 +4730,7 @@ function PrintBlankLines({ title, lines }: { title: string; lines: number }) {
   );
 }
 
-function RosterHeader({ roster }: { roster: Roster }) {
+function RosterHeader({ roster, onNameChange }: { roster: Roster; onNameChange?: (name: string) => void }) {
   const warband = currentWarband(roster)!;
   const cost = calculateRosterCost(roster, rulesDb);
   const rating = calculateWarbandRating(roster, rulesDb);
@@ -4622,8 +4742,17 @@ function RosterHeader({ roster }: { roster: Roster }) {
       <div className="roster-title-lockup">
         <WarbandBadge warbandTypeId={roster.warbandTypeId} size="large" />
         <div>
-        <p className="eyebrow">Warband name</p>
-        <h2>{roster.name || "Unnamed Warband"}</h2>
+          {onNameChange ? (
+            <label className="roster-name-field">
+              <span>Warband name</span>
+              <input value={roster.name} onChange={(event) => onNameChange(event.target.value)} placeholder="Warband name" />
+            </label>
+          ) : (
+            <>
+              <p className="eyebrow">Warband name</p>
+              <h2>{roster.name || "Unnamed Warband"}</h2>
+            </>
+          )}
         <SourceNote sourceUrl={warband.sourceUrl} label={`${warband.name} · ${warband.sourceCode}`} />
       </div>
         </div>
@@ -5056,13 +5185,112 @@ function SpellPrayerPicker({
   onChange: (member: RosterMember) => void;
   onLookup: (item: LookupItem) => void;
 }) {
-  const options = getAllowedSpecialRules(member, roster, rulesDb).filter((option) => option.item.validation.selectableAs && option.allowed);
+  const allRollableRules = rollableCastableRulesForMember(member, roster);
+  const selectedCastableIds = new Set(member.specialRules.filter((ruleId) => rulesDb.specialRules.some((rule) => rule.id === ruleId && isCastableRule(rule))));
+  const options = allRollableRules.filter((rule) => !selectedCastableIds.has(rule.id));
   const selectedRules = member.specialRules
     .map((id) => rulesDb.specialRules.find((rule) => rule.id === id))
-    .filter((rule): rule is SpecialRule => Boolean(rule?.validation.selectableAs));
+    .filter((rule): rule is SpecialRule => Boolean(rule && isCastableRule(rule)));
+  const [rollMessage, setRollMessage] = useState("");
+  const [pendingDuplicate, setPendingDuplicate] = useState<PendingCastableDuplicate | undefined>();
+  const spellTableGroups = castableRuleGroups(allRollableRules);
+  const isWarlock = member.fighterTypeId === "hired-sword-warlock";
+  const selectedCastableRuleIds = new Set(selectedRules.map((rule) => rule.id));
+  const castableDifficultyCredits = member.castableDifficultyAdjustments?.filter((adjustment) => selectedCastableRuleIds.has(adjustment.ruleId)).length ?? 0;
+  const warlockMissingSpells = Math.max(0, 2 - selectedRules.length - castableDifficultyCredits);
+  const canRollCastable = allRollableRules.length > 0;
 
   function removeRule(ruleId: string) {
-    onChange({ ...member, specialRules: member.specialRules.filter((id) => id !== ruleId) });
+    onChange({
+      ...member,
+      specialRules: member.specialRules.filter((id) => id !== ruleId),
+      castableDifficultyAdjustments: member.castableDifficultyAdjustments?.filter((adjustment) => adjustment.ruleId !== ruleId)
+    });
+  }
+
+  function applyRolledRules(count: number) {
+    rollAndApplyCastableRules(member, count);
+  }
+
+  function rollAndApplyCastableRules(baseMember: RosterMember, count: number, leadingNotes: string[] = []) {
+    let workingMember = leadingNotes.reduce(
+      (current, note) => ({ ...current, notes: appendUniqueNote(current.notes, note) }),
+      baseMember
+    );
+    const selectedIds = new Set(workingMember.specialRules);
+    const notes = [...leadingNotes];
+
+    for (let index = 0; index < count; index += 1) {
+      const step = rollRandomCastableRuleStep(workingMember, roster, selectedIds);
+      if (!step) break;
+
+      if (step.type === "duplicate") {
+        const duplicate = {
+          ...step.duplicate,
+          remainingCount: count - index,
+          memberWithPriorRolls: workingMember
+        };
+        setPendingDuplicate(duplicate);
+        if (workingMember !== baseMember) onChange(workingMember);
+        setRollMessage([...notes, duplicateChoiceSummary(duplicate)].join(" "));
+        return;
+      }
+
+      selectedIds.add(step.result.rule.id);
+      const note = spellRollSummary(step.result);
+      notes.push(note);
+      workingMember = {
+        ...workingMember,
+        specialRules: unique([...workingMember.specialRules, step.result.rule.id]),
+        notes: appendUniqueNote(workingMember.notes, note)
+      };
+    }
+
+    setPendingDuplicate(undefined);
+    if (workingMember !== baseMember) {
+      onChange(workingMember);
+      setRollMessage(notes.join(" "));
+      return;
+    }
+    setRollMessage("No legal spell or prayer table is available for this fighter.");
+  }
+
+  function rerollPendingDuplicate() {
+    if (!pendingDuplicate) return;
+    const note = duplicateRerollChoiceSummary(pendingDuplicate);
+    const nextMember = {
+      ...pendingDuplicate.memberWithPriorRolls,
+      notes: appendUniqueNote(pendingDuplicate.memberWithPriorRolls.notes, note)
+    };
+    setPendingDuplicate(undefined);
+    rollAndApplyCastableRules(nextMember, pendingDuplicate.remainingCount, [note]);
+  }
+
+  function reducePendingDuplicateDifficulty() {
+    if (!pendingDuplicate) return;
+    const note = duplicateDifficultyReductionSummary(pendingDuplicate);
+    const nextMember = {
+      ...pendingDuplicate.memberWithPriorRolls,
+      castableDifficultyAdjustments: [
+        ...(pendingDuplicate.memberWithPriorRolls.castableDifficultyAdjustments ?? []),
+        {
+          id: id("castable-adjustment"),
+          ruleId: pendingDuplicate.rule.id,
+          modifier: -1,
+          source: "duplicate-spell-roll",
+          date: new Date().toISOString(),
+          notes: note
+        }
+      ],
+      notes: appendUniqueNote(pendingDuplicate.memberWithPriorRolls.notes, note)
+    };
+    setPendingDuplicate(undefined);
+    if (pendingDuplicate.remainingCount > 1) {
+      rollAndApplyCastableRules(nextMember, pendingDuplicate.remainingCount - 1, [note]);
+      return;
+    }
+    onChange(nextMember);
+    setRollMessage(note);
   }
 
   return (
@@ -5071,7 +5299,7 @@ function SpellPrayerPicker({
         {selectedRules.map((rule) => (
           <span className="choice-chip" key={rule.id}>
             <button className="chip" onClick={() => onLookup({ type: "specialRule", item: rule })}>
-              {rule.name}
+              {castableRuleDisplayName(member, rule)}
             </button>
             <button className="mini-remove" aria-label={`Remove ${rule.name}`} onClick={() => removeRule(rule.id)}>
               Remove
@@ -5080,6 +5308,36 @@ function SpellPrayerPicker({
         ))}
         {selectedRules.length === 0 && <span className="muted">None</span>}
       </div>
+      <div className="castable-roll-tools">
+        <button type="button" disabled={!canRollCastable || Boolean(pendingDuplicate)} onClick={() => applyRolledRules(1)}>
+          <Dices aria-hidden /> Randomise one
+        </button>
+        {isWarlock && (
+          <button type="button" disabled={warlockMissingSpells === 0 || !canRollCastable || Boolean(pendingDuplicate)} onClick={() => applyRolledRules(warlockMissingSpells)}>
+            <Dices aria-hidden /> Roll Warlock spells
+          </button>
+        )}
+      </div>
+      <p className="castable-roll-hint">
+        Random rolls choose a spell table first when more than one table is available. If a duplicate spell is rolled, choose whether to re-roll it or lower that spell's difficulty by 1.
+      </p>
+      {pendingDuplicate && (
+        <div className="duplicate-spell-choice" role="alert">
+          <div>
+            <strong>Duplicate rolled: {pendingDuplicate.rule.name}</strong>
+            <p>{duplicateChoiceSummary(pendingDuplicate)}</p>
+          </div>
+          <div className="castable-roll-tools">
+            <button type="button" onClick={rerollPendingDuplicate}>
+              Re-roll duplicate
+            </button>
+            <button type="button" onClick={reducePendingDuplicateDifficulty}>
+              Lower difficulty by 1
+            </button>
+          </div>
+        </div>
+      )}
+      {rollMessage && <p className="spell-roll-result">{rollMessage}</p>}
       <select
         value=""
         onChange={(event) => {
@@ -5087,15 +5345,249 @@ function SpellPrayerPicker({
           if (rule && !member.specialRules.includes(rule.id)) onChange({ ...member, specialRules: [...member.specialRules, rule.id] });
         }}
       >
-        <option value="">Add prayer or spell</option>
-        {options.map((option) => (
-          <option value={option.item.id} key={option.item.id}>
-            {option.item.name}
+        <option value="">Record manually rolled result</option>
+        {options.map((rule) => (
+          <option value={rule.id} key={rule.id}>
+            {castableRuleOptionLabel(rule, spellTableGroups)}
           </option>
         ))}
       </select>
     </div>
   );
+}
+
+type CastableRuleGroup = {
+  key: string;
+  name: string;
+  rules: SpecialRule[];
+};
+type CastableRollResult = {
+  rule: SpecialRule;
+  tableName: string;
+  tableChoiceRoll?: number;
+  tableChoiceCount: number;
+  spellRolls: number[];
+  duplicateResults: string[];
+};
+type CastableDuplicateRoll = {
+  rule: SpecialRule;
+  tableName: string;
+  tableChoiceRoll?: number;
+  tableChoiceCount: number;
+  spellRoll: number;
+};
+type PendingCastableDuplicate = CastableDuplicateRoll & {
+  remainingCount: number;
+  memberWithPriorRolls: RosterMember;
+};
+type CastableRollStep =
+  | { type: "new"; result: CastableRollResult }
+  | { type: "duplicate"; duplicate: CastableDuplicateRoll };
+
+function rollableCastableRulesForMember(member: RosterMember, roster?: Roster) {
+  const baseMember = memberWithoutSelectedCastables(member);
+  if (roster) {
+    return getAllowedSpecialRules(baseMember, roster, rulesDb)
+      .filter((option) => option.allowed && isCastableRule(option.item))
+      .map((option) => option.item);
+  }
+
+  const fighterType = fighterTypeForMember(member);
+  if (!fighterType) return [];
+  const activeRuleIds = new Set([...fighterType.specialRuleIds, ...baseMember.specialRules]);
+  return rulesDb.specialRules.filter((rule) => {
+    if (!isCastableRule(rule)) return false;
+    if (rule.validation.allowedFighterTypeIds.length > 0 && !rule.validation.allowedFighterTypeIds.includes(fighterType.id)) return false;
+    if (rule.validation.requiredSpecialRuleIds.some((ruleId) => !activeRuleIds.has(ruleId))) return false;
+    if (
+      activeRuleIds.has("cannot-cast-spells-in-armour") &&
+      (rule.validation.selectableAs === "spell" || rule.validation.selectableAs === "ritual") &&
+      member.equipment.some((itemId) => {
+        const item = rulesDb.equipmentItems.find((equipment) => equipment.id === itemId);
+        return item?.validation.isBodyArmour || item?.validation.isShield || item?.validation.isBuckler;
+      })
+    ) return false;
+    return true;
+  });
+}
+
+function memberWithoutSelectedCastables(member: RosterMember): RosterMember {
+  const selectableIds = new Set(rulesDb.specialRules.filter(isCastableRule).map((rule) => rule.id));
+  return {
+    ...member,
+    specialRules: member.specialRules.filter((ruleId) => !selectableIds.has(ruleId))
+  };
+}
+
+function isCastableRule(rule: SpecialRule) {
+  return rule.validation.selectableAs === "spell" || rule.validation.selectableAs === "prayer" || rule.validation.selectableAs === "ritual";
+}
+
+function castableRuleGroups(rules: SpecialRule[]): CastableRuleGroup[] {
+  const groups = new Map<string, CastableRuleGroup>();
+  for (const rule of rules) {
+    const key = castableTableKey(rule);
+    const group = groups.get(key) ?? { key, name: castableTableName(key, rule), rules: [] };
+    group.rules.push(rule);
+    groups.set(key, group);
+  }
+  return Array.from(groups.values());
+}
+
+function castableTableKey(rule: SpecialRule) {
+  return rule.validation.requiredSpecialRuleIds[0] ?? rule.relatedRuleIds[0] ?? rule.validation.selectableAs ?? "magic";
+}
+
+function castableTableName(key: string, fallbackRule: SpecialRule) {
+  return rulesDb.specialRules.find((rule) => rule.id === key)?.name ?? `${fallbackRule.validation.selectableAs ?? "Magic"} table`;
+}
+
+function castableRuleOptionLabel(rule: SpecialRule, groups: CastableRuleGroup[]) {
+  const group = groups.find((item) => item.key === castableTableKey(rule));
+  const rollNumber = group ? group.rules.findIndex((item) => item.id === rule.id) + 1 : 0;
+  return `${group?.name ?? "Magic"}${rollNumber > 0 ? ` ${rollNumber}` : ""}: ${rule.name}`;
+}
+
+function castableRuleDisplayName(member: RosterMember, rule: SpecialRule) {
+  const modifier = castableDifficultyModifier(member, rule.id);
+  return modifier < 0 ? `${rule.name} (difficulty ${modifier})` : rule.name;
+}
+
+function castableDifficultyModifier(member: RosterMember, ruleId: string) {
+  return (member.castableDifficultyAdjustments ?? [])
+    .filter((adjustment) => adjustment.ruleId === ruleId)
+    .reduce((total, adjustment) => total + adjustment.modifier, 0);
+}
+
+function rollRandomCastableRuleStep(
+  member: RosterMember,
+  roster: Roster | undefined,
+  selectedIds: Set<string>,
+  random = Math.random
+): CastableRollStep | undefined {
+  const groups = castableRuleGroups(rollableCastableRulesForMember(member, roster));
+  if (!groups.length) return undefined;
+
+  const tableChoiceRoll = groups.length > 1 ? rollNumber(groups.length, random) : undefined;
+  const group = groups[(tableChoiceRoll ?? 1) - 1];
+  const spellRoll = rollD6(random);
+  const rule = group.rules[(spellRoll - 1) % group.rules.length];
+
+  if (selectedIds.has(rule.id)) {
+    return {
+      type: "duplicate",
+      duplicate: {
+        rule,
+        tableName: group.name,
+        tableChoiceRoll,
+        tableChoiceCount: groups.length,
+        spellRoll
+      }
+    };
+  }
+
+  return {
+    type: "new",
+    result: {
+      rule,
+      tableName: group.name,
+      tableChoiceRoll,
+      tableChoiceCount: groups.length,
+      spellRolls: [spellRoll],
+      duplicateResults: []
+    }
+  };
+}
+
+function rollRandomCastableRules(member: RosterMember, roster: Roster | undefined, count: number, random = Math.random): CastableRollResult[] {
+  const results: CastableRollResult[] = [];
+  const selectedIds = new Set(member.specialRules);
+  for (let index = 0; index < count; index += 1) {
+    const result = rollRandomCastableRule(member, roster, selectedIds, random);
+    if (!result) break;
+    selectedIds.add(result.rule.id);
+    results.push(result);
+  }
+  return results;
+}
+
+function rollRandomCastableRule(
+  member: RosterMember,
+  roster: Roster | undefined,
+  selectedIds: Set<string>,
+  random = Math.random
+): CastableRollResult | undefined {
+  const groups = castableRuleGroups(rollableCastableRulesForMember(member, roster))
+    .filter((group) => group.rules.some((rule) => !selectedIds.has(rule.id)));
+  if (!groups.length) return undefined;
+
+  const tableChoiceRoll = groups.length > 1 ? rollNumber(groups.length, random) : undefined;
+  const group = groups[(tableChoiceRoll ?? 1) - 1];
+  const duplicateResults: string[] = [];
+  const spellRolls: number[] = [];
+
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const spellRoll = rollD6(random);
+    const rule = group.rules[(spellRoll - 1) % group.rules.length];
+    spellRolls.push(spellRoll);
+    if (!selectedIds.has(rule.id)) {
+      return {
+        rule,
+        tableName: group.name,
+        tableChoiceRoll,
+        tableChoiceCount: groups.length,
+        spellRolls,
+        duplicateResults
+      };
+    }
+    duplicateResults.push(`${spellRoll}: ${rule.name}`);
+  }
+
+  const fallbackRule = group.rules.find((rule) => !selectedIds.has(rule.id));
+  if (!fallbackRule) return undefined;
+  return {
+    rule: fallbackRule,
+    tableName: group.name,
+    tableChoiceRoll,
+    tableChoiceCount: groups.length,
+    spellRolls,
+    duplicateResults
+  };
+}
+
+function rollNumber(sides: number, random = Math.random) {
+  return Math.floor(random() * sides) + 1;
+}
+
+function spellRollSummary(result: CastableRollResult) {
+  const tablePart = result.tableChoiceRoll
+    ? `${result.tableName} table roll ${result.tableChoiceRoll}/${result.tableChoiceCount}`
+    : result.tableName;
+  const duplicatePart = result.duplicateResults.length
+    ? `; duplicate re-rolls ${result.duplicateResults.join(", ")}`
+    : "";
+  return `Random spell roll: ${tablePart}; D6 ${result.spellRolls.join(", ")} -> ${result.rule.name}${duplicatePart}.`;
+}
+
+function duplicateChoiceSummary(result: CastableDuplicateRoll) {
+  const tablePart = result.tableChoiceRoll
+    ? `${result.tableName} table roll ${result.tableChoiceRoll}/${result.tableChoiceCount}`
+    : result.tableName;
+  return `Duplicate spell roll: ${tablePart}; D6 ${result.spellRoll} -> ${result.rule.name}. Choose re-roll, or keep the duplicate and reduce this spell's difficulty by 1.`;
+}
+
+function duplicateRerollChoiceSummary(result: CastableDuplicateRoll) {
+  const tablePart = result.tableChoiceRoll
+    ? `${result.tableName} table roll ${result.tableChoiceRoll}/${result.tableChoiceCount}`
+    : result.tableName;
+  return `Duplicate spell roll re-rolled: ${tablePart}; D6 ${result.spellRoll} -> ${result.rule.name}.`;
+}
+
+function duplicateDifficultyReductionSummary(result: CastableDuplicateRoll) {
+  const tablePart = result.tableChoiceRoll
+    ? `${result.tableName} table roll ${result.tableChoiceRoll}/${result.tableChoiceCount}`
+    : result.tableName;
+  return `Duplicate spell roll kept: ${tablePart}; D6 ${result.spellRoll} -> ${result.rule.name}. ${result.rule.name} difficulty reduced by 1.`;
 }
 
 function CampaignPanel({
@@ -5690,6 +6182,13 @@ const SERIOUS_INJURY_RESULTS = [
   "Other / custom"
 ];
 
+const HENCHMAN_INJURY_RESULTS = [
+  "Dead",
+  "Full Recovery",
+  "Miss Next Game",
+  "Other / custom"
+];
+
 const SERIOUS_INJURY_TABLE = [
   { min: 11, max: 15, result: "Dead" },
   { min: 16, max: 21, result: "Multiple Injuries" },
@@ -6275,13 +6774,15 @@ function afterBattleXpEntryForMember(member: RosterMember, fighterType: FighterT
 }
 
 function afterBattleInjuryEntryForMember(member: RosterMember): AfterBattleInjuryEntry {
+  const isHenchmanGroup = member.kind === "henchman_group";
   return {
     fighterId: member.id,
     fighterName: member.displayName,
     result: "",
     permanentEffect: "",
     notes: "",
-    casualties: member.kind === "henchman_group" ? 0 : undefined
+    casualties: isHenchmanGroup ? 0 : undefined,
+    henchmanInjuries: isHenchmanGroup ? [defaultHenchmanInjury(member, 1)] : undefined
   };
 }
 
@@ -6460,8 +6961,8 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
       const injuryTexts = permanentInjuryEntries(injury);
       if (injuryTexts.length) next = { ...next, injuries: [...next.injuries, ...injuryTexts] };
       if (injury.result.toLowerCase() === "dead") next = { ...next, status: "dead" };
-      if (member.kind === "henchman_group" && injury.casualties) {
-        const groupSize = Math.max(0, next.groupSize - injury.casualties);
+      if (member.kind === "henchman_group" && (injury.casualties || injury.henchmanInjuries?.length)) {
+        const groupSize = Math.max(0, next.groupSize - henchmanCasualtyCount(injury));
         next = { ...next, groupSize, status: groupSize === 0 ? "dead" : next.status };
       }
     }
@@ -6528,6 +7029,14 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
             permanentEffect: entry.permanentEffect,
             notes: entry.notes,
             casualties: entry.casualties,
+            henchmanInjuries: entry.henchmanInjuries?.map((assignment) => ({
+              modelIndex: assignment.modelIndex,
+              modelName: assignment.modelName,
+              result: assignment.result,
+              rollLabel: assignment.rollLabel,
+              effect: assignment.effect,
+              notes: assignment.notes
+            })),
             followUps: (entry.followUpInjuries ?? []).map((followUp) => ({
               result: followUp.result,
               effect: followUp.effect,
@@ -6599,6 +7108,16 @@ function reviewBlockingMessages(draft: AfterBattleDraft, roster: Roster): string
   const messages: string[] = [];
   for (const injury of draft.injuries) {
     const member = roster.members.find((item) => item.id === injury.fighterId);
+    if (member?.kind === "henchman_group" && !injury.resolvedOutsideApp) {
+      const assignments = normaliseHenchmanInjuries(injury, member);
+      if (!assignments.length || assignments.some((assignment) => !assignment.result.trim())) {
+        messages.push(`${injury.fighterName} needs a result for each affected henchman.`);
+      }
+      const assignedModels = assignments.map((assignment) => assignment.modelIndex);
+      if (new Set(assignedModels).size !== assignedModels.length) {
+        messages.push(`${injury.fighterName} has more than one injury assigned to the same henchman model.`);
+      }
+    }
     if (member?.kind !== "henchman_group" && !injury.resolvedOutsideApp && !injury.result.trim()) {
       messages.push(`${injury.fighterName} needs a serious injury result.`);
     }
@@ -6695,6 +7214,118 @@ function createSoldToPitsLosingInjuryRoll(random = Math.random): { roll: TableRo
   return { roll: createTableRoll(rulesLookupRecords, { kind: "d66" }, random), rerolled };
 }
 
+function defaultHenchmanInjury(member: RosterMember, modelIndex: number): AfterBattleHenchmanInjury {
+  return {
+    id: id("henchman-injury"),
+    modelIndex,
+    modelName: henchmanModelLabel(member, modelIndex),
+    result: "",
+    notes: ""
+  };
+}
+
+function henchmanModelLabel(member: RosterMember, modelIndex: number) {
+  const baseName = member.displayName || fighterTypeForMember(member)?.name || "Henchman";
+  return `${baseName} #${modelIndex}`;
+}
+
+function normaliseHenchmanInjuries(entry: AfterBattleInjuryEntry, member: RosterMember): AfterBattleHenchmanInjury[] {
+  const maxModels = Math.max(1, member.groupSize);
+  const existing = entry.henchmanInjuries ?? [];
+  if (existing.length) {
+    return existing.map((assignment, index) => {
+      const modelIndex = Math.min(maxModels, Math.max(1, assignment.modelIndex || index + 1));
+      return {
+        ...assignment,
+        modelIndex,
+        modelName: assignment.modelName || henchmanModelLabel(member, modelIndex)
+      };
+    });
+  }
+
+  if ((entry.casualties ?? 0) > 0) {
+    return Array.from({ length: Math.min(maxModels, entry.casualties ?? 0) }, (_, index) => ({
+      ...defaultHenchmanInjury(member, index + 1),
+      result: "Dead"
+    }));
+  }
+
+  if (entry.result.trim()) {
+    return [{
+      ...defaultHenchmanInjury(member, 1),
+      result: entry.result,
+      notes: entry.notes
+    }];
+  }
+
+  return [defaultHenchmanInjury(member, 1)];
+}
+
+function resizeHenchmanInjuries(
+  assignments: AfterBattleHenchmanInjury[],
+  count: number,
+  member: RosterMember
+): AfterBattleHenchmanInjury[] {
+  const safeCount = Math.max(0, Math.min(Math.max(1, member.groupSize), Math.floor(Number.isFinite(count) ? count : 0)));
+  const resized = assignments.slice(0, safeCount).map((assignment, index) => {
+    const modelIndex = Math.min(Math.max(1, member.groupSize), Math.max(1, assignment.modelIndex || index + 1));
+    return {
+      ...assignment,
+      modelIndex,
+      modelName: assignment.modelName || henchmanModelLabel(member, modelIndex)
+    };
+  });
+  while (resized.length < safeCount) {
+    const used = new Set(resized.map((assignment) => assignment.modelIndex));
+    const nextModelIndex = Array.from({ length: Math.max(1, member.groupSize) }, (_, index) => index + 1).find((index) => !used.has(index)) ?? resized.length + 1;
+    resized.push(defaultHenchmanInjury(member, nextModelIndex));
+  }
+  return resized;
+}
+
+function henchmanCasualtyCount(entry: AfterBattleInjuryEntry) {
+  if (entry.henchmanInjuries?.length) {
+    return entry.henchmanInjuries.filter((assignment) => assignment.result === "Dead").length;
+  }
+  return Math.max(0, entry.casualties ?? 0);
+}
+
+function henchmanAssignmentsPatch(assignments: AfterBattleHenchmanInjury[]): Partial<AfterBattleInjuryEntry> {
+  const casualties = assignments.filter((assignment) => assignment.result === "Dead").length;
+  return {
+    henchmanInjuries: assignments,
+    casualties,
+    result: henchmanInjuryResultSummary(assignments)
+  };
+}
+
+function henchmanInjuryResultSummary(assignments: AfterBattleHenchmanInjury[]) {
+  const resolved = assignments.filter((assignment) => assignment.result.trim());
+  if (!resolved.length) return "";
+  const counts = new Map<string, number>();
+  for (const assignment of resolved) counts.set(assignment.result, (counts.get(assignment.result) ?? 0) + 1);
+  return Array.from(counts.entries()).map(([result, count]) => `${count} ${result}`).join(", ");
+}
+
+function henchmanInjuryPatchFromRoll(entry: AfterBattleInjuryEntry, roll: TableRollResult, member: RosterMember): Partial<AfterBattleInjuryEntry> {
+  const result = roll.result || "Other / custom";
+  const assignments = normaliseHenchmanInjuries(entry, member);
+  const targetIndex = assignments.findIndex((assignment) => !assignment.result.trim());
+  const indexToUse = targetIndex >= 0 ? targetIndex : Math.max(0, assignments.length - 1);
+  const nextAssignments = assignments.map((assignment, index) => (
+    index === indexToUse
+      ? {
+          ...assignment,
+          result,
+          rollLabel: roll.rollLabel,
+          effect: roll.effect,
+          notes: prependNote(roll.effect ? `${roll.rollLabel}: ${roll.effect}.` : `${roll.rollLabel}: ${result}.`, assignment.notes)
+        }
+      : assignment
+  ));
+  return henchmanAssignmentsPatch(nextAssignments);
+}
+
 function injuryPatchFromRoll(entry: AfterBattleInjuryEntry, roll: TableRollResult, isHenchmanGroup: boolean): Partial<AfterBattleInjuryEntry> {
   const result = roll.result || (roll.kind === "d66" ? seriousInjuryResultForRoll(roll.rollValue) : "Other / custom");
   const rollNote = `${roll.rollLabel}: ${result}${roll.effect ? ` - ${roll.effect}` : ""}.`;
@@ -6764,10 +7395,24 @@ function followUpHighlight(followUp: AfterBattleFollowUpInjury): RuleLookupHighl
 
 function injurySummary(injury: AfterBattleInjuryEntry) {
   if (injury.resolvedOutsideApp) return "resolved outside app";
+  const henchmanSummary = henchmanInjurySummary(injury);
+  if (henchmanSummary) return henchmanSummary;
   const main = injury.result || "not recorded";
   const followUps = followUpInjurySummary(injury);
   const permanent = injury.permanentEffect?.trim() ? `; ${injury.permanentEffect}` : "";
   return followUps ? `${main}; ${followUps}${permanent}` : `${main}${permanent}`;
+}
+
+function henchmanInjurySummary(injury: AfterBattleInjuryEntry) {
+  const assignments = injury.henchmanInjuries ?? [];
+  if (!assignments.length) return "";
+  const casualtyCount = henchmanCasualtyCount(injury);
+  const details = assignments.map((assignment) => {
+    const roll = assignment.rollLabel ? ` (${assignment.rollLabel})` : "";
+    const notes = assignment.notes ? ` - ${assignment.notes}` : assignment.effect ? ` - ${assignment.effect}` : "";
+    return `${assignment.modelName}: ${assignment.result || "not recorded"}${roll}${notes}`;
+  }).join("; ");
+  return `${casualtyCount} casualty${casualtyCount === 1 ? "" : "ies"}; ${details}`;
 }
 
 function followUpInjurySummary(injury: AfterBattleInjuryEntry) {
@@ -6782,6 +7427,10 @@ function followUpInjurySummary(injury: AfterBattleInjuryEntry) {
 }
 
 function permanentInjuryEntries(injury: AfterBattleInjuryEntry) {
+  const henchmanEntries = (injury.henchmanInjuries ?? [])
+    .filter((assignment) => assignment.result && assignment.result !== "Full Recovery")
+    .map((assignment) => [assignment.modelName, assignment.result, assignment.effect, assignment.notes].filter(Boolean).join(" - "));
+  if (henchmanEntries.length) return henchmanEntries;
   if (!injury.result) return [];
   if (injury.result === "Multiple Injuries" && injury.followUpInjuries?.length) {
     return [
