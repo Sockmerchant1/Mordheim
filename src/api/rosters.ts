@@ -29,7 +29,10 @@ export async function saveRoster(roster: Roster): Promise<Roster> {
       body: JSON.stringify(parsed)
     });
     if (!response.ok) throw new Error(response.statusText);
-    const saved = rosterSchema.parse(await response.json());
+    const responseRoster = rosterSchema.parse(await response.json());
+    const saved = responseRoster.id === parsed.id
+      ? responseRoster
+      : rosterSchema.parse({ ...responseRoster, id: parsed.id, createdAt: parsed.createdAt });
     writeLocal(upsertLocal(saved));
     return saved;
   } catch {

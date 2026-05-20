@@ -278,8 +278,9 @@ export default function App() {
 
   useEffect(() => {
     void listRosters().then((items) => {
-      setRosters(items);
-      setActiveRosterId(items[0]?.id);
+      const normalized = uniqueRostersById(items);
+      setRosters(normalized);
+      setActiveRosterId(normalized[0]?.id);
     });
   }, []);
 
@@ -288,16 +289,27 @@ export default function App() {
     [activeRosterId, draftRoster, mode, rosters]
   );
 
-  async function persistRoster(roster: Roster, nextMode: Mode = "play") {
-    const saved = await saveRoster({
+  async function persistRoster(
+    roster: Roster,
+    nextMode: Mode = "play",
+    options: { existingId?: string; moveToTop?: boolean } = {}
+  ) {
+    const existingRoster = options.existingId ? rosters.find((item) => item.id === options.existingId) : undefined;
+    const rosterToSave = {
       ...roster,
+      id: options.existingId ?? roster.id,
+      createdAt: existingRoster?.createdAt ?? roster.createdAt,
       claimedCost: calculateRosterCost(roster, rulesDb),
       claimedWarbandRating: calculateWarbandRating(roster, rulesDb),
       treasuryGold: roster.campaignLog.length === 0 && currentWarband(roster)?.startingGold
         ? Math.max(0, currentWarband(roster)!.startingGold - calculateRosterCost(roster, rulesDb))
         : roster.treasuryGold
-    });
-    setRosters((current) => [saved, ...current.filter((item) => item.id !== saved.id)]);
+    };
+    const savedResponse = await saveRoster(rosterToSave);
+    const saved = options.existingId
+      ? { ...savedResponse, id: options.existingId, createdAt: rosterToSave.createdAt }
+      : savedResponse;
+    setRosters((current) => mergeSavedRoster(current, saved, options.existingId, options.moveToTop ?? !options.existingId));
     setActiveRosterId(saved.id);
     setMode(nextMode);
   }
@@ -461,7 +473,7 @@ export default function App() {
               onLookup={setLookupItem}
               onToggleIllegal={setShowIllegalOptions}
               onToggleDraftSave={setAllowDraftSave}
-              onSave={() => persistRoster({ ...activeRoster, isDraft: blockingErrors }, "roster")}
+              onSave={() => persistRoster({ ...activeRoster, isDraft: blockingErrors }, "roster", { existingId: activeRosterId })}
               onExport={() => exportRoster(activeRoster)}
               onExportPdf={() => exportRosterPdf(activeRoster)}
             />
@@ -470,7 +482,7 @@ export default function App() {
               roster={activeRoster}
               validation={validation}
               onRosterChange={updateActiveRoster}
-              onSave={() => persistRoster(activeRoster, "campaign")}
+              onSave={() => persistRoster(activeRoster, "campaign", { existingId: activeRosterId })}
               onEditRoster={() => setMode("roster")}
               onPlay={() => setMode("play")}
               onAfterBattle={() => setMode("afterBattle")}
@@ -489,7 +501,7 @@ export default function App() {
               onBackToPlay={() => setMode("play")}
               onEditRoster={() => setMode("roster")}
               onLookup={setLookupItem}
-              onApply={(updatedRoster) => persistRoster(updatedRoster, "play")}
+              onApply={(updatedRoster) => persistRoster(updatedRoster, "play", { existingId: activeRosterId })}
             />
           )}
         </main>
@@ -7474,6 +7486,22 @@ function uniqueById<T extends { id: string }>(items: T[]): T[] {
     seen.add(item.id);
     return true;
   });
+}
+
+function uniqueRostersById(items: Roster[]) {
+  return uniqueById(items);
+}
+
+function mergeSavedRoster(current: Roster[], saved: Roster, existingId?: string, moveToTop = true) {
+  const replacementIds = new Set([saved.id, existingId].filter((value): value is string => Boolean(value)));
+  const existingIndex = current.findIndex((item) => replacementIds.has(item.id));
+  const filtered = current.filter((item) => !replacementIds.has(item.id));
+
+  if (moveToTop || existingIndex === -1) return [saved, ...filtered];
+
+  const next = [...filtered];
+  next.splice(Math.min(existingIndex, next.length), 0, saved);
+  return next;
 }
 
 function id(prefix: string) {
