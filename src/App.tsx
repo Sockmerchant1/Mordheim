@@ -358,12 +358,21 @@ export default function App() {
 
   function exportRosterPdf(roster: Roster) {
     const previousTitle = document.title;
+    let restored = false;
+    const restoreAfterPrint = () => {
+      if (restored) return;
+      restored = true;
+      document.title = previousTitle;
+      document.body.classList.remove("printing-roster");
+      window.removeEventListener("afterprint", restoreAfterPrint);
+    };
+
     document.title = `${slug(roster.name)}-warband-roster`;
+    document.body.classList.add("printing-roster");
+    window.addEventListener("afterprint", restoreAfterPrint);
     window.setTimeout(() => {
       window.print();
-      window.setTimeout(() => {
-        document.title = previousTitle;
-      }, 500);
+      window.setTimeout(restoreAfterPrint, 1500);
     }, 0);
   }
 
@@ -4635,8 +4644,8 @@ function PrintableRosterSheet({ roster, includeCampaign }: { roster: Roster; inc
           <p>{roster.storedEquipment.length ? roster.storedEquipment.map(equipmentName).join(", ") : "None"}</p>
         </div>
         <div>
-          <strong>Campaign notes</strong>
-          <p>{roster.campaignNotes || " "}</p>
+          <strong>Roster notes</strong>
+          <p>{includeCampaign ? "Campaign notes included below." : " "}</p>
         </div>
       </section>
 
