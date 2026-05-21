@@ -173,7 +173,11 @@ export function calculateWarbandRating(roster: Roster, rulesDb: RulesDb): number
     const basePerWarrior =
       fighterType.ratingOverride ?? (fighterType.isLargeCreature ? 20 : 5);
     const fixedEquipmentRating = member.kind === "hired_sword" ? 0 : equipmentRating(member, rulesDb);
-    return rating + basePerWarrior * warriors + Math.max(0, member.experience) + fixedEquipmentRating;
+    const currentExperience = member.currentXp ?? member.experience;
+    const experienceRating = member.kind === "henchman_group"
+      ? Math.max(0, currentExperience) * warriors
+      : Math.max(0, currentExperience);
+    return rating + basePerWarrior * warriors + experienceRating + fixedEquipmentRating;
   }, 0);
 }
 
@@ -345,13 +349,14 @@ export function createRosterMemberFromType(
   kind: RosterMember["kind"],
   name = fighterType.name
 ): RosterMember {
+  const groupSize = kind === "henchman_group" ? fighterType.groupMinSize ?? 1 : 1;
   return {
     id: cryptoSafeId("member"),
     rosterId,
     fighterTypeId: fighterType.id,
     displayName: name,
     kind,
-    groupSize: kind === "henchman_group" ? fighterType.groupMinSize ?? 1 : 1,
+    groupSize,
     currentProfile: { ...fighterType.profile },
     startingXp: fighterType.startingExperience,
     currentXp: fighterType.startingExperience,
@@ -360,6 +365,15 @@ export function createRosterMemberFromType(
     advancesTaken: [],
     injuries: [],
     equipment: [],
+    henchmanModels: kind === "henchman_group"
+      ? Array.from({ length: groupSize }, (_, index) => ({
+          id: cryptoSafeId("henchman-model"),
+          name: `${name} #${index + 1}`,
+          status: "active" as const,
+          injuries: [],
+          notes: ""
+        }))
+      : [],
     skills: [],
     specialRules: [...fighterType.specialRuleIds],
     castableDifficultyAdjustments: [],
@@ -718,15 +732,16 @@ function validateExperience(
   rulesDb: RulesDb,
   issues: ValidationIssue[]
 ) {
-  if (member.experience < fighterType.startingExperience) {
+  const currentExperience = member.currentXp ?? member.experience;
+  if (currentExperience < fighterType.startingExperience) {
     issues.push(issue("error", "EXPERIENCE_BELOW_STARTING", `${fighterType.name} starts with ${fighterType.startingExperience} XP.`, "Current experience cannot be lower than starting experience.", member.id, "experience", fighterType.source, "Set XP to at least the fighter type starting value."));
   }
-  if (!fighterType.canGainExperience && member.experience > fighterType.startingExperience) {
+  if (!fighterType.canGainExperience && currentExperience > fighterType.startingExperience) {
     issues.push(issue("error", "EXPERIENCE_NOT_ALLOWED", `${fighterType.name} cannot gain experience.`, "This fighter type is marked as unable to gain experience.", member.id, "experience", sourceForRule(rulesDb, "experience-advances"), "Reset XP to the starting value."));
   }
 
   const possibleAdvanceCount = HERO_ADVANCE_XP.filter(
-    (threshold) => threshold > fighterType.startingExperience && threshold <= member.experience
+    (threshold) => threshold > fighterType.startingExperience && threshold <= currentExperience
   ).length;
   if ((fighterType.category === "hero" || fighterType.category === "hired_sword") && member.advances.length > possibleAdvanceCount) {
     issues.push(issue("warning", "ADVANCE_COUNT_HIGH", `${fighterType.name} has more recorded advances than the current XP normally supports.`, "The app uses core hero XP thresholds as a consistency check.", member.id, "advances", sourceForRule(rulesDb, "experience-advances"), "Review XP or remove extra advances."));

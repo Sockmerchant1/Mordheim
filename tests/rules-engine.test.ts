@@ -365,6 +365,18 @@ describe("rules engine - Witch Hunters", () => {
     expect(calculateWarbandRating(validStartingWitchHunters(), rulesDb)).toBe(88);
   });
 
+  it("counts henchman group XP once per model for warband rating", () => {
+    const roster = validStartingWitchHunters();
+    roster.members[4] = { ...roster.members[4], groupSize: 3, experience: 2, currentXp: 2 };
+    expect(calculateWarbandRating(roster, rulesDb)).toBe(99);
+  });
+
+  it("blocks experience for henchmen that cannot gain experience", () => {
+    const roster = validStartingWitchHunters();
+    roster.members[5] = { ...roster.members[5], experience: 1, currentXp: 1 };
+    expect(codes(roster)).toContain("EXPERIENCE_NOT_ALLOWED");
+  });
+
   it("restricts skills by fighter skill categories", () => {
     expect(codes(invalidSkillWitchHunters())).toContain("INVALID_SKILL");
     const roster = validStartingWitchHunters();

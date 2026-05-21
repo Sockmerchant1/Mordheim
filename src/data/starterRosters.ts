@@ -375,9 +375,19 @@ function createStarterMember(
         : "hero";
 
   const member = createRosterMemberFromType(fighterType, rosterId, kind, template.displayName);
+  const groupSize = kind === "henchman_group" ? template.groupSize ?? fighterType.groupMinSize ?? 1 : 1;
   return {
     ...member,
-    groupSize: kind === "henchman_group" ? template.groupSize ?? fighterType.groupMinSize ?? 1 : 1,
+    groupSize,
+    henchmanModels: kind === "henchman_group"
+      ? Array.from({ length: groupSize }, (_, index) => ({
+          id: id("henchman-model"),
+          name: `${template.displayName ?? fighterType.name} #${index + 1}`,
+          status: "active" as const,
+          injuries: [],
+          notes: ""
+        }))
+      : [],
     equipment: template.equipment ?? [],
     skills: template.skills ?? [],
     specialRules: uniquePreserveOrder([...member.specialRules, ...(template.specialRules ?? [])]),

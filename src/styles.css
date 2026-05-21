@@ -1014,6 +1014,57 @@ h3 {
   min-height: 48px;
 }
 
+.henchman-model-editor,
+.henchman-model-play-panel {
+  background: rgba(255, 250, 240, 0.56);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0.75rem;
+}
+
+.henchman-model-list,
+.henchman-model-play-list {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.henchman-model-row {
+  align-items: end;
+  background: rgba(255, 250, 240, 0.62);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr));
+  min-width: 0;
+  padding: 0.65rem;
+}
+
+.henchman-model-row > * {
+  min-width: 0;
+}
+
+.henchman-model-play-panel p {
+  color: var(--muted);
+  margin: 0.15rem 0 0;
+}
+
+.henchman-model-play-list {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.henchman-model-play-list label {
+  background: rgba(255, 250, 240, 0.62);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
 .hired-sword-grid {
   display: grid;
   gap: 0.65rem;
@@ -1039,6 +1090,38 @@ h3 {
 
 .hired-sword-option small {
   font-weight: 800;
+}
+
+.hire-note {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.hire-action-stack {
+  display: grid;
+  gap: 0.55rem;
+  min-width: min(260px, 100%);
+}
+
+.hire-action-stack label {
+  min-width: 220px;
+}
+
+.hire-veteran-panel {
+  align-items: end;
+  background: rgba(255, 250, 240, 0.58);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: minmax(170px, 240px) 1fr;
+  margin-bottom: 0.85rem;
+  padding: 0.75rem;
+}
+
+.hire-veteran-panel p {
+  color: var(--muted-strong);
+  margin: 0;
 }
 
 .starter-template-grid {
@@ -1175,7 +1258,7 @@ button.blocked,
 .member-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
 }
 
 .member-card {
@@ -1190,14 +1273,22 @@ button.blocked,
   box-shadow: var(--shadow);
   display: grid;
   gap: 0.9rem;
+  min-width: 0;
+  overflow: hidden;
   padding: 1rem;
+}
+
+.member-card > *,
+.member-card label,
+.member-card header > div {
+  min-width: 0;
 }
 
 .member-card header {
   align-items: start;
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .icon-danger {
@@ -1210,7 +1301,7 @@ button.blocked,
 .member-detail-grid {
   display: grid;
   gap: 0.65rem;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr));
 }
 
 .profile-table {
@@ -3330,6 +3421,10 @@ button.blocked,
     grid-template-columns: 1fr;
   }
 
+  .hired-sword-option {
+    grid-template-columns: 1fr;
+  }
+
   .calendar-weekdays,
   .calendar-grid {
     gap: 0.2rem;
@@ -3379,7 +3474,9 @@ button.blocked,
   .metric-grid,
   .play-metrics,
   .after-report-metrics,
+  .hire-veteran-panel,
   .resolution-flow,
+  .henchman-model-row,
   .henchman-injury-row,
   .review-grid {
     grid-template-columns: 1fr;

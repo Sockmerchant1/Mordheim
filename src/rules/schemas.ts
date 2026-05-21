@@ -298,6 +298,13 @@ export const rosterMemberSchema = z.object({
   injuries: z.array(z.string()).default([]),
   equipment: z.array(z.string()).default([]),
   perModelEquipment: z.array(z.array(z.string())).optional(),
+  henchmanModels: z.array(z.object({
+    id: z.string(),
+    name: z.string().default(""),
+    status: memberStatusSchema.default("active"),
+    injuries: z.array(z.string()).default([]),
+    notes: z.string().default("")
+  })).optional(),
   skills: z.array(z.string()).default([]),
   specialRules: z.array(z.string()).default([]),
   castableDifficultyAdjustments: z.array(z.object({
@@ -339,6 +346,7 @@ export const campaignLogDetailsSchema = z.object({
     notes: z.string().optional(),
     casualties: z.number().optional(),
     henchmanInjuries: z.array(z.object({
+      modelId: z.string().optional(),
       modelIndex: z.number(),
       modelName: z.string(),
       result: z.string(),

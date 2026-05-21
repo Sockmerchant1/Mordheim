@@ -111,6 +111,7 @@ type BattleMemberState = {
   enemyOoaXp: number;
   objectiveXp: number;
   otherXp: number;
+  modelStatuses?: Record<string, BattleStatus>;
 };
 type BattleState = {
   rosterId: string;
@@ -183,6 +184,7 @@ type AfterBattleInjuryEntry = {
 };
 type AfterBattleHenchmanInjury = {
   id: string;
+  modelId?: string;
   modelIndex: number;
   modelName: string;
   result: string;
@@ -230,6 +232,7 @@ type AfterBattleRosterUpdate = {
   description: string;
   payload?: Record<string, unknown>;
 };
+type HenchmanModelRecord = NonNullable<RosterMember["henchmanModels"]>[number];
 type CampaignLogFilter = "all" | "battles" | "income" | "injuries" | "trading" | "advances" | "upkeep" | "stash" | "notes";
 type WyrdstoneIncomeRow = {
   "1-3": number;
@@ -256,6 +259,7 @@ const AFTER_BATTLE_STEPS = [
   { label: "Roster updates", shortLabel: "Updates", help: "Review automatic changes and add campaign notes." },
   { label: "Review", shortLabel: "Review", help: "Check the report before applying permanent changes." }
 ] as const;
+const HENCHMAN_XP_MATCH_COST_PER_XP = 2;
 const WYRDSTONE_INCOME_TABLE: Record<number, WyrdstoneIncomeRow> = {
   1: { "1-3": 45, "4-6": 40, "7-9": 35, "10-12": 30, "13-15": 30, "16+": 25 },
   2: { "1-3": 60, "4-6": 55, "7-9": 50, "10-12": 45, "13-15": 40, "16+": 35 },
@@ -280,7 +284,7 @@ export default function App() {
 
   useEffect(() => {
     void listRosters().then((items) => {
-      const normalized = uniqueRostersById(items);
+      const normalized = uniqueRostersById(items).map(syncRosterHenchmanModels);
       setRosters(normalized);
       setActiveRosterId(normalized[0]?.id);
     });
@@ -299,11 +303,12 @@ export default function App() {
     const existingRoster = options.existingId ? rosters.find((item) => item.id === options.existingId) : undefined;
     const rosterToSave = {
       ...roster,
+      members: roster.members.map(syncHenchmanModels),
       id: options.existingId ?? roster.id,
       createdAt: existingRoster?.createdAt ?? roster.createdAt,
       claimedCost: calculateRosterCost(roster, rulesDb),
       claimedWarbandRating: calculateWarbandRating(roster, rulesDb),
-      treasuryGold: roster.campaignLog.length === 0 && currentWarband(roster)?.startingGold
+      treasuryGold: !hasCampaignProgress(roster) && currentWarband(roster)?.startingGold
         ? Math.max(0, currentWarband(roster)!.startingGold - calculateRosterCost(roster, rulesDb))
         : roster.treasuryGold
     };
@@ -324,7 +329,7 @@ export default function App() {
 
   function updateActiveRoster(updater: (roster: Roster) => Roster) {
     if (!activeRoster) return;
-    const updated = { ...updater(activeRoster), updatedAt: new Date().toISOString() };
+    const updated = syncRosterHenchmanModels({ ...updater(activeRoster), updatedAt: new Date().toISOString() });
     if (mode === "create") {
       setDraftRoster(updated);
     } else {
@@ -1940,12 +1945,15 @@ function PlayModeView({
   function updateBattleMember(member: RosterMember, patch: Partial<BattleMemberState>) {
     setBattleState((current) => {
       const currentMember = current.members[member.id] ?? defaultBattleMemberState(member);
+      const modelStatuses = member.kind === "henchman_group" && patch.status && !patch.modelStatuses
+        ? Object.fromEntries(henchmanModelsForMember(member).map((model) => [model.id, patch.status as BattleStatus]))
+        : patch.modelStatuses;
       const next = {
         ...ensureBattleState(roster, current),
         updatedAt: new Date().toISOString(),
         members: {
           ...current.members,
-          [member.id]: { ...currentMember, ...patch, memberId: member.id }
+          [member.id]: { ...currentMember, ...patch, ...(modelStatuses ? { modelStatuses } : {}), memberId: member.id }
         }
       };
       writeBattleState(next);
@@ -1982,7 +1990,7 @@ function PlayModeView({
   const totalFighters = countRosterFighters(playableMembers);
   const outOfAction = playableMembers.reduce((total, member) => {
     const state = battleState.members[member.id];
-    return total + (state?.status === "out_of_action" ? memberModelCount(member) : 0);
+    return total + outOfActionCountForBattle(member, state);
   }, 0);
   const warband = currentWarband(roster);
 
@@ -2457,6 +2465,7 @@ function FighterCard({
     ...[...passiveRules, ...equipmentRules].map(ruleRecordForSpecialRule)
   ]);
   const battleXp = battleState.enemyOoaXp + battleState.objectiveXp + battleState.otherXp;
+  const henchmanModels = henchmanModelsForMember(member);
   const roleLabel = member.kind === "henchman_group"
     ? `Henchmen group x${member.groupSize}`
     : member.kind === "hired_sword"
@@ -2502,7 +2511,7 @@ function FighterCard({
       <div className="fighter-state-row">
         <SmallPanel label="XP">
           <strong>{currentXp}</strong>
-          <small>Starting {startingXp}</small>
+          <small>{member.kind === "henchman_group" ? "Shared group XP" : `Starting ${startingXp}`}</small>
         </SmallPanel>
         <SmallPanel label="Wounds">
           <div className="inline-stepper">
@@ -2523,6 +2532,37 @@ function FighterCard({
           </div>
         </SmallPanel>
       </div>
+
+      {member.kind === "henchman_group" && henchmanModels.length > 0 && (
+        <section className="henchman-model-play-panel">
+          <div>
+            <strong>Models in group</strong>
+            <p>XP, advances and equipment are shared by the group. Battle status can be set per model for injury resolution.</p>
+          </div>
+          <div className="henchman-model-play-list">
+            {henchmanModels.map((model) => (
+              <label key={model.id}>
+                <span>{model.name}</span>
+                <select
+                  value={modelStatusForBattle(model, battleState)}
+                  onChange={(event) => onBattleChange({
+                    modelStatuses: {
+                      ...(battleState.modelStatuses ?? {}),
+                      [model.id]: event.target.value as BattleStatus
+                    }
+                  })}
+                >
+                  <option value="active">Active</option>
+                  <option value="hidden">Hidden</option>
+                  <option value="knocked_down">Knocked down</option>
+                  <option value="stunned">Stunned</option>
+                  <option value="out_of_action">Out of action</option>
+                </select>
+              </label>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="paper-trackers print-only" aria-hidden="true">
         <div>
@@ -2701,7 +2741,16 @@ function HirePanel({
   onRosterChange: (updater: (roster: Roster) => Roster) => void;
 }) {
   const [hireMode, setHireMode] = useState<"warband" | "hiredSwords">("warband");
+  const [veteranExperienceAvailable, setVeteranExperienceAvailable] = useState("");
+  const [veteranExperienceSpent, setVeteranExperienceSpent] = useState(0);
   const warband = currentWarband(roster)!;
+  const campaignProgress = hasCampaignProgress(roster);
+  const veteranExperienceLimit = veteranExperienceAvailable.trim() === ""
+    ? undefined
+    : Number(veteranExperienceAvailable);
+  const veteranExperienceRemaining = veteranExperienceLimit === undefined
+    ? undefined
+    : Math.max(0, veteranExperienceLimit - veteranExperienceSpent);
   const allowedWarbandFighters = getAllowedFighterTypes(warband.id, roster, rulesDb);
   const availableHiredSwords = rulesDb.hiredSwords.filter((hiredSword) => {
     if (hiredSword.implementationStatus !== "implemented") return false;
@@ -2710,17 +2759,23 @@ function HirePanel({
     return true;
   });
 
-  function hireWarbandFighter(fighterType: FighterType) {
+  function hireWarbandFighter(fighterType: FighterType, targetGroupId = "new") {
     onRosterChange((current) => {
       const kind: RosterMember["kind"] = fighterType.category === "henchman" ? "henchman_group" : "hero";
+      const targetGroup = kind === "henchman_group" && targetGroupId !== "new"
+        ? current.members.find((member) => member.id === targetGroupId && member.kind === "henchman_group")
+        : undefined;
+      if (targetGroup && !canJoinHenchmanGroup(fighterType, targetGroup)) return current;
+      if (targetGroup) return addHenchmanToExistingGroup(current, targetGroup, fighterType);
+
       const member = createRosterMemberFromType(fighterType, current.id, kind);
       const hireCost = fighterType.hireCost * member.groupSize;
-      const campaignHire = current.campaignLog.length > 0;
+      const isCampaignHire = hasCampaignProgress(current);
       return {
         ...current,
-        treasuryGold: campaignHire ? Math.max(0, current.treasuryGold - hireCost) : current.treasuryGold,
+        treasuryGold: isCampaignHire ? Math.max(0, current.treasuryGold - hireCost) : current.treasuryGold,
         members: [...current.members, member],
-        campaignLog: campaignHire
+        campaignLog: isCampaignHire
           ? [
               campaignLogEntry(current, {
                 type: "purchase",
@@ -2753,7 +2808,7 @@ function HirePanel({
       const alreadyHired = current.members.some((member) => member.status !== "dead" && member.status !== "retired" && member.fighterTypeId === fighterType.id);
       if (alreadyHired) return current;
       const member = createHiredSwordMember(hiredSword, fighterType, current.id);
-      const campaignHire = current.campaignLog.length > 0;
+      const campaignHire = hasCampaignProgress(current);
       return {
         ...current,
         treasuryGold: campaignHire ? Math.max(0, current.treasuryGold - hiredSword.hireFee) : current.treasuryGold,
@@ -2800,6 +2855,28 @@ function HirePanel({
           </button>
         </div>
       </div>
+      {hireMode === "warband" && campaignProgress && (
+        <div className="hire-veteran-panel">
+          <label>
+            <span>Veteran availability roll</span>
+            <input
+              type="number"
+              min={2}
+              max={12}
+              placeholder="2D6"
+              value={veteranExperienceAvailable}
+              onChange={(event) => {
+                setVeteranExperienceAvailable(event.target.value);
+                setVeteranExperienceSpent(0);
+              }}
+            />
+          </label>
+          <p>
+            Optional rules check for adding models to experienced henchman groups. Remaining veteran XP:{" "}
+            <strong>{veteranExperienceRemaining ?? "not tracked"}</strong>.
+          </p>
+        </div>
+      )}
       <div className="hired-sword-grid">
         {hireMode === "warband" && allowedWarbandFighters.length === 0 ? (
           <div className="empty-state">No legal warband fighters can be hired right now.</div>
@@ -2807,16 +2884,60 @@ function HirePanel({
           allowedWarbandFighters.map((fighterType) => {
             const groupSize = fighterType.category === "henchman" ? fighterType.groupMinSize ?? 1 : 1;
             const hireCost = fighterType.hireCost * groupSize;
+            const joinableGroups = fighterType.category === "henchman"
+              ? getJoinableHenchmanGroups(roster, fighterType).map((group) => {
+                  const veteranXpNeeded = henchmanVeteranExperienceNeeded(group.member, fighterType);
+                  const blockedByVeteranRoll = campaignProgress
+                    && fighterType.canGainExperience
+                    && veteranExperienceRemaining !== undefined
+                    && veteranXpNeeded > veteranExperienceRemaining;
+                  return { ...group, veteranXpNeeded, blockedByVeteranRoll };
+                })
+              : [];
             return (
               <article className="hired-sword-option" key={fighterType.id}>
                 <div>
                   <strong>{fighterType.name}</strong>
-                  <p>{fighterType.category === "henchman" ? `Henchman group starts at ${groupSize}.` : "Hero recruit."}</p>
+                  <p>{fighterType.category === "henchman" ? `Creates a separate Henchman group of ${groupSize}.` : "Hero recruit."}</p>
                   <small>Hire {hireCost} gc{groupSize > 1 ? ` (${groupSize} models)` : ""}.</small>
+                  {fighterType.category === "henchman" && (
+                    <p className="hire-note">
+                      Henchman groups keep shared XP and advances. New models only join an existing group if type and equipment match; experienced groups require an XP catch-up payment.
+                    </p>
+                  )}
                 </div>
-                <button onClick={() => hireWarbandFighter(fighterType)}>
-                  <Plus aria-hidden /> Hire
-                </button>
+                <div className="hire-action-stack">
+                  <button onClick={() => hireWarbandFighter(fighterType, "new")}>
+                    <Plus aria-hidden /> New group
+                  </button>
+                  {joinableGroups.length > 0 && (
+                    <label>
+                      <span>Add to matching group</span>
+                      <select
+                        defaultValue=""
+                        onChange={(event) => {
+                          if (!event.target.value) return;
+                          const selectedGroup = joinableGroups.find((group) => group.member.id === event.target.value);
+                          if (selectedGroup?.blockedByVeteranRoll) return;
+                          hireWarbandFighter(fighterType, event.target.value);
+                          if (campaignProgress && veteranExperienceRemaining !== undefined && selectedGroup) {
+                            setVeteranExperienceSpent((current) => current + selectedGroup.veteranXpNeeded);
+                          }
+                          event.currentTarget.value = "";
+                        }}
+                      >
+                        <option value="">Choose group</option>
+                        {joinableGroups.map((group) => (
+                          <option value={group.member.id} key={group.member.id} disabled={group.blockedByVeteranRoll}>
+                            {group.member.displayName} ({group.member.groupSize}/{fighterType.groupMaxSize ?? warband.maxWarriors}) - {group.cost} gc
+                            {campaignProgress && group.veteranXpNeeded > 0 ? `; uses ${group.veteranXpNeeded} veteran XP` : ""}
+                            {group.blockedByVeteranRoll ? " - not enough veteran XP rolled" : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                </div>
               </article>
             );
           })
@@ -2846,6 +2967,89 @@ function HirePanel({
 
 function fighterTypeForHiredSword(hiredSword: HiredSword) {
   return rulesDb.fighterTypes.find((fighterType) => fighterType.id === `hired-sword-${hiredSword.id}`);
+}
+
+function getJoinableHenchmanGroups(roster: Roster, fighterType: FighterType) {
+  if (fighterType.category !== "henchman") return [];
+  return roster.members
+    .filter((member) => canJoinHenchmanGroup(fighterType, member))
+    .map((member) => ({ member, ...henchmanJoinCost(roster, member, fighterType) }));
+}
+
+function canJoinHenchmanGroup(fighterType: FighterType, member: RosterMember) {
+  if (member.kind !== "henchman_group") return false;
+  if (member.status === "dead" || member.status === "retired") return false;
+  if (member.fighterTypeId !== fighterType.id) return false;
+  if (member.perModelEquipment?.length) return false;
+  const max = fighterType.groupMaxSize ?? Infinity;
+  return member.groupSize < max;
+}
+
+function henchmanJoinCost(roster: Roster, group: RosterMember, fighterType: FighterType) {
+  const grownGroup = syncHenchmanModels({ ...group, groupSize: group.groupSize + 1 });
+  const rosterWithRecruit = {
+    ...roster,
+    members: roster.members.map((member) => (member.id === group.id ? grownGroup : member))
+  };
+  const rosterCostIncrease = calculateRosterCost(rosterWithRecruit, rulesDb) - calculateRosterCost(roster, rulesDb);
+  const xpToMatch = henchmanVeteranExperienceNeeded(group, fighterType);
+  const xpCatchUpCost = xpToMatch * HENCHMAN_XP_MATCH_COST_PER_XP;
+  return {
+    cost: rosterCostIncrease + xpCatchUpCost,
+    rosterCostIncrease,
+    xpCatchUpCost,
+    xpToMatch
+  };
+}
+
+function henchmanVeteranExperienceNeeded(group: RosterMember, fighterType: FighterType) {
+  if (!fighterType.canGainExperience) return 0;
+  const groupXp = group.currentXp ?? group.experience;
+  return Math.max(0, groupXp - fighterType.startingExperience);
+}
+
+function addHenchmanToExistingGroup(roster: Roster, group: RosterMember, fighterType: FighterType): Roster {
+  const pricing = henchmanJoinCost(roster, group, fighterType);
+  const campaignHire = hasCampaignProgress(roster);
+  const currentModels = henchmanModelsForMember(group);
+  const nextGroup = syncHenchmanModels({
+    ...group,
+    groupSize: group.groupSize + 1,
+    henchmanModels: [...currentModels, defaultHenchmanModel(group, currentModels.length)]
+  });
+  const description = pricing.xpToMatch > 0
+    ? `Added ${fighterType.name} to ${group.displayName}, matching ${pricing.xpToMatch} XP.`
+    : `Added ${fighterType.name} to ${group.displayName}.`;
+
+  return {
+    ...roster,
+    treasuryGold: campaignHire ? Math.max(0, roster.treasuryGold - pricing.cost) : roster.treasuryGold,
+    members: roster.members.map((member) => (member.id === group.id ? nextGroup : member)),
+    campaignLog: campaignHire
+      ? [
+          campaignLogEntry(roster, {
+            type: "purchase",
+            description,
+            goldDelta: -pricing.cost,
+            rosterChanges: `${group.displayName} increased to ${nextGroup.groupSize} models.`,
+            details: {
+              tags: ["purchase", "recruitment", "henchman-group"],
+              transactions: [{
+                action: "bought",
+                itemName: `${fighterType.name} recruit for ${group.displayName}`,
+                value: -pricing.cost,
+                assignedTo: group.id,
+                notes: pricing.xpCatchUpCost > 0
+                  ? `Includes ${pricing.xpCatchUpCost} gc to match ${pricing.xpToMatch} group XP at ${HENCHMAN_XP_MATCH_COST_PER_XP} gc per XP.`
+                  : "Joined existing henchman group with matching type and equipment."
+              }],
+              rosterUpdates: [{ type: "recruit", targetId: group.id, description }]
+            }
+          }),
+          ...roster.campaignLog
+        ]
+      : roster.campaignLog
+  };
 }
 
 function createHiredSwordMember(hiredSword: HiredSword, fighterType: FighterType, rosterId: string): RosterMember {
@@ -3393,6 +3597,7 @@ function HenchmanInjuryAssignments({
   onChange: (patch: Partial<AfterBattleInjuryEntry>) => void;
 }) {
   const assignments = normaliseHenchmanInjuries(entry, member);
+  const models = henchmanModelsForMember(member);
 
   function setAssignments(nextAssignments: AfterBattleHenchmanInjury[]) {
     onChange(henchmanAssignmentsPatch(nextAssignments));
@@ -3402,11 +3607,15 @@ function HenchmanInjuryAssignments({
     setAssignments(assignments.map((assignment) => {
       if (assignment.id !== assignmentId) return assignment;
       const modelIndex = patch.modelIndex ?? assignment.modelIndex;
+      const model = patch.modelId
+        ? models.find((item) => item.id === patch.modelId)
+        : models[modelIndex - 1];
       return {
         ...assignment,
         ...patch,
+        modelId: model?.id ?? patch.modelId ?? assignment.modelId,
         modelIndex,
-        modelName: patch.modelName ?? henchmanModelLabel(member, modelIndex)
+        modelName: patch.modelName ?? model?.name ?? henchmanModelLabel(member, modelIndex)
       };
     }));
   }
@@ -3434,11 +3643,15 @@ function HenchmanInjuryAssignments({
             <label>
               <span>Model</span>
               <select
-                value={assignment.modelIndex}
-                onChange={(event) => updateAssignment(assignment.id, { modelIndex: Number(event.target.value) })}
+                value={assignment.modelId ?? models[assignment.modelIndex - 1]?.id ?? ""}
+                onChange={(event) => {
+                  const modelIndex = Math.max(0, models.findIndex((model) => model.id === event.target.value)) + 1;
+                  const model = models[modelIndex - 1];
+                  updateAssignment(assignment.id, { modelId: model?.id, modelIndex, modelName: model?.name });
+                }}
               >
-                {Array.from({ length: Math.max(1, member.groupSize) }, (_, modelIndex) => modelIndex + 1).map((modelIndex) => (
-                  <option value={modelIndex} key={modelIndex}>{henchmanModelLabel(member, modelIndex)}</option>
+                {models.map((model, modelIndex) => (
+                  <option value={model.id} key={model.id}>{model.name || henchmanModelLabel(member, modelIndex + 1)}</option>
                 ))}
               </select>
             </label>
@@ -4881,7 +5094,7 @@ function RosterHeader({ roster, onNameChange }: { roster: Roster; onNameChange?:
   const cost = calculateRosterCost(roster, rulesDb);
   const rating = calculateWarbandRating(roster, rulesDb);
   const remainingGold = warband.startingGold - cost;
-  const displayedTreasury = roster.campaignLog.length === 0 ? Math.max(0, remainingGold) : roster.treasuryGold;
+  const displayedTreasury = !hasCampaignProgress(roster) ? Math.max(0, remainingGold) : roster.treasuryGold;
 
   return (
     <section className="roster-header">
@@ -5000,6 +5213,7 @@ function MemberCard({
   const castableOptions = getAllowedSpecialRules(member, roster, rulesDb);
   const hasCastableChoices = castableRules.length > 0 || castableOptions.some((option) => option.allowed);
   const hasRequiredEquipmentChoices = fighterType.validation.requiredOneOfEquipmentItemIds.length > 0;
+  const isCampaignRoster = hasCampaignProgress(roster);
 
   return (
     <article className="member-card">
@@ -5025,17 +5239,22 @@ function MemberCard({
               min={fighterType.groupMinSize ?? 1}
               max={fighterType.groupMaxSize ?? undefined}
               value={member.groupSize}
-              onChange={(event) => onChange({ ...member, groupSize: Number(event.target.value) })}
+              disabled={isCampaignRoster}
+              onChange={(event) => onChange(syncHenchmanModels({ ...member, groupSize: Number(event.target.value) }))}
             />
+            {isCampaignRoster && <small>Use Hire Fighters to add models to an existing campaign group.</small>}
           </label>
         )}
         <label>
-          <span>XP</span>
+          <span>{member.kind === "henchman_group" ? "Group XP" : "XP"}</span>
           <input
             type="number"
             min={0}
             value={member.experience}
-            onChange={(event) => onChange({ ...member, experience: Number(event.target.value) })}
+            onChange={(event) => {
+              const experience = Number(event.target.value);
+              onChange({ ...member, experience, currentXp: experience });
+            }}
           />
         </label>
         <label>
@@ -5048,6 +5267,10 @@ function MemberCard({
           </select>
         </label>
       </div>
+
+      {member.kind === "henchman_group" && (
+        <HenchmanModelsEditor member={member} onChange={onChange} />
+      )}
 
       <ProfileTable base={fighterType.profile} current={member.currentProfile} onChange={(profile) => onChange({ ...member, currentProfile: profile })} />
 
@@ -5097,6 +5320,64 @@ function MemberCard({
         </div>
       )}
     </article>
+  );
+}
+
+function HenchmanModelsEditor({
+  member,
+  onChange
+}: {
+  member: RosterMember;
+  onChange: (member: RosterMember) => void;
+}) {
+  const models = henchmanModelsForMember(member);
+
+  function updateModel(modelId: string, patch: Partial<HenchmanModelRecord>) {
+    onChange(updateHenchmanModelRecord(member, modelId, patch));
+  }
+
+  return (
+    <section className="henchman-model-editor">
+      <div className="section-heading compact">
+        <div>
+          <h3>Models in this henchman group</h3>
+          <p>Group XP, advances and equipment are shared. Individual rows track names, status and injuries.</p>
+        </div>
+        <span className="pill">{models.length} model{models.length === 1 ? "" : "s"}</span>
+      </div>
+      <div className="henchman-model-list">
+        {models.map((model, index) => (
+          <article className="henchman-model-row" key={model.id}>
+            <label>
+              <span>Model {index + 1}</span>
+              <input value={model.name} onChange={(event) => updateModel(model.id, { name: event.target.value })} />
+            </label>
+            <label>
+              <span>Status</span>
+              <select value={model.status} onChange={(event) => updateModel(model.id, { status: event.target.value as RosterMember["status"] })}>
+                <option value="active">Active</option>
+                <option value="missing">Missing</option>
+                <option value="dead">Dead</option>
+                <option value="retired">Retired</option>
+              </select>
+            </label>
+            <label>
+              <span>Injuries</span>
+              <input
+                value={model.injuries.join(", ")}
+                onChange={(event) => updateModel(model.id, {
+                  injuries: event.target.value.split(",").map((item) => item.trim()).filter(Boolean)
+                })}
+              />
+            </label>
+            <label>
+              <span>Notes</span>
+              <input value={model.notes} onChange={(event) => updateModel(model.id, { notes: event.target.value })} />
+            </label>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -6567,13 +6848,22 @@ function ensureBattleState(roster: Roster, current?: BattleState): BattleState {
       .map((member) => {
         const existing = base.members[member.id];
         const maxWounds = maxBattleWounds(member);
+        const modelStatuses = member.kind === "henchman_group"
+          ? Object.fromEntries(
+              henchmanModelsForMember(member).map((model) => [
+                model.id,
+                existing?.modelStatuses?.[model.id] ?? "active"
+              ])
+            )
+          : undefined;
         return [
           member.id,
           {
             ...defaultBattleMemberState(member),
             ...existing,
             memberId: member.id,
-            currentWounds: Math.min(existing?.currentWounds ?? maxWounds, maxWounds)
+            currentWounds: Math.min(existing?.currentWounds ?? maxWounds, maxWounds),
+            modelStatuses
           }
         ];
       })
@@ -6588,7 +6878,10 @@ function defaultBattleMemberState(member: RosterMember): BattleMemberState {
     currentWounds: maxBattleWounds(member),
     enemyOoaXp: 0,
     objectiveXp: 0,
-    otherXp: 0
+    otherXp: 0,
+    modelStatuses: member.kind === "henchman_group"
+      ? Object.fromEntries(henchmanModelsForMember(member).map((model) => [model.id, "active" as BattleStatus]))
+      : undefined
   };
 }
 
@@ -6631,6 +6924,74 @@ function maxBattleWounds(member: RosterMember) {
 
 function memberModelCount(member: RosterMember) {
   return member.kind === "henchman_group" ? Math.max(0, member.groupSize) : 1;
+}
+
+function defaultHenchmanModel(member: RosterMember, index: number): HenchmanModelRecord {
+  const baseName = member.displayName || fighterTypeForMember(member)?.name || "Henchman";
+  return {
+    id: id("henchman-model"),
+    name: `${baseName} #${index + 1}`,
+    status: "active",
+    injuries: [],
+    notes: ""
+  };
+}
+
+function henchmanModelsForMember(member: RosterMember): HenchmanModelRecord[] {
+  if (member.kind !== "henchman_group") return [];
+  const groupSize = Math.max(0, Math.floor(Number.isFinite(member.groupSize) ? member.groupSize : 0));
+  const existing = member.henchmanModels ?? [];
+  const baseName = member.displayName || fighterTypeForMember(member)?.name || "Henchman";
+  return Array.from({ length: groupSize }, (_, index) => {
+    const current = existing[index];
+    if (current) {
+      return {
+        id: current.id || id("henchman-model"),
+        name: current.name || `${baseName} #${index + 1}`,
+        status: current.status ?? "active",
+        injuries: current.injuries ?? [],
+        notes: current.notes ?? ""
+      };
+    }
+    return defaultHenchmanModel(member, index);
+  });
+}
+
+function syncHenchmanModels(member: RosterMember): RosterMember {
+  if (member.kind !== "henchman_group") return { ...member, henchmanModels: [] };
+  return { ...member, henchmanModels: henchmanModelsForMember(member) };
+}
+
+function syncRosterHenchmanModels(roster: Roster): Roster {
+  return { ...roster, members: roster.members.map(syncHenchmanModels) };
+}
+
+function updateHenchmanModelRecord(
+  member: RosterMember,
+  modelId: string,
+  patch: Partial<HenchmanModelRecord>
+): RosterMember {
+  const models = henchmanModelsForMember(member).map((model) => (
+    model.id === modelId ? { ...model, ...patch } : model
+  ));
+  return { ...member, henchmanModels: models };
+}
+
+function modelStatusForBattle(model: HenchmanModelRecord, battleState: BattleMemberState): BattleStatus {
+  return battleState.modelStatuses?.[model.id] ?? "active";
+}
+
+function outOfActionCountForBattle(member: RosterMember, battleState?: BattleMemberState) {
+  if (!battleState) return 0;
+  if (member.kind === "henchman_group") {
+    const modelCount = henchmanModelsForMember(member).filter((model) => modelStatusForBattle(model, battleState) === "out_of_action").length;
+    return modelCount || (battleState.status === "out_of_action" ? memberModelCount(member) : 0);
+  }
+  return battleState.status === "out_of_action" ? 1 : 0;
+}
+
+function memberHasOutOfAction(member: RosterMember, battleState?: BattleMemberState) {
+  return outOfActionCountForBattle(member, battleState) > 0;
 }
 
 function hasMissNextGameReminder(member: RosterMember) {
@@ -6849,6 +7210,27 @@ function fighterTypeForMember(member: RosterMember) {
   return rulesDb.fighterTypes.find((fighterType) => fighterType.id === member.fighterTypeId);
 }
 
+function hasCampaignProgress(roster: Roster) {
+  if (roster.campaignLog.length > 0 || roster.wyrdstoneShards > 0) return true;
+  return roster.members.some((member) => {
+    const fighterType = fighterTypeForMember(member);
+    const currentXp = member.currentXp ?? member.experience;
+    const hasPostStartingXp = fighterType
+      ? currentXp > fighterType.startingExperience
+      : currentXp > 0;
+    const hasModelCampaignState = henchmanModelsForMember(member).some((model) => (
+      model.status !== "active" || model.injuries.length > 0
+    ));
+    return (
+      hasPostStartingXp ||
+      member.advances.length > 0 ||
+      member.injuries.length > 0 ||
+      member.status !== "active" ||
+      hasModelCampaignState
+    );
+  });
+}
+
 function calculateRoutThreshold(totalFighters: number) {
   return Math.max(1, Math.ceil(totalFighters / 4));
 }
@@ -6865,10 +7247,10 @@ function mergeAfterBattleDraftWithBattleState(draft: AfterBattleDraft, roster: R
   const activeMembers = roster.members.filter((member) => member.status !== "dead" && member.status !== "retired");
   const injuryIds = new Set(draft.injuries.map((entry) => entry.fighterId));
   const injuries = [
-    ...draft.injuries,
+    ...draft.injuries.map((entry) => mergeHenchmanInjuryEntryWithBattleState(entry, roster, snapshot)),
     ...activeMembers
-      .filter((member) => snapshot.members[member.id]?.status === "out_of_action" && !injuryIds.has(member.id))
-      .map(afterBattleInjuryEntryForMember)
+      .filter((member) => memberHasOutOfAction(member, snapshot.members[member.id]) && !injuryIds.has(member.id))
+      .map((member) => afterBattleInjuryEntryForMember(member, snapshot.members[member.id]))
   ];
   const xpIds = new Set(draft.xp.map((entry) => entry.fighterId));
   const missingXp = activeMembers.flatMap((member) => {
@@ -6897,6 +7279,30 @@ function mergeAfterBattleDraftWithBattleState(draft: AfterBattleDraft, roster: R
   });
 }
 
+function mergeHenchmanInjuryEntryWithBattleState(
+  entry: AfterBattleInjuryEntry,
+  roster: Roster,
+  battleState: BattleState
+): AfterBattleInjuryEntry {
+  const member = roster.members.find((item) => item.id === entry.fighterId);
+  if (member?.kind !== "henchman_group") return entry;
+  const memberState = battleState.members[member.id];
+  if (!memberState) return entry;
+  const assignments = normaliseHenchmanInjuries(entry, member);
+  const assigned = new Set(assignments.flatMap((assignment) => [
+    assignment.modelId ?? "",
+    `index-${assignment.modelIndex}`
+  ]).filter(Boolean));
+  const extraAssignments = henchmanModelsForMember(member).flatMap((model, index) => {
+    const key = model.id;
+    if (modelStatusForBattle(model, memberState) !== "out_of_action" || assigned.has(key) || assigned.has(`index-${index + 1}`)) return [];
+    return [defaultHenchmanInjury(member, index + 1, model)];
+  });
+  return extraAssignments.length
+    ? { ...entry, henchmanInjuries: [...assignments, ...extraAssignments] }
+    : { ...entry, henchmanInjuries: assignments };
+}
+
 function afterBattleXpEntryForMember(member: RosterMember, fighterType: FighterType, battleState: BattleState): AfterBattleXpEntry {
   const startingXp = member.startingXp ?? fighterType.startingExperience;
   const previousXp = member.currentXp ?? member.experience;
@@ -6919,8 +7325,15 @@ function afterBattleXpEntryForMember(member: RosterMember, fighterType: FighterT
   });
 }
 
-function afterBattleInjuryEntryForMember(member: RosterMember): AfterBattleInjuryEntry {
+function afterBattleInjuryEntryForMember(member: RosterMember, battleMemberState?: BattleMemberState): AfterBattleInjuryEntry {
   const isHenchmanGroup = member.kind === "henchman_group";
+  const affectedHenchmen = isHenchmanGroup
+    ? henchmanModelsForMember(member).flatMap((model, index) => (
+        modelStatusForBattle(model, battleMemberState ?? defaultBattleMemberState(member)) === "out_of_action"
+          ? [defaultHenchmanInjury(member, index + 1, model)]
+          : []
+      ))
+    : [];
   return {
     fighterId: member.id,
     fighterName: member.displayName,
@@ -6928,7 +7341,9 @@ function afterBattleInjuryEntryForMember(member: RosterMember): AfterBattleInjur
     permanentEffect: "",
     notes: "",
     casualties: isHenchmanGroup ? 0 : undefined,
-    henchmanInjuries: isHenchmanGroup ? [defaultHenchmanInjury(member, 1)] : undefined
+    henchmanInjuries: isHenchmanGroup
+      ? affectedHenchmen.length ? affectedHenchmen : [defaultHenchmanInjury(member, 1)]
+      : undefined
   };
 }
 
@@ -6941,8 +7356,8 @@ function createAfterBattleDraft(roster: Roster, battleState: BattleState): After
     return [afterBattleXpEntryForMember(member, fighterType, battleState)];
   });
   const injuries = activeMembers
-    .filter((member) => battleState.members[member.id]?.status === "out_of_action")
-    .map(afterBattleInjuryEntryForMember);
+    .filter((member) => memberHasOutOfAction(member, battleState.members[member.id]))
+    .map((member) => afterBattleInjuryEntryForMember(member, battleState.members[member.id]));
 
   return syncDraftAdvances({
     id: id("after-battle"),
@@ -7103,14 +7518,12 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
       };
     }
 
-    if (injury && !injury.resolvedOutsideApp) {
+    if (injury && !injury.resolvedOutsideApp && member.kind === "henchman_group") {
+      next = applyHenchmanGroupInjury(next, injury);
+    } else if (injury && !injury.resolvedOutsideApp) {
       const injuryTexts = permanentInjuryEntries(injury);
       if (injuryTexts.length) next = { ...next, injuries: [...next.injuries, ...injuryTexts] };
       if (injury.result.toLowerCase() === "dead") next = { ...next, status: "dead" };
-      if (member.kind === "henchman_group" && (injury.casualties || injury.henchmanInjuries?.length)) {
-        const groupSize = Math.max(0, next.groupSize - henchmanCasualtyCount(injury));
-        next = { ...next, groupSize, status: groupSize === 0 ? "dead" : next.status };
-      }
     }
 
     return next;
@@ -7176,6 +7589,7 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
             notes: entry.notes,
             casualties: entry.casualties,
             henchmanInjuries: entry.henchmanInjuries?.map((assignment) => ({
+              modelId: assignment.modelId,
               modelIndex: assignment.modelIndex,
               modelName: assignment.modelName,
               result: assignment.result,
@@ -7237,6 +7651,52 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
   };
 }
 
+function applyHenchmanGroupInjury(member: RosterMember, injury: AfterBattleInjuryEntry): RosterMember {
+  const assignments = normaliseHenchmanInjuries(injury, member).filter((assignment) => assignment.result.trim());
+  if (!assignments.length) return syncHenchmanModels(member);
+
+  const models = henchmanModelsForMember(member);
+  const deadIds = new Set(assignments.filter((assignment) => assignment.result === "Dead").map((assignment) => assignment.modelId).filter(Boolean));
+  const deadIndexes = new Set(assignments.filter((assignment) => assignment.result === "Dead" && !assignment.modelId).map((assignment) => assignment.modelIndex));
+  const updatedModels = models.flatMap((model, index) => {
+    const modelIndex = index + 1;
+    if (deadIds.has(model.id) || deadIndexes.has(modelIndex)) return [];
+    const modelAssignments = assignments.filter((assignment) =>
+      assignment.modelId ? assignment.modelId === model.id : assignment.modelIndex === modelIndex
+    );
+    if (!modelAssignments.length) return [model];
+    const injuryNotes = modelAssignments
+      .filter((assignment) => !["Full Recovery", "Dead"].includes(assignment.result))
+      .map((assignment) => henchmanModelInjuryText(assignment));
+    const status = modelAssignments.some((assignment) => assignment.result === "Miss Next Game")
+      ? "missing"
+      : model.status;
+    const notes = modelAssignments
+      .map((assignment) => assignment.notes)
+      .filter(Boolean)
+      .join("; ");
+    return [{
+      ...model,
+      status,
+      injuries: injuryNotes.length ? [...model.injuries, ...injuryNotes] : model.injuries,
+      notes: notes ? [model.notes, notes].filter(Boolean).join("; ") : model.notes
+    }];
+  });
+
+  return {
+    ...member,
+    groupSize: updatedModels.length,
+    status: updatedModels.length === 0 ? "dead" : member.status,
+    henchmanModels: updatedModels
+  };
+}
+
+function henchmanModelInjuryText(assignment: AfterBattleHenchmanInjury) {
+  const roll = assignment.rollLabel ? `${assignment.rollLabel}: ` : "";
+  const effect = assignment.effect ? ` - ${assignment.effect}` : "";
+  return `${roll}${assignment.result}${effect}`;
+}
+
 function previewRosterUpdates(roster: Roster, draft: AfterBattleDraft): string[] {
   const lines = [
     ...draft.xp.map((entry) => `${entry.fighterName}: set XP to ${entry.finalXp}`),
@@ -7259,7 +7719,7 @@ function reviewBlockingMessages(draft: AfterBattleDraft, roster: Roster): string
       if (!assignments.length || assignments.some((assignment) => !assignment.result.trim())) {
         messages.push(`${injury.fighterName} needs a result for each affected henchman.`);
       }
-      const assignedModels = assignments.map((assignment) => assignment.modelIndex);
+      const assignedModels = assignments.map((assignment) => assignment.modelId ?? `index-${assignment.modelIndex}`);
       if (new Set(assignedModels).size !== assignedModels.length) {
         messages.push(`${injury.fighterName} has more than one injury assigned to the same henchman model.`);
       }
@@ -7360,31 +7820,43 @@ function createSoldToPitsLosingInjuryRoll(random = Math.random): { roll: TableRo
   return { roll: createTableRoll(rulesLookupRecords, { kind: "d66" }, random), rerolled };
 }
 
-function defaultHenchmanInjury(member: RosterMember, modelIndex: number): AfterBattleHenchmanInjury {
+function defaultHenchmanInjury(
+  member: RosterMember,
+  modelIndex: number,
+  model?: HenchmanModelRecord
+): AfterBattleHenchmanInjury {
   return {
     id: id("henchman-injury"),
+    modelId: model?.id,
     modelIndex,
-    modelName: henchmanModelLabel(member, modelIndex),
+    modelName: model?.name || henchmanModelLabel(member, modelIndex),
     result: "",
     notes: ""
   };
 }
 
 function henchmanModelLabel(member: RosterMember, modelIndex: number) {
+  const model = henchmanModelsForMember(member)[modelIndex - 1];
+  if (model?.name) return model.name;
   const baseName = member.displayName || fighterTypeForMember(member)?.name || "Henchman";
   return `${baseName} #${modelIndex}`;
 }
 
 function normaliseHenchmanInjuries(entry: AfterBattleInjuryEntry, member: RosterMember): AfterBattleHenchmanInjury[] {
   const maxModels = Math.max(1, member.groupSize);
+  const models = henchmanModelsForMember(member);
   const existing = entry.henchmanInjuries ?? [];
   if (existing.length) {
     return existing.map((assignment, index) => {
       const modelIndex = Math.min(maxModels, Math.max(1, assignment.modelIndex || index + 1));
+      const model = assignment.modelId
+        ? models.find((item) => item.id === assignment.modelId) ?? models[modelIndex - 1]
+        : models[modelIndex - 1];
       return {
         ...assignment,
+        modelId: model?.id ?? assignment.modelId,
         modelIndex,
-        modelName: assignment.modelName || henchmanModelLabel(member, modelIndex)
+        modelName: assignment.modelName || model?.name || henchmanModelLabel(member, modelIndex)
       };
     });
   }
@@ -7413,18 +7885,24 @@ function resizeHenchmanInjuries(
   member: RosterMember
 ): AfterBattleHenchmanInjury[] {
   const safeCount = Math.max(0, Math.min(Math.max(1, member.groupSize), Math.floor(Number.isFinite(count) ? count : 0)));
-  const resized = assignments.slice(0, safeCount).map((assignment, index) => {
+  const models = henchmanModelsForMember(member);
+  const resized: AfterBattleHenchmanInjury[] = assignments.slice(0, safeCount).map((assignment, index) => {
     const modelIndex = Math.min(Math.max(1, member.groupSize), Math.max(1, assignment.modelIndex || index + 1));
+    const model = assignment.modelId
+      ? models.find((item) => item.id === assignment.modelId) ?? models[modelIndex - 1]
+      : models[modelIndex - 1];
     return {
       ...assignment,
+      modelId: model?.id ?? assignment.modelId,
       modelIndex,
-      modelName: assignment.modelName || henchmanModelLabel(member, modelIndex)
+      modelName: assignment.modelName || model?.name || henchmanModelLabel(member, modelIndex)
     };
   });
   while (resized.length < safeCount) {
-    const used = new Set(resized.map((assignment) => assignment.modelIndex));
-    const nextModelIndex = Array.from({ length: Math.max(1, member.groupSize) }, (_, index) => index + 1).find((index) => !used.has(index)) ?? resized.length + 1;
-    resized.push(defaultHenchmanInjury(member, nextModelIndex));
+    const used = new Set(resized.map((assignment) => assignment.modelId).filter(Boolean));
+    const nextModel = models.find((model) => !used.has(model.id));
+    const nextModelIndex = nextModel ? models.indexOf(nextModel) + 1 : resized.length + 1;
+    resized.push(defaultHenchmanInjury(member, nextModelIndex, nextModel));
   }
   return resized;
 }
