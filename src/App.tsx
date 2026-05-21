@@ -8,6 +8,7 @@ import {
   Copy,
   Dices,
   Download,
+  Edit3,
   Plus,
   Printer,
   RotateCcw,
@@ -273,6 +274,7 @@ export default function App() {
   const [draftRoster, setDraftRoster] = useState<Roster>(() => createRosterDraft("witch-hunters"));
   const [showIllegalOptions, setShowIllegalOptions] = useState(false);
   const [allowDraftSave, setAllowDraftSave] = useState(false);
+  const [includeCampaignInPdf, setIncludeCampaignInPdf] = useState(false);
   const [lookupItem, setLookupItem] = useState<LookupItem>();
   const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -422,6 +424,10 @@ export default function App() {
             setActiveRosterId(id);
             setMode("play");
           }}
+          onEdit={(id) => {
+            setActiveRosterId(id);
+            setMode("roster");
+          }}
           onCampaign={(id) => {
             setActiveRosterId(id);
             setMode("campaign");
@@ -474,8 +480,11 @@ export default function App() {
               onToggleIllegal={setShowIllegalOptions}
               onToggleDraftSave={setAllowDraftSave}
               onSave={() => persistRoster({ ...activeRoster, isDraft: blockingErrors }, "roster", { existingId: activeRosterId })}
+              onSaveAndPlay={() => persistRoster({ ...activeRoster, isDraft: blockingErrors }, "play", { existingId: activeRosterId })}
               onExport={() => exportRoster(activeRoster)}
               onExportPdf={() => exportRosterPdf(activeRoster)}
+              includeCampaignInPdf={includeCampaignInPdf}
+              onIncludeCampaignInPdfChange={setIncludeCampaignInPdf}
             />
           ) : mode === "campaign" ? (
             <CampaignView
@@ -493,6 +502,8 @@ export default function App() {
               onEditRoster={() => setMode("roster")}
               onAfterBattle={() => setMode("afterBattle")}
               onExportPdf={() => exportRosterPdf(activeRoster)}
+              includeCampaignInPdf={includeCampaignInPdf}
+              onIncludeCampaignInPdfChange={setIncludeCampaignInPdf}
               onLookup={setLookupItem}
             />
           ) : (
@@ -598,6 +609,7 @@ function WarbandList({
   rosters,
   onCreate,
   onSelect,
+  onEdit,
   onCampaign,
   onDuplicate,
   onDelete,
@@ -607,6 +619,7 @@ function WarbandList({
   rosters: Roster[];
   onCreate: () => void;
   onSelect: (id: string) => void;
+  onEdit: (id: string) => void;
   onCampaign: (id: string) => void;
   onDuplicate: (roster: Roster) => void;
   onDelete: (id: string) => void;
@@ -664,6 +677,9 @@ function WarbandList({
                 </div>
               <div className="icon-row">
                 <button onClick={() => onSelect(roster.id)}>Play</button>
+                <button onClick={() => onEdit(roster.id)}>
+                  <Edit3 aria-hidden /> Edit warband
+                </button>
                 <button onClick={() => onCampaign(roster.id)}>Campaign</button>
                 <button aria-label={`Duplicate ${roster.name}`} onClick={() => onDuplicate(roster)}>
                   <Copy aria-hidden />
@@ -1062,8 +1078,11 @@ function RosterView({
   onToggleIllegal,
   onToggleDraftSave,
   onSave,
+  onSaveAndPlay,
   onExport,
-  onExportPdf
+  onExportPdf,
+  includeCampaignInPdf,
+  onIncludeCampaignInPdfChange
 }: {
   roster: Roster;
   validation: ValidationIssue[];
@@ -1075,13 +1094,16 @@ function RosterView({
   onToggleIllegal: (value: boolean) => void;
   onToggleDraftSave: (value: boolean) => void;
   onSave: () => void;
+  onSaveAndPlay: () => void;
   onExport: () => void;
   onExportPdf: () => void;
+  includeCampaignInPdf: boolean;
+  onIncludeCampaignInPdfChange: (value: boolean) => void;
 }) {
   return (
     <div className="two-column">
       <section className="primary-flow print-sheet">
-        <PrintableRosterSheet roster={roster} />
+        <PrintableRosterSheet roster={roster} includeCampaign={includeCampaignInPdf} />
         <RosterHeader roster={roster} onNameChange={(name) => onRosterChange((current) => ({ ...current, name }))} />
         <div className="action-strip no-print">
           <label className="toggle">
@@ -1091,9 +1113,20 @@ function RosterView({
           <button onClick={onSave}>
             <Save aria-hidden /> Save
           </button>
+          <button className="primary" onClick={onSaveAndPlay}>
+            <Swords aria-hidden /> Save & Play
+          </button>
           <button onClick={onExport}>
             <Download aria-hidden /> Export JSON
           </button>
+          <label className="toggle print-option-toggle">
+            <input
+              type="checkbox"
+              checked={includeCampaignInPdf}
+              onChange={(event) => onIncludeCampaignInPdfChange(event.target.checked)}
+            />
+            Include campaign in PDF
+          </label>
           <button onClick={onExportPdf}>
             <Printer aria-hidden /> Export PDF
           </button>
@@ -1862,12 +1895,16 @@ function PlayModeView({
   onEditRoster,
   onAfterBattle,
   onExportPdf,
+  includeCampaignInPdf,
+  onIncludeCampaignInPdfChange,
   onLookup
 }: {
   roster: Roster;
   onEditRoster: () => void;
   onAfterBattle: () => void;
   onExportPdf: () => void;
+  includeCampaignInPdf: boolean;
+  onIncludeCampaignInPdfChange: (value: boolean) => void;
   onLookup: (item: LookupItem) => void;
 }) {
   const [battleState, setBattleState] = useState<BattleState>(() => readBattleState(roster));
@@ -1942,7 +1979,7 @@ function PlayModeView({
 
   return (
     <section className={`play-mode ${compact ? "compact-play" : "comfortable-play"}`}>
-      <PrintableRosterSheet roster={roster} />
+      <PrintableRosterSheet roster={roster} includeCampaign={includeCampaignInPdf} />
       <div className="play-summary">
         <div className="roster-title-lockup">
           <WarbandBadge warbandTypeId={roster.warbandTypeId} size="large" />
@@ -1962,6 +1999,14 @@ function PlayModeView({
           <button onClick={onExportPdf}>
             <Printer aria-hidden /> Export PDF
           </button>
+          <label className="toggle print-option-toggle">
+            <input
+              type="checkbox"
+              checked={includeCampaignInPdf}
+              onChange={(event) => onIncludeCampaignInPdfChange(event.target.checked)}
+            />
+            Include campaign in PDF
+          </label>
           <button onClick={() => setShowRulesSearch((value) => !value)}>
             <Search aria-hidden /> Rules
           </button>
@@ -2433,6 +2478,12 @@ function FighterCard({
             <p>{fighterType.name} · {roleLabel}</p>
           </div>
         </div>
+        {member.kind === "henchman_group" && (
+          <div className="henchman-group-box">
+            <span>Group</span>
+            <strong>{member.displayName || fighterType.name}</strong>
+          </div>
+        )}
         <StatusPill status={battleState.status} onChange={(status) => onBattleChange({ status })} />
         <p className="print-only print-status">Battle status: {battleStatusLabel(battleState.status)}</p>
       </header>
@@ -3367,6 +3418,10 @@ function HenchmanInjuryAssignments({
       <div className="henchman-injury-list">
         {assignments.map((assignment, index) => (
           <div className="henchman-injury-row" key={assignment.id}>
+            <div className="henchman-group-box injury-group-box">
+              <span>Group</span>
+              <strong>{member.displayName || fighterTypeForMember(member)?.name || "Henchmen"}</strong>
+            </div>
             <label>
               <span>Model</span>
               <select
@@ -4545,7 +4600,7 @@ function ReviewBlock({ title, lines }: { title: string; lines: string[] }) {
   );
 }
 
-function PrintableRosterSheet({ roster }: { roster: Roster }) {
+function PrintableRosterSheet({ roster, includeCampaign }: { roster: Roster; includeCampaign: boolean }) {
   const warband = currentWarband(roster)!;
   const cost = calculateRosterCost(roster, rulesDb);
   const rating = calculateWarbandRating(roster, rulesDb);
@@ -4596,14 +4651,84 @@ function PrintableRosterSheet({ roster }: { roster: Roster }) {
         </section>
       ))}
 
-      <section className="print-after-battle">
-        <h2>Battle & After-Battle Notes</h2>
-        <div className="print-notes-grid">
-          <PrintBlankLines title="Battle result / opponent / scenario" lines={3} />
-          <PrintBlankLines title="Exploration / wyrdstone / income" lines={3} />
-          <PrintBlankLines title="Injuries / advances / purchases" lines={4} />
+      {includeCampaign ? (
+        <PrintableCampaignSection roster={roster} />
+      ) : (
+        <section className="print-after-battle">
+          <h2>Table Notes</h2>
+          <div className="print-notes-grid">
+            <PrintBlankLines title="Battle result / opponent / scenario" lines={2} />
+            <PrintBlankLines title="Exploration / wyrdstone / income" lines={2} />
+            <PrintBlankLines title="Injuries / advances / purchases" lines={3} />
+          </div>
+        </section>
+      )}
+    </section>
+  );
+}
+
+function PrintableCampaignSection({ roster }: { roster: Roster }) {
+  const logEntries = campaignTimeline(roster).slice(0, 8);
+  const activeFlags = roster.members
+    .filter((member) => member.status !== "active" || member.injuries.length > 0 || (member.advancesTaken?.length ?? 0) > 0)
+    .slice(0, 12);
+  const economy = campaignEconomy(roster);
+
+  return (
+    <section className="print-campaign-section">
+      <h2>Current Campaign Record</h2>
+      <div className="print-campaign-summary">
+        <PrintSummary label="Treasury" value={`${roster.treasuryGold} gc`} />
+        <PrintSummary label="Wyrdstone" value={roster.wyrdstoneShards.toString()} />
+        <PrintSummary label="Battles" value={campaignSummary(roster).battles.toString()} />
+        <PrintSummary label="Record" value={campaignSummary(roster).recordLabel} />
+        <PrintSummary label="Income" value={formatGoldDelta(economy.goldIn)} />
+        <PrintSummary label="Spending" value={formatGoldDelta(economy.goldOut)} />
+      </div>
+      <div className="print-campaign-grid">
+        <div>
+          <strong>Campaign notes</strong>
+          <p>{roster.campaignNotes || "None"}</p>
         </div>
-      </section>
+        <div>
+          <strong>Stash</strong>
+          <p>{roster.storedEquipment.length ? roster.storedEquipment.map(equipmentName).join(", ") : "None"}</p>
+        </div>
+      </div>
+      <div className="print-campaign-grid">
+        <div>
+          <strong>Recent campaign log</strong>
+          {logEntries.length ? (
+            <ul>
+              {logEntries.map((entry) => (
+                <li key={entry.id}>
+                  <b>{campaignLogTypeLabel(entry.type)}</b>: {entry.description}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No campaign log entries yet.</p>
+          )}
+        </div>
+        <div>
+          <strong>Fighter status / injuries / advances</strong>
+          {activeFlags.length ? (
+            <ul>
+              {activeFlags.map((member) => (
+                <li key={member.id}>
+                  <b>{member.displayName || fighterTypeForMember(member)?.name}</b>: {[
+                    member.status !== "active" ? member.status.replaceAll("_", " ") : "",
+                    member.injuries.length ? `injuries ${member.injuries.join(", ")}` : "",
+                    member.advancesTaken?.length ? `${member.advancesTaken.length} recorded advance${member.advancesTaken.length === 1 ? "" : "s"}` : ""
+                  ].filter(Boolean).join("; ")}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No injuries, non-active statuses or recorded advances.</p>
+          )}
+        </div>
+      </div>
     </section>
   );
 }
@@ -7664,6 +7789,10 @@ function campaignTasks(roster: Roster, validation: ValidationIssue[]): CampaignT
 
 function campaignTimeline(roster: Roster) {
   return [...roster.campaignLog].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
+function campaignLogTypeLabel(type: Roster["campaignLog"][number]["type"]) {
+  return type.replaceAll("_", " ");
 }
 
 function campaignLogMatchesFilter(entry: Roster["campaignLog"][number], filter: CampaignLogFilter) {

@@ -980,6 +980,40 @@ h3 {
   justify-content: center;
 }
 
+.print-option-toggle {
+  background: rgba(255, 250, 240, 0.56);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  min-height: 40px;
+  padding: 0.35rem 0.55rem;
+}
+
+.henchman-group-box {
+  background: rgba(255, 250, 240, 0.72);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.05rem;
+  min-width: 150px;
+  padding: 0.45rem 0.6rem;
+}
+
+.henchman-group-box span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.henchman-group-box strong {
+  font-size: 0.94rem;
+}
+
+.injury-group-box {
+  align-self: end;
+  min-height: 48px;
+}
+
 .hired-sword-grid {
   display: grid;
   gap: 0.65rem;
@@ -3394,8 +3428,10 @@ button.blocked,
   .print-roster-sheet {
     color: #111111;
     display: block;
-    font-size: 8.2pt;
-    line-height: 1.22;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 8pt;
+    line-height: 1.18;
+    width: 100%;
   }
 
   .print-roster-sheet h1,
@@ -3436,7 +3472,15 @@ button.blocked,
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .print-summary-grid div {
+  .print-campaign-summary {
+    display: grid;
+    gap: 0;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    margin-bottom: 0.1in;
+  }
+
+  .print-summary-grid div,
+  .print-campaign-summary div {
     border: 1px solid #333333;
     display: grid;
     min-height: 0.38in;
@@ -3444,18 +3488,21 @@ button.blocked,
   }
 
   .print-summary-grid span,
+  .print-campaign-summary span,
   .print-member-card header p,
   .print-member-meta span,
   .print-member-fields strong,
   .print-track-grid strong,
   .print-ledger-row strong,
-  .print-after-battle strong {
+  .print-after-battle strong,
+  .print-campaign-section strong {
     font-size: 7pt;
     font-weight: 800;
     text-transform: uppercase;
   }
 
-  .print-summary-grid strong {
+  .print-summary-grid strong,
+  .print-campaign-summary strong {
     font-size: 10pt;
   }
 
@@ -3468,7 +3515,8 @@ button.blocked,
 
   .print-ledger-row > div,
   .print-after-battle,
-  .print-notes-grid > div {
+  .print-notes-grid > div,
+  .print-campaign-grid > div {
     border: 1px solid #333333;
     padding: 0.07in;
   }
@@ -3478,7 +3526,8 @@ button.blocked,
   }
 
   .print-member-section h2,
-  .print-after-battle h2 {
+  .print-after-battle h2,
+  .print-campaign-section h2 {
     background: #111111;
     color: #ffffff;
     font-size: 10pt;
@@ -3603,6 +3652,31 @@ button.blocked,
   .print-after-battle {
     break-inside: avoid;
     margin-top: 0.16in;
+  }
+
+  .print-campaign-section {
+    break-inside: avoid;
+    margin-top: 0.16in;
+  }
+
+  .print-campaign-grid {
+    display: grid;
+    gap: 0.08in;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 0.08in;
+  }
+
+  .print-campaign-grid p,
+  .print-campaign-grid ul {
+    margin: 0.03in 0 0;
+  }
+
+  .print-campaign-grid ul {
+    padding-left: 0.14in;
+  }
+
+  .print-campaign-grid li {
+    margin-bottom: 0.03in;
   }
 
   .print-notes-grid {
