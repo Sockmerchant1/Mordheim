@@ -76,6 +76,7 @@ export type ExplorationFollowUpResult = {
 };
 
 const FORBIDDEN_MULTIPLE_INJURY_RESULTS = new Set(["Dead", "Captured", "Multiple Injuries"]);
+const MAX_EXPLORATION_DICE = 7;
 
 export function rollD6(random = Math.random) {
   return Math.floor(random() * 6) + 1;
@@ -414,7 +415,8 @@ export function createTableRoll(
   }
 
   if (options.kind === "exploration") {
-    const diceValues = rollD6s(options.diceCount ?? 1, random);
+    const diceCount = clampExplorationDiceCount(options.diceCount ?? 1);
+    const diceValues = diceCount > 0 ? rollD6s(diceCount, random) : [];
     const summary = getExplorationDiceSummary(records, diceValues, options.recordId, options.tableCaption);
     return {
       kind: options.kind,
@@ -426,8 +428,10 @@ export function createTableRoll(
       diceValues,
       rollValue: summary.total,
       total: summary.total,
-      rollLabel: `Exploration ${diceValues.join(", ")} = ${summary.total}`,
-      result: summary.wyrdstoneShards === undefined ? "No shard result found" : `${summary.wyrdstoneShards} wyrdstone shards`,
+      rollLabel: diceValues.length ? `Exploration ${diceValues.join(", ")} = ${summary.total}` : "Exploration: no dice",
+      result: diceValues.length
+        ? summary.wyrdstoneShards === undefined ? "No shard result found" : `${summary.wyrdstoneShards} wyrdstone shards`
+        : "No exploration dice",
       effect: summary.description,
       wyrdstoneShards: summary.wyrdstoneShards,
       specialResults: summary.combinations.map(formatExplorationCombination)
@@ -556,7 +560,7 @@ export function getExplorationDiceSummary(
   recordId = "table-exploration",
   tableCaption = "Number Of Wyrdstone Shards Found"
 ): ExplorationDiceSummary {
-  const validDice = diceValues.filter((value) => Number.isInteger(value) && value >= 1 && value <= 6).slice(0, 6);
+  const validDice = diceValues.filter((value) => Number.isInteger(value) && value >= 1 && value <= 6).slice(0, MAX_EXPLORATION_DICE);
   const total = validDice.reduce((sum, value) => sum + value, 0);
   const match = total > 0 ? findTableRowForRoll(records, recordId, total, tableCaption) : undefined;
   const wyrdstoneShards = match ? Number(match.result) : undefined;
@@ -586,12 +590,15 @@ export function getExplorationCombinations(diceValues: number[], records: TableL
     .map(([value, count]) => ({ value: Number(value), count }))
     .filter((entry) => entry.count >= 2)
     .sort((a, b) => b.count - a.count || b.value - a.value)
-    .map((entry): ExplorationCombination => ({
-      ...entry,
-      label: `${combinationLabel(entry.count)} of ${entry.value}s`,
-      combination: combinationValueLabel(entry.value, entry.count),
-      ...explorationMatchFields(findExplorationCombinationMatch(records, recordId, entry.value, entry.count))
-    }));
+    .map((entry): ExplorationCombination => {
+      const tableCount = Math.min(entry.count, 6);
+      return {
+        ...entry,
+        label: `${entry.count > 6 ? "Six or more" : combinationLabel(entry.count)} of ${entry.value}s`,
+        combination: combinationValueLabel(entry.value, tableCount),
+        ...explorationMatchFields(findExplorationCombinationMatch(records, recordId, entry.value, tableCount))
+      };
+    });
 }
 
 export function formatExplorationCombination(combo: ExplorationCombination) {
@@ -604,7 +611,7 @@ export function parseDiceValues(value: string) {
     .split(/[,\s]+/)
     .map((item) => Number(item))
     .filter((item) => Number.isInteger(item) && item >= 1 && item <= 6)
-    .slice(0, 6);
+    .slice(0, MAX_EXPLORATION_DICE);
 }
 
 export function rollMatchesRangeLabel(label: string, rollValue: number) {
@@ -713,5 +720,10 @@ function sum(values: number[]) {
 
 function clampDiceCount(count: number) {
   const safeCount = Number.isFinite(count) ? count : 1;
-  return Math.max(1, Math.min(6, Math.floor(safeCount)));
+  return Math.max(1, Math.min(MAX_EXPLORATION_DICE, Math.floor(safeCount)));
+}
+
+function clampExplorationDiceCount(count: number) {
+  const safeCount = Number.isFinite(count) ? count : 1;
+  return Math.max(0, Math.min(MAX_EXPLORATION_DICE, Math.floor(safeCount)));
 }

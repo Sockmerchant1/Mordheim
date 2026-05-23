@@ -25,11 +25,33 @@ See `NETLIFY_DEPLOY.md` for step-by-step setup and the GitHub upload checklist.
 
 The Netlify site is configured as an installable web app. On iPhone or iPad, open the site in Safari, tap Share, then choose Add to Home Screen. On Mac Safari, use File, then Add to Dock.
 
-App icon files live in `public/pwa-icon-192.png`, `public/pwa-icon-512.png`, and `public/apple-touch-icon.png`. Replace those files with the final app icon artwork before publishing if you want a different icon.
+App icon files live in `public/pwa-icon-192.png`, `public/pwa-icon-512.png`, and `public/apple-touch-icon.png`. The current checked-in icon is the Mordheim skull artwork. Warband icon assets live in matching `public/warband-icons/light` and `public/warband-icons/dark` slug-named files.
 
 ## Run Locally
 
 Requires Node 24+ because the local SQLite API uses `node:sqlite`. The Netlify deployment does not run that local API; it uses browser storage instead.
+
+On macOS, double-click:
+
+```text
+Open Mordheim App.command
+```
+
+On Windows, use:
+
+```text
+Open Mordheim App.bat
+```
+
+Or run the friendly launcher:
+
+```bash
+npm start
+```
+
+The launcher installs dependencies if needed, starts the local API and Vite app, then opens the browser.
+
+The lower-level development commands are:
 
 ```bash
 npm install
@@ -82,12 +104,12 @@ Rules live in JSON seed files under `src/data`; campaign roster state is saved s
 - **Roster Editor**: the existing long-term roster builder and campaign editor.
 - **Campaign**: a campaign dashboard for history, economy, fighter progression, notes and between-game reminders.
 - **Schedule**: a shared game scheduler for campaign games, invitations, a compact month calendar and optional Google Calendar invites.
-- **Play Mode**: opened by the Roster button for quick table use, dice/table helpers, temporary fighter status, wound tracking, rules lookup and printable PDF roster sheets.
-- **After Battle**: a guided post-game draft for result, XP, serious injuries, exploration, income, trading, advances, roster updates and final review.
+- **Play Mode**: opened by the Roster button for quick table use. It has a compact battle dashboard, rout watch, status totals, rules lookup, dice/table helpers and an After Battle handoff. Secondary actions such as PDF export, roster editing, battle reset and view filters sit under More actions. Fighter cards use segmented battle status controls, wound tracking, a compact `+ XP` picker for OOA/objective/other battle XP, relevant-rules lookup and printable PDF roster sheets.
+- **After Battle**: a guided post-game flow with a progress rail, checkpoint drawer and focused next/previous steps for result, XP, serious injuries, exploration, income, trading, advances, roster updates and final review.
 
 The Create Warband screen also includes legal starter roster templates for implemented warbands. Templates live in `src/data/starterRosters.ts`, use canonical fighter/equipment ids, and are verified by the Node rules check.
 
-The After Battle flow compares pre-battle XP with final XP using the central advancement threshold helper in `src/rules/engine.ts`, queues one advance slot per crossed threshold, and writes one campaign history entry when updates are applied. Serious injury and exploration steps use the shared dice/table helper in `src/rules/tableDice.ts`, so rolls can fill draft fields while still allowing manual overrides.
+The After Battle flow compares pre-battle XP with final XP using the central advancement threshold helper in `src/rules/engine.ts`, queues one advance slot per crossed threshold, and writes one campaign history entry when updates are applied. Serious injury and exploration steps use the shared dice/table helper in `src/rules/tableDice.ts`, so rolls can fill draft fields while still allowing manual overrides. Exploration defaults to one die per Hero who was not Out of Action in the battle snapshot, plus one winner's die for a win; Heroes who later make a Full Recovery still do not add an exploration die for that battle.
 
 The Trading step is a post-battle ledger. Canonical equipment records can be bought, sold, found, moved between stash and fighters, or logged as discarded. Gold changes are folded into the treasury preview, and canonical stash/fighter equipment changes are applied only when the final After Battle review is confirmed. Custom items and unusual trading outcomes can still be logged as notes.
 

@@ -30,4 +30,4 @@
 - Hired sword upkeep and Dramatis Personae rating overrides are modeled but not fully seeded.
 - CSV export is not implemented. JSON export/import and browser-based PDF export are implemented; PDF export uses the browser print dialog's Save as PDF option.
 - SQLite uses Node 24 `node:sqlite` directly rather than Prisma or Drizzle.
-- On machines without global Node/npm on PATH, use `Open Mordheim App.bat` or `run-local.ps1`; they use the bundled Node runtime when available.
+- On machines without global Node/npm on PATH, use `Open Mordheim App.command` on macOS, or `Open Mordheim App.bat` / `run-local.ps1` on Windows; they use the bundled Node runtime when available.

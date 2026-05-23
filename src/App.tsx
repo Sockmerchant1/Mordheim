@@ -9,6 +9,7 @@ import {
   Dices,
   Download,
   Edit3,
+  MoreHorizontal,
   Plus,
   Printer,
   RotateCcw,
@@ -1992,6 +1993,13 @@ function PlayModeView({
     const state = battleState.members[member.id];
     return total + outOfActionCountForBattle(member, state);
   }, 0);
+  const battleStatusTotals = battleStatusCountsForRoster(playableMembers, battleState);
+  const routThreshold = calculateRoutThreshold(totalFighters);
+  const routRemaining = Math.max(0, routThreshold - outOfAction);
+  const battleXpTotal = playableMembers.reduce((total, member) => {
+    const state = battleState.members[member.id] ?? defaultBattleMemberState(member);
+    return total + state.enemyOoaXp + state.objectiveXp + state.otherXp;
+  }, 0);
   const warband = currentWarband(roster);
 
   return (
@@ -2006,37 +2014,76 @@ function PlayModeView({
             <p>{warband?.name ?? roster.warbandTypeId}</p>
           </div>
         </div>
-        <div className="play-metrics">
-          <Metric icon={<Shield aria-hidden />} label="Rating" value={calculateWarbandRating(roster, rulesDb).toString()} />
-          <Metric icon={<Swords aria-hidden />} label="Fighters" value={totalFighters.toString()} />
-          <Metric icon={<AlertTriangle aria-hidden />} label="Out" value={outOfAction.toString()} tone={outOfAction > 0 ? "bad" : undefined} />
-          <Metric icon={<BookOpen aria-hidden />} label="Rout at" value={`${calculateRoutThreshold(totalFighters)} out`} />
+        <div className="play-dashboard">
+          <div className="play-metrics">
+            <Metric icon={<Shield aria-hidden />} label="Rating" value={calculateWarbandRating(roster, rulesDb).toString()} />
+            <Metric icon={<Swords aria-hidden />} label="Fighters" value={totalFighters.toString()} />
+            <Metric icon={<AlertTriangle aria-hidden />} label="Out" value={outOfAction.toString()} tone={outOfAction > 0 ? "bad" : undefined} />
+            <Metric icon={<BookOpen aria-hidden />} label="Battle XP" value={`+${battleXpTotal}`} />
+          </div>
+          <div className={`battle-watch ${routRemaining === 0 ? "danger" : outOfAction > 0 ? "warning" : ""}`}>
+            <span>Rout watch</span>
+            <strong>{routRemaining > 0 ? `${routRemaining} until rout` : "Rout check due"}</strong>
+            <small>{outOfAction} out · threshold {routThreshold}</small>
+          </div>
+          <div className="battle-status-summary" aria-label="Battle status counts">
+            <span><b>{battleStatusTotals.active}</b> active</span>
+            <span><b>{battleStatusTotals.hidden}</b> hidden</span>
+            <span><b>{battleStatusTotals.knocked_down}</b> down</span>
+            <span><b>{battleStatusTotals.stunned}</b> stunned</span>
+          </div>
         </div>
         <div className="play-actions">
-          <button onClick={onExportPdf}>
-            <Printer aria-hidden /> Export PDF
-          </button>
-          <label className="toggle print-option-toggle">
-            <input
-              type="checkbox"
-              checked={includeCampaignInPdf}
-              onChange={(event) => onIncludeCampaignInPdfChange(event.target.checked)}
-            />
-            Include campaign in PDF
-          </label>
           <button onClick={() => setShowRulesSearch((value) => !value)}>
             <Search aria-hidden /> Rules
           </button>
           <button onClick={() => setShowDiceTools((value) => !value)}>
             <Dices aria-hidden /> Dice / Tables
           </button>
-          <button onClick={resetBattleState}>
-            <RotateCcw aria-hidden /> Reset Battle State
-          </button>
-          <button onClick={onEditRoster}>Edit roster</button>
           <button className="primary" onClick={onAfterBattle}>
             End Battle / After Battle
           </button>
+          <details className="play-more-actions">
+            <summary>
+              <MoreHorizontal aria-hidden /> More actions
+            </summary>
+            <div>
+              <button onClick={onExportPdf}>
+                <Printer aria-hidden /> Export PDF
+              </button>
+              <label className="toggle print-option-toggle">
+                <input
+                  type="checkbox"
+                  checked={includeCampaignInPdf}
+                  onChange={(event) => onIncludeCampaignInPdfChange(event.target.checked)}
+                />
+                Include campaign in PDF
+              </label>
+              <button onClick={onEditRoster}>
+                <Edit3 aria-hidden /> Edit roster
+              </button>
+              <button onClick={resetBattleState}>
+                <RotateCcw aria-hidden /> Reset Battle State
+              </button>
+              <div className="play-view-options" aria-label="Play Mode view options">
+                <label>
+                  <span>Fighter list</span>
+                  <select value={fighterFilter} onChange={(event) => setFighterFilter(event.target.value as "all" | "active")}>
+                    <option value="all">Show all fighters</option>
+                    <option value="active">Hide out of action</option>
+                  </select>
+                </label>
+                <label className="toggle">
+                  <input type="checkbox" checked={heroesFirst} onChange={(event) => setHeroesFirst(event.target.checked)} />
+                  Heroes first
+                </label>
+                <label className="toggle">
+                  <input type="checkbox" checked={compact} onChange={(event) => setCompact(event.target.checked)} />
+                  Compact density
+                </label>
+              </div>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -2050,24 +2097,6 @@ function PlayModeView({
       )}
 
       {showDiceTools && <DiceTablesPanel onLookup={onLookup} />}
-
-      <div className="play-controls" aria-label="Play Mode filters">
-        <label>
-          <span>Show fighters</span>
-          <select value={fighterFilter} onChange={(event) => setFighterFilter(event.target.value as "all" | "active")}>
-            <option value="all">Show all fighters</option>
-            <option value="active">Show active only</option>
-          </select>
-        </label>
-        <label className="toggle">
-          <input type="checkbox" checked={heroesFirst} onChange={(event) => setHeroesFirst(event.target.checked)} />
-          Heroes first
-        </label>
-        <label className="toggle">
-          <input type="checkbox" checked={compact} onChange={(event) => setCompact(event.target.checked)} />
-          Compact density
-        </label>
-      </div>
 
       <div className="play-card-grid">
         {visibleMembers.map((member) => (
@@ -2165,7 +2194,7 @@ function DiceTablesPanel({ onLookup }: { onLookup: (item: LookupItem) => void })
           recordId="table-exploration"
           tableCaption="Number Of Wyrdstone Shards Found"
           diceCount={explorationDiceCount}
-          diceCountOptions={[1, 2, 3, 4, 5, 6]}
+          diceCountOptions={[1, 2, 3, 4, 5, 6, 7]}
           onDiceCountChange={setExplorationDiceCount}
           helperText="Rolls exploration dice, totals wyrdstone and calls out doubles or better."
           onLookup={onLookup}
@@ -2471,17 +2500,28 @@ function FighterCard({
     : member.kind === "hired_sword"
       ? "Hired sword"
       : "Hero";
+  const displayedWounds = Math.min(battleState.currentWounds, maxWounds);
+  const [isXpPickerOpen, setIsXpPickerOpen] = useState(false);
+  const xpReasonMenuId = `battle-xp-reasons-${member.id}`;
+
+  function addBattleXp(kind: "enemyOoaXp" | "objectiveXp" | "otherXp") {
+    onBattleChange({ [kind]: battleState[kind] + 1 });
+    setIsXpPickerOpen(false);
+  }
 
   function decrementBattleXp() {
     if (battleState.enemyOoaXp > 0) {
       onBattleChange({ enemyOoaXp: battleState.enemyOoaXp - 1 });
+      setIsXpPickerOpen(false);
       return;
     }
     if (battleState.objectiveXp > 0) {
       onBattleChange({ objectiveXp: battleState.objectiveXp - 1 });
+      setIsXpPickerOpen(false);
       return;
     }
     onBattleChange({ otherXp: Math.max(0, battleState.otherXp - 1) });
+    setIsXpPickerOpen(false);
   }
 
   return (
@@ -2502,36 +2542,56 @@ function FighterCard({
             <strong>{member.displayName || fighterType.name}</strong>
           </div>
         )}
-        <StatusPill status={battleState.status} onChange={(status) => onBattleChange({ status })} />
+        <BattleStatusControls status={battleState.status} onChange={(status) => onBattleChange({ status })} />
         <p className="print-only print-status">Battle status: {battleStatusLabel(battleState.status)}</p>
       </header>
 
-      <StatGrid profile={member.currentProfile} />
-
-      <div className="fighter-state-row">
-        <SmallPanel label="XP">
+      <div className="fighter-battle-strip">
+        <section className="battle-counter-card wounds">
+          <span>Wounds</span>
+          <strong>{displayedWounds} / {maxWounds}</strong>
+          <div>
+            <button aria-label="Apply one wound" onClick={() => onBattleChange({ currentWounds: Math.max(0, battleState.currentWounds - 1) })}>
+              Hit
+            </button>
+            <button aria-label="Restore one wound" onClick={() => onBattleChange({ currentWounds: Math.min(maxWounds, battleState.currentWounds + 1) })}>
+              Heal
+            </button>
+          </div>
+        </section>
+        <section className="battle-counter-card battle-xp-card">
+          <span>Battle XP</span>
+          <strong>+{battleXp}</strong>
+          <div className="battle-xp-actions">
+            <button
+              aria-controls={xpReasonMenuId}
+              aria-expanded={isXpPickerOpen}
+              aria-label="Add battle experience"
+              className="xp-add-toggle"
+              onClick={() => setIsXpPickerOpen((open) => !open)}
+              type="button"
+            >
+              <Plus aria-hidden />
+              XP
+            </button>
+            <button aria-label="Remove battle experience" disabled={battleXp === 0} onClick={decrementBattleXp} type="button">Undo</button>
+          </div>
+          {isXpPickerOpen && (
+            <div className="battle-xp-reasons" id={xpReasonMenuId}>
+              <button aria-label="Add enemy out of action experience" onClick={() => addBattleXp("enemyOoaXp")} type="button">OOA</button>
+              <button aria-label="Add objective experience" onClick={() => addBattleXp("objectiveXp")} type="button">Obj</button>
+              <button aria-label="Add other battle experience" onClick={() => addBattleXp("otherXp")} type="button">Other</button>
+            </div>
+          )}
+        </section>
+        <section className="battle-counter-card roster-xp-card">
+          <span>Roster XP</span>
           <strong>{currentXp}</strong>
-          <small>{member.kind === "henchman_group" ? "Shared group XP" : `Starting ${startingXp}`}</small>
-        </SmallPanel>
-        <SmallPanel label="Wounds">
-          <div className="inline-stepper">
-            <button aria-label="Reduce current wounds" onClick={() => onBattleChange({ currentWounds: Math.max(0, battleState.currentWounds - 1) })}>
-              -
-            </button>
-            <strong>{Math.min(battleState.currentWounds, maxWounds)} / {maxWounds}</strong>
-            <button aria-label="Increase current wounds" onClick={() => onBattleChange({ currentWounds: Math.min(maxWounds, battleState.currentWounds + 1) })}>
-              +
-            </button>
-          </div>
-        </SmallPanel>
-        <SmallPanel label="Battle XP">
-          <div className="inline-stepper battle-xp-stepper">
-            <button aria-label="Remove battle XP" onClick={decrementBattleXp}>-</button>
-            <strong>{battleXp}</strong>
-            <button aria-label="Add battle XP" onClick={() => onBattleChange({ enemyOoaXp: battleState.enemyOoaXp + 1 })}>+</button>
-          </div>
-        </SmallPanel>
+          <small>{member.kind === "henchman_group" ? "Shared group" : `Starts ${startingXp}`}</small>
+        </section>
       </div>
+
+      <StatGrid profile={member.currentProfile} />
 
       {member.kind === "henchman_group" && henchmanModels.length > 0 && (
         <section className="henchman-model-play-panel">
@@ -2627,27 +2687,28 @@ function StatBox({ label, value }: { label: string; value: number }) {
   );
 }
 
-function StatusPill({ status, onChange }: { status: BattleStatus; onChange: (status: BattleStatus) => void }) {
+function BattleStatusControls({ status, onChange }: { status: BattleStatus; onChange: (status: BattleStatus) => void }) {
+  const options: Array<{ status: BattleStatus; label: string }> = [
+    { status: "active", label: "Active" },
+    { status: "hidden", label: "Hide" },
+    { status: "knocked_down", label: "Down" },
+    { status: "stunned", label: "Stun" },
+    { status: "out_of_action", label: "Out" }
+  ];
   return (
-    <label className={`fighter-status-pill status-${status}`}>
-      <span className="sr-only">Battle status</span>
-      <select value={status} onChange={(event) => onChange(event.target.value as BattleStatus)}>
-        <option value="active">Active</option>
-        <option value="hidden">Hidden</option>
-        <option value="knocked_down">Knocked down</option>
-        <option value="stunned">Stunned</option>
-        <option value="out_of_action">Out of action</option>
-      </select>
-    </label>
-  );
-}
-
-function SmallPanel({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <section className="fighter-small-panel">
-      <span>{label}</span>
-      <div>{children}</div>
-    </section>
+    <div className={`battle-status-controls status-${status}`} role="group" aria-label="Battle status">
+      {options.map((option) => (
+        <button
+          aria-pressed={status === option.status}
+          className={status === option.status ? "selected" : ""}
+          key={option.status}
+          onClick={() => onChange(option.status)}
+          type="button"
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -3110,9 +3171,25 @@ function AfterBattleView({
     setDraft((current) => syncDraftAdvances(updater(current)));
   }
 
+  const currentStep = steps[stepIndex];
+  const nextStep = steps[stepIndex + 1];
+  const currentStepStatus = afterBattleStepStatus(stepIndex, draft, roster);
+  const progressPercent = Math.round(((stepIndex + 1) / steps.length) * 100);
   const canContinue = canContinueAfterBattleStep(stepIndex, draft, roster);
   const stepBlocker = canContinue ? "" : afterBattleStepBlocker(stepIndex, draft, roster);
   const blockers = reviewBlockingMessages(draft, roster);
+
+  function goToStep(index: number) {
+    setStepIndex(index);
+  }
+
+  function goToNextStep() {
+    setStepIndex((index) => Math.min(steps.length - 1, index + 1));
+  }
+
+  function goToPreviousStep() {
+    setStepIndex((index) => Math.max(0, index - 1));
+  }
 
   return (
     <section className="after-battle">
@@ -3128,63 +3205,98 @@ function AfterBattleView({
         </div>
       </div>
 
-      <AfterBattleOverview
-        draft={draft}
-        roster={roster}
-        blockers={blockers}
-        currentStep={steps[stepIndex]}
-        onGoToStep={setStepIndex}
-      />
+      <details className="after-checkpoints" open={blockers.length > 0 || undefined}>
+        <summary>
+          <span>Draft checkpoints</span>
+          <strong>{blockers.length ? `${blockers.length} needs attention` : "Ready so far"}</strong>
+        </summary>
+        <AfterBattleOverview
+          draft={draft}
+          roster={roster}
+          blockers={blockers}
+          onGoToStep={goToStep}
+        />
+      </details>
 
-      <nav className="after-steps" aria-label="After Battle steps">
-        {steps.map((step, index) => (
-          <button
-            key={step.label}
-            className={index === stepIndex ? "active" : ""}
-            onClick={() => setStepIndex(index)}
-          >
-            <span>{index + 1}. {step.shortLabel}</span>
-            <small>{afterBattleStepStatus(index, draft, roster)}</small>
-          </button>
-        ))}
-      </nav>
+      <div className="after-flow-layout">
+        <aside className="after-flow-rail" aria-label="After Battle guide">
+          <div className="after-progress-panel">
+            <span className="eyebrow">Guided flow</span>
+            <strong>Step {stepIndex + 1} of {steps.length}</strong>
+            <div className="after-progress-bar" aria-hidden>
+              <span style={{ width: `${progressPercent}%` }} />
+            </div>
+            <p>{progressPercent}% through the report</p>
+          </div>
+          <nav className="after-steps" aria-label="After Battle steps">
+            {steps.map((step, index) => {
+              const status = afterBattleStepStatus(index, draft, roster);
+              return (
+                <button
+                  aria-current={index === stepIndex ? "step" : undefined}
+                  className={index === stepIndex ? "active" : ""}
+                  key={step.label}
+                  onClick={() => goToStep(index)}
+                  type="button"
+                >
+                  <span className="after-step-number">{index + 1}</span>
+                  <span className="after-step-copy">
+                    <span>{step.shortLabel}</span>
+                    <small>{status}</small>
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
 
-      <div className="after-step-body">
-        {stepIndex === 0 && <BattleResultStep draft={draft} roster={roster} onChange={updateDraft} />}
-        {stepIndex === 1 && <ExperienceStep draft={draft} onChange={updateDraft} />}
-        {stepIndex === 2 && <SeriousInjuriesStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
-        {stepIndex === 3 && <ExplorationStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
-        {stepIndex === 4 && <IncomeStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
-        {stepIndex === 5 && <TradingStep draft={draft} roster={roster} onChange={updateDraft} />}
-        {stepIndex === 6 && <AdvancesStep draft={draft} onChange={updateDraft} />}
-        {stepIndex === 7 && <RosterUpdatesStep draft={draft} roster={roster} onChange={updateDraft} />}
-        {stepIndex === 8 && (
-          <ReviewApplyStep
-            draft={draft}
-            roster={roster}
-            onApply={() => {
-              const updated = applyAfterBattleDraft(roster, draft);
-              clearAfterBattleDraft(roster.id);
-              resetBattleStateStorage(roster);
-              onApply(updated);
-            }}
-          />
-        )}
+        <div className="after-flow-main">
+          <div className="after-step-guide">
+            <div>
+              <span className="eyebrow">Step {stepIndex + 1}: {currentStep.label}</span>
+              <p>{currentStep.help}</p>
+            </div>
+            <span className="pill">{currentStepStatus}</span>
+          </div>
+
+          <div className="after-step-body">
+            {stepIndex === 0 && <BattleResultStep draft={draft} roster={roster} onChange={updateDraft} />}
+            {stepIndex === 1 && <ExperienceStep draft={draft} onChange={updateDraft} />}
+            {stepIndex === 2 && <SeriousInjuriesStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
+            {stepIndex === 3 && <ExplorationStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
+            {stepIndex === 4 && <IncomeStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
+            {stepIndex === 5 && <TradingStep draft={draft} roster={roster} onChange={updateDraft} />}
+            {stepIndex === 6 && <AdvancesStep draft={draft} onChange={updateDraft} />}
+            {stepIndex === 7 && <RosterUpdatesStep draft={draft} roster={roster} onChange={updateDraft} />}
+            {stepIndex === 8 && (
+              <ReviewApplyStep
+                draft={draft}
+                roster={roster}
+                onApply={() => {
+                  const updated = applyAfterBattleDraft(roster, draft);
+                  clearAfterBattleDraft(roster.id);
+                  resetBattleStateStorage(roster);
+                  onApply(updated);
+                }}
+              />
+            )}
+          </div>
+
+          <div className="after-step-actions">
+            <button disabled={stepIndex === 0} onClick={goToPreviousStep} type="button">
+              Previous
+            </button>
+            {stepIndex < steps.length - 1 ? (
+              <button className="primary" disabled={!canContinue} onClick={goToNextStep} type="button">
+                {nextStep ? `Next: ${nextStep.shortLabel}` : "Next"}
+              </button>
+            ) : (
+              <span className="muted">Review the draft, then apply when ready.</span>
+            )}
+          </div>
+          {stepBlocker && <p className="after-step-blocker">{stepBlocker}</p>}
+        </div>
       </div>
-
-      <div className="after-step-actions">
-        <button disabled={stepIndex === 0} onClick={() => setStepIndex((index) => Math.max(0, index - 1))}>
-          Previous
-        </button>
-        {stepIndex < steps.length - 1 ? (
-          <button className="primary" disabled={!canContinue} onClick={() => setStepIndex((index) => Math.min(steps.length - 1, index + 1))}>
-            Next
-          </button>
-        ) : (
-          <span className="muted">Review the draft, then apply when ready.</span>
-        )}
-      </div>
-      {stepBlocker && <p className="after-step-blocker">{stepBlocker}</p>}
     </section>
   );
 }
@@ -3193,13 +3305,11 @@ function AfterBattleOverview({
   draft,
   roster,
   blockers,
-  currentStep,
   onGoToStep
 }: {
   draft: AfterBattleDraft;
   roster: Roster;
   blockers: string[];
-  currentStep: (typeof AFTER_BATTLE_STEPS)[number];
   onGoToStep: (step: number) => void;
 }) {
   const xpEntries = draft.xp.filter((entry) => entry.gainedXp > 0);
@@ -3215,9 +3325,9 @@ function AfterBattleOverview({
   return (
     <section className="after-report-summary">
       <div className="after-report-current">
-        <span className="eyebrow">Current step</span>
-        <strong>{currentStep.label}</strong>
-        <p>{currentStep.help}</p>
+        <span className="eyebrow">Checkpoint</span>
+        <strong>Draft report</strong>
+        <p>Use these only when you need to jump to a problem or a total.</p>
       </div>
       <div className="after-report-metrics">
         <button type="button" onClick={() => onGoToStep(1)}>
@@ -3896,12 +4006,22 @@ function ExplorationStep({
   onLookup: (item: LookupItem) => void;
 }) {
   const [diceInput, setDiceInput] = useState(() => draft.exploration.diceValues.join(", "));
-  const [diceCount, setDiceCount] = useState(Math.max(1, draft.exploration.diceValues.length || 1));
+  const [isDiceCountManual, setIsDiceCountManual] = useState(false);
+  const standardDice = standardExplorationDiceBreakdown(roster, draft);
+  const [diceCount, setDiceCount] = useState(() => draft.exploration.diceValues.length || standardDice.total);
   const incomeWarriors = countIncomeWarriors(roster);
 
   useEffect(() => {
     setDiceInput(draft.exploration.diceValues.join(", "));
+    setIsDiceCountManual(false);
+    setDiceCount(draft.exploration.diceValues.length || standardDice.total);
   }, [draft.id]);
+
+  useEffect(() => {
+    if (!isDiceCountManual) {
+      setDiceCount(draft.exploration.diceValues.length || standardDice.total);
+    }
+  }, [draft.exploration.diceValues.length, isDiceCountManual, standardDice.total]);
 
   function updateExploration(patch: Partial<AfterBattleDraft["exploration"]>) {
     onChange((current) => ({ ...current, exploration: { ...current.exploration, ...patch } }));
@@ -3998,6 +4118,11 @@ function ExplorationStep({
           <p>{draft.exploration.diceValues.length ? describeExplorationDice(draft.exploration.diceValues) : "Enter dice or use the roller."}</p>
         </article>
         <article>
+          <span>Standard dice</span>
+          <strong>{standardDice.total}</strong>
+          <p>{standardDice.survivingHeroes} surviving Hero{standardDice.survivingHeroes === 1 ? "" : "es"}{standardDice.winBonus ? " + winner's die" : ""}. Out of Action Heroes do not count, even after Full Recovery.</p>
+        </article>
+        <article>
           <span>Wyrdstone found</span>
           <strong>{draft.exploration.wyrdstoneShards}</strong>
           <p>{draft.treasury.wyrdstoneSold ? `${draft.treasury.wyrdstoneSold} will be sold in Income.` : "Nothing marked for sale yet."}</p>
@@ -4035,16 +4160,19 @@ function ExplorationStep({
         recordId="table-exploration"
         tableCaption="Number Of Wyrdstone Shards Found"
         diceCount={diceCount}
-        diceCountOptions={[1, 2, 3, 4, 5, 6]}
-        onDiceCountChange={setDiceCount}
+        diceCountOptions={[0, 1, 2, 3, 4, 5, 6, 7]}
+        onDiceCountChange={(value) => {
+          setIsDiceCountManual(true);
+          setDiceCount(value);
+        }}
         autoApply
-        helperText="Rolls exploration dice, sets the wyrdstone total, and records doubles or better."
+        helperText={`Defaults to ${standardDice.total} standard exploration dice; edit it here for scenario or campaign modifiers.`}
         onLookup={onLookup}
         onUseResult={applyExplorationRoll}
       />
       <div className="button-row">
-        <button disabled={draft.exploration.diceValues.length >= 6} onClick={() => {
-          const diceValues = [...draft.exploration.diceValues, rollD6()].slice(0, 6);
+        <button disabled={draft.exploration.diceValues.length >= 7} onClick={() => {
+          const diceValues = [...draft.exploration.diceValues, rollD6()].slice(0, 7);
           setDiceInput(diceValues.join(", "));
           updateExploration({ diceValues });
         }}>
@@ -6990,6 +7118,34 @@ function outOfActionCountForBattle(member: RosterMember, battleState?: BattleMem
   return battleState.status === "out_of_action" ? 1 : 0;
 }
 
+function battleStatusCountsForRoster(members: RosterMember[], battleState: BattleState): Record<BattleStatus, number> {
+  const totals: Record<BattleStatus, number> = {
+    active: 0,
+    hidden: 0,
+    knocked_down: 0,
+    stunned: 0,
+    out_of_action: 0
+  };
+
+  for (const member of members) {
+    const state = battleState.members[member.id] ?? defaultBattleMemberState(member);
+    if (member.kind === "henchman_group") {
+      const models = henchmanModelsForMember(member);
+      if (models.length > 0) {
+        for (const model of models) {
+          totals[modelStatusForBattle(model, state)] += 1;
+        }
+        continue;
+      }
+      totals[state.status] += memberModelCount(member);
+      continue;
+    }
+    totals[state.status] += 1;
+  }
+
+  return totals;
+}
+
 function memberHasOutOfAction(member: RosterMember, battleState?: BattleMemberState) {
   return outOfActionCountForBattle(member, battleState) > 0;
 }
@@ -7012,6 +7168,22 @@ function countRosterFighters(members: RosterMember[]) {
 
 function countIncomeWarriors(roster: Roster) {
   return Math.max(1, countRosterFighters(activeWarbandRosterMembers(roster)));
+}
+
+function standardExplorationDiceBreakdown(roster: Roster, draft: AfterBattleDraft) {
+  const battleState = ensureBattleState(roster, draft.battleStateSnapshot);
+  const survivingHeroes = activeWarbandRosterMembers(roster).filter((member) => {
+    if (member.kind !== "hero") return false;
+    const state = battleState.members[member.id] ?? defaultBattleMemberState(member);
+    return state.status !== "out_of_action";
+  }).length;
+  const winBonus = draft.battleResult.result === "win" ? 1 : 0;
+
+  return {
+    survivingHeroes,
+    winBonus,
+    total: Math.max(0, Math.min(7, survivingHeroes + winBonus))
+  };
 }
 
 function calculateWyrdstoneSaleIncome(wyrdstoneSold: number, warriorCount: number) {
