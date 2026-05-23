@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Coins,
   Copy,
+  Crosshair,
   Dices,
   Download,
   Edit3,
@@ -42,6 +43,22 @@ import {
   getPendingAdvances,
   validateRoster
 } from "./rules/engine";
+import {
+  buildRollAssistAttacker,
+  calculateCloseCombatRoll,
+  calculateShootingRoll,
+  type RollAssistArmourSave,
+  type RollAssistAttackProfile,
+  type RollAssistAttacker,
+  type RollAssistCloseCombatTarget,
+  type RollAssistEnemyToughness,
+  type RollAssistEnemyWs,
+  type RollAssistMode,
+  type RollAssistRangeBand,
+  type RollAssistResult,
+  type RollAssistShootingTarget,
+  type RollAssistTargetState
+} from "./rules/rollAssist";
 import { rosterSchema } from "./rules/schemas";
 import { GameSchedulerPage } from "./scheduler/GameSchedulerPage";
 import {
@@ -119,6 +136,27 @@ type BattleState = {
   updatedAt: string;
   members: Record<string, BattleMemberState>;
 };
+type RollAssistShootingContextState = {
+  toughness: RollAssistEnemyToughness;
+  armourSave: RollAssistArmourSave;
+  cover: boolean;
+  range: RollAssistRangeBand;
+  shooterMoved: boolean;
+  largeTarget: boolean;
+};
+type RollAssistRecentTarget =
+  | {
+      key: string;
+      mode: "closeCombat";
+      label: string;
+      profile: RollAssistCloseCombatTarget;
+    }
+  | {
+      key: string;
+      mode: "shooting";
+      label: string;
+      profile: RollAssistShootingContextState;
+    };
 type BattleResult = "win" | "loss" | "draw" | "routed" | "wiped-out" | "other";
 type AfterBattleDraft = {
   id: string;
@@ -1930,9 +1968,13 @@ function PlayModeView({
   const [showDiceTools, setShowDiceTools] = useState(false);
   const [rulesQuery, setRulesQuery] = useState("");
   const [recentRuleIds, setRecentRuleIds] = useState<string[]>(() => readRecentRuleIds());
+  const [recentRollAssistTargets, setRecentRollAssistTargets] = useState<RollAssistRecentTarget[]>(
+    () => readRecentRollAssistTargets(roster.id)
+  );
 
   useEffect(() => {
     setBattleState(readBattleState(roster));
+    setRecentRollAssistTargets(readRecentRollAssistTargets(roster.id));
   }, [roster.id]);
 
   useEffect(() => {
@@ -1966,7 +2008,9 @@ function PlayModeView({
     if (!window.confirm("Reset temporary battle state for this warband? This will not change the saved roster.")) return;
     const next = createBattleState(roster);
     writeBattleState(next);
+    resetRollAssistTargetsStorage(roster.id);
     setBattleState(next);
+    setRecentRollAssistTargets([]);
   }
 
   function openRule(record: RuleLookupRecord) {
@@ -1975,6 +2019,15 @@ function PlayModeView({
     setRecentRuleIds(nextRecent);
     writeRecentRuleIds(nextRecent);
     onLookup({ type: "rule", item: resolvedRecord });
+  }
+
+  function rememberRollAssistTarget(target: RollAssistRecentTarget) {
+    setRecentRollAssistTargets((current) => {
+      const next = mergeRecentRollAssistTargets(current, target);
+      if (next === current) return current;
+      writeRecentRollAssistTargets(roster.id, next);
+      return next;
+    });
   }
 
   const playableMembers = roster.members.filter((member) => member.status !== "dead" && member.status !== "retired");
@@ -2107,6 +2160,8 @@ function PlayModeView({
             battleState={battleState.members[member.id] ?? defaultBattleMemberState(member)}
             onBattleChange={(patch) => updateBattleMember(member, patch)}
             onOpenRule={openRule}
+            recentRollAssistTargets={recentRollAssistTargets}
+            onRememberRollAssistTarget={rememberRollAssistTarget}
           />
         ))}
       </div>
@@ -2456,16 +2511,21 @@ function FighterCard({
   member,
   battleState,
   onBattleChange,
-  onOpenRule
+  onOpenRule,
+  recentRollAssistTargets,
+  onRememberRollAssistTarget
 }: {
   roster: Roster;
   member: RosterMember;
   battleState: BattleMemberState;
   onBattleChange: (patch: Partial<BattleMemberState>) => void;
   onOpenRule: (record: RuleLookupRecord) => void;
+  recentRollAssistTargets: RollAssistRecentTarget[];
+  onRememberRollAssistTarget: (target: RollAssistRecentTarget) => void;
 }) {
   const fighterType = rulesDb.fighterTypes.find((item) => item.id === member.fighterTypeId)!;
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [rollAssistOpen, setRollAssistOpen] = useState(false);
   const equipment = member.equipment
     .map((itemId) => rulesDb.equipmentItems.find((item) => item.id === itemId))
     .filter((item): item is EquipmentItem => Boolean(item));
@@ -2501,6 +2561,20 @@ function FighterCard({
       ? "Hired sword"
       : "Hero";
   const displayedWounds = Math.min(battleState.currentWounds, maxWounds);
+  const rollAssistAttacker = useMemo(() => buildRollAssistAttacker({
+    name: member.displayName || fighterType.name,
+    profile: {
+      WS: member.currentProfile.WS,
+      BS: member.currentProfile.BS,
+      S: member.currentProfile.S,
+      W: member.currentProfile.W,
+      A: member.currentProfile.A
+    },
+    currentWounds: displayedWounds,
+    equipment,
+    skills,
+    specialRules
+  }), [displayedWounds, equipment, fighterType.name, member.currentProfile, member.displayName, skills, specialRules]);
   const [isXpPickerOpen, setIsXpPickerOpen] = useState(false);
   const xpReasonMenuId = `battle-xp-reasons-${member.id}`;
 
@@ -2591,6 +2665,27 @@ function FighterCard({
         </section>
       </div>
 
+      <div className="fighter-card-actions">
+        <button
+          aria-expanded={rollAssistOpen}
+          className={`roll-assist-toggle-button ${rollAssistOpen ? "active" : ""}`}
+          onClick={() => setRollAssistOpen((open) => !open)}
+          type="button"
+        >
+          <Crosshair aria-hidden />
+          Roll Assist
+        </button>
+      </div>
+
+      {rollAssistOpen && (
+        <RollAssistPanel
+          attacker={rollAssistAttacker}
+          recentTargets={recentRollAssistTargets}
+          onRememberTarget={onRememberRollAssistTarget}
+          onClose={() => setRollAssistOpen(false)}
+        />
+      )}
+
       <StatGrid profile={member.currentProfile} />
 
       {member.kind === "henchman_group" && henchmanModels.length > 0 && (
@@ -2664,6 +2759,378 @@ function FighterCard({
         </div>
       )}
     </article>
+  );
+}
+
+function RollAssistPanel({
+  attacker,
+  recentTargets,
+  onRememberTarget,
+  onClose
+}: {
+  attacker: RollAssistAttacker;
+  recentTargets: RollAssistRecentTarget[];
+  onRememberTarget: (target: RollAssistRecentTarget) => void;
+  onClose: () => void;
+}) {
+  const [mode, setMode] = useState<RollAssistMode>("closeCombat");
+  const [selectedCloseWeaponId, setSelectedCloseWeaponId] = useState(attacker.closeCombatProfiles[0]?.id ?? "default-close-combat");
+  const [selectedShootingWeaponId, setSelectedShootingWeaponId] = useState(attacker.shootingProfiles[0]?.id ?? "");
+  const [closeTarget, setCloseTarget] = useState<RollAssistCloseCombatTarget>({
+    ws: 3,
+    toughness: 3,
+    armourSave: null,
+    state: "standing"
+  });
+  const [shootingTarget, setShootingTarget] = useState<RollAssistShootingContextState>({
+    toughness: 3,
+    armourSave: null,
+    cover: false,
+    range: "short",
+    shooterMoved: false,
+    largeTarget: false
+  });
+  const [closeDirty, setCloseDirty] = useState(false);
+  const [shootingDirty, setShootingDirty] = useState(false);
+
+  useEffect(() => {
+    if (!attacker.closeCombatProfiles.some((profile) => profile.id === selectedCloseWeaponId)) {
+      setSelectedCloseWeaponId(attacker.closeCombatProfiles[0]?.id ?? "default-close-combat");
+    }
+  }, [attacker.closeCombatProfiles, selectedCloseWeaponId]);
+
+  useEffect(() => {
+    if (!attacker.shootingProfiles.some((profile) => profile.id === selectedShootingWeaponId)) {
+      setSelectedShootingWeaponId(attacker.shootingProfiles[0]?.id ?? "");
+    }
+  }, [attacker.shootingProfiles, selectedShootingWeaponId]);
+
+  const selectedCloseWeapon = attacker.closeCombatProfiles.find((profile) => profile.id === selectedCloseWeaponId) ?? attacker.closeCombatProfiles[0];
+  const selectedShootingWeapon = attacker.shootingProfiles.find((profile) => profile.id === selectedShootingWeaponId) ?? attacker.shootingProfiles[0];
+
+  useEffect(() => {
+    if (selectedShootingWeapon?.supportsLongRange === false && shootingTarget.range === "long") {
+      setShootingTarget((current) => ({ ...current, range: "short" }));
+    }
+  }, [selectedShootingWeapon, shootingTarget.range]);
+
+  const closeResult = useMemo(() => calculateCloseCombatRoll(attacker, closeTarget, {
+    weapon: selectedCloseWeapon
+  }), [attacker, closeTarget, selectedCloseWeapon]);
+
+  const shootingResult = useMemo(() => {
+    if (!selectedShootingWeapon) return undefined;
+    return calculateShootingRoll(attacker, {
+      toughness: shootingTarget.toughness,
+      armourSave: shootingTarget.armourSave
+    }, {
+      weapon: selectedShootingWeapon,
+      cover: shootingTarget.cover,
+      range: selectedShootingWeapon.supportsLongRange ? shootingTarget.range : "short",
+      shooterMoved: shootingTarget.shooterMoved,
+      largeTarget: shootingTarget.largeTarget
+    });
+  }, [attacker, selectedShootingWeapon, shootingTarget]);
+
+  useEffect(() => {
+    if (!closeDirty) return;
+    onRememberTarget(createRecentCloseCombatTarget(closeTarget));
+  }, [closeDirty, closeTarget, onRememberTarget]);
+
+  useEffect(() => {
+    if (!shootingDirty) return;
+    onRememberTarget(createRecentShootingTarget(shootingTarget));
+  }, [onRememberTarget, shootingDirty, shootingTarget]);
+
+  const visibleRecentTargets = recentTargets.filter((target) => target.mode === mode).slice(0, 5);
+
+  return (
+    <section className="roll-assist-panel" aria-label={`${attacker.name} roll assist`}>
+      <div className="roll-assist-header">
+        <div>
+          <strong>Roll Assist</strong>
+          <p>{attacker.name} already brings the stats and gear.</p>
+        </div>
+        <button className="roll-assist-close" onClick={onClose} type="button">Close</button>
+      </div>
+
+      <div className="segmented-control roll-assist-mode" role="tablist" aria-label="Roll assist mode">
+        <button
+          aria-selected={mode === "closeCombat"}
+          className={mode === "closeCombat" ? "active" : ""}
+          onClick={() => setMode("closeCombat")}
+          role="tab"
+          type="button"
+        >
+          <Swords aria-hidden />
+          Close combat
+        </button>
+        <button
+          aria-selected={mode === "shooting"}
+          className={mode === "shooting" ? "active" : ""}
+          onClick={() => setMode("shooting")}
+          role="tab"
+          type="button"
+        >
+          <Crosshair aria-hidden />
+          Shooting
+        </button>
+      </div>
+
+      {visibleRecentTargets.length > 0 && (
+        <section className="roll-assist-recent">
+          <span>Recent targets</span>
+          <div className="chip-list">
+            {visibleRecentTargets.map((target) => (
+              <button
+                className="chip"
+                key={target.key}
+                onClick={() => {
+                  if (target.mode === "closeCombat") {
+                    setMode("closeCombat");
+                    setCloseDirty(true);
+                    setCloseTarget(target.profile);
+                    return;
+                  }
+                  setMode("shooting");
+                  setShootingDirty(true);
+                  setShootingTarget(target.profile);
+                }}
+                type="button"
+              >
+                {target.label}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {mode === "closeCombat" ? (
+        <div className="roll-assist-body">
+          <AssistChipGroup
+            label="Weapon"
+            options={attacker.closeCombatProfiles.map((profile) => ({ value: profile.id, label: profile.name }))}
+            value={selectedCloseWeapon?.id ?? ""}
+            onChange={(value) => setSelectedCloseWeaponId(value)}
+          />
+          <div className="roll-assist-input-grid">
+            <AssistChipGroup
+              label="Enemy WS"
+              options={([1, 2, 3, 4, 5] as RollAssistEnemyWs[]).map((value) => ({ value, label: value === 5 ? "5+" : value.toString() }))}
+              value={closeTarget.ws}
+              onChange={(value) => {
+                setCloseDirty(true);
+                setCloseTarget((current) => ({ ...current, ws: value }));
+              }}
+            />
+            <AssistChipGroup
+              label="Enemy Toughness"
+              options={([2, 3, 4, 5] as RollAssistEnemyToughness[]).map((value) => ({ value, label: value === 5 ? "5+" : value.toString() }))}
+              value={closeTarget.toughness}
+              onChange={(value) => {
+                setCloseDirty(true);
+                setCloseTarget((current) => ({ ...current, toughness: value }));
+              }}
+            />
+            <AssistChipGroup
+              label="Armour save"
+              options={[
+                { value: null, label: "None" },
+                { value: 6 as RollAssistArmourSave, label: "6+" },
+                { value: 5 as RollAssistArmourSave, label: "5+" },
+                { value: 4 as RollAssistArmourSave, label: "4+" }
+              ]}
+              value={closeTarget.armourSave}
+              onChange={(value) => {
+                setCloseDirty(true);
+                setCloseTarget((current) => ({ ...current, armourSave: value }));
+              }}
+            />
+            <AssistChipGroup
+              label="Target state"
+              options={[
+                { value: "standing" as RollAssistTargetState, label: "Standing" },
+                { value: "knocked_down" as RollAssistTargetState, label: "Knocked Down" },
+                { value: "stunned" as RollAssistTargetState, label: "Stunned" }
+              ]}
+              value={closeTarget.state}
+              onChange={(value) => {
+                setCloseDirty(true);
+                setCloseTarget((current) => ({ ...current, state: value }));
+              }}
+            />
+          </div>
+          <RollAssistSummary result={closeResult} />
+        </div>
+      ) : (
+        <div className="roll-assist-body">
+          {selectedShootingWeapon ? (
+            <>
+              <AssistChipGroup
+                label="Weapon"
+                options={attacker.shootingProfiles.map((profile) => ({ value: profile.id, label: profile.name }))}
+                value={selectedShootingWeapon.id}
+                onChange={(value) => setSelectedShootingWeaponId(value)}
+              />
+              <div className="roll-assist-input-grid">
+                <AssistChipGroup
+                  label="Enemy Toughness"
+                  options={([2, 3, 4, 5] as RollAssistEnemyToughness[]).map((value) => ({ value, label: value === 5 ? "5+" : value.toString() }))}
+                  value={shootingTarget.toughness}
+                  onChange={(value) => {
+                    setShootingDirty(true);
+                    setShootingTarget((current) => ({ ...current, toughness: value }));
+                  }}
+                />
+                <AssistChipGroup
+                  label="Armour save"
+                  options={[
+                    { value: null, label: "None" },
+                    { value: 6 as RollAssistArmourSave, label: "6+" },
+                    { value: 5 as RollAssistArmourSave, label: "5+" },
+                    { value: 4 as RollAssistArmourSave, label: "4+" }
+                  ]}
+                  value={shootingTarget.armourSave}
+                  onChange={(value) => {
+                    setShootingDirty(true);
+                    setShootingTarget((current) => ({ ...current, armourSave: value }));
+                  }}
+                />
+                <AssistChipGroup
+                  label="Cover"
+                  options={[
+                    { value: false, label: "None" },
+                    { value: true, label: "Cover" }
+                  ]}
+                  value={shootingTarget.cover}
+                  onChange={(value) => {
+                    setShootingDirty(true);
+                    setShootingTarget((current) => ({ ...current, cover: value }));
+                  }}
+                />
+                <AssistChipGroup
+                  label="Range"
+                  options={[
+                    { value: "short" as RollAssistRangeBand, label: "Short" },
+                    { value: "long" as RollAssistRangeBand, label: "Long", disabled: !selectedShootingWeapon.supportsLongRange }
+                  ]}
+                  value={shootingTarget.range}
+                  onChange={(value) => {
+                    setShootingDirty(true);
+                    setShootingTarget((current) => ({ ...current, range: value }));
+                  }}
+                />
+                <AssistChipGroup
+                  label="Shooter moved"
+                  options={[
+                    { value: false, label: "No" },
+                    { value: true, label: "Yes" }
+                  ]}
+                  value={shootingTarget.shooterMoved}
+                  onChange={(value) => {
+                    setShootingDirty(true);
+                    setShootingTarget((current) => ({ ...current, shooterMoved: value }));
+                  }}
+                />
+                <AssistChipGroup
+                  label="Large target"
+                  options={[
+                    { value: false, label: "No" },
+                    { value: true, label: "Yes" }
+                  ]}
+                  value={shootingTarget.largeTarget}
+                  onChange={(value) => {
+                    setShootingDirty(true);
+                    setShootingTarget((current) => ({ ...current, largeTarget: value }));
+                  }}
+                />
+              </div>
+              {shootingResult && <RollAssistSummary result={shootingResult} />}
+            </>
+          ) : (
+            <div className="empty-state">No missile weapon is equipped on this warrior.</div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function RollAssistSummary({ result }: { result: RollAssistResult }) {
+  return (
+    <section className="roll-assist-summary">
+      <div className="roll-assist-summary-header">
+        <strong>{result.weapon.name}</strong>
+        <span>{result.weapon.strength >= 0 ? `S${result.weapon.strength}` : result.weapon.name}</span>
+      </div>
+      <div className="roll-assist-result-grid" role="list" aria-label="Roll assist result summary">
+        <div role="listitem">
+          <span>Hit</span>
+          <strong>{formatHitTarget(result.hitTarget)}</strong>
+        </div>
+        <div role="listitem">
+          <span>Wound</span>
+          <strong>{result.woundTarget}+</strong>
+        </div>
+        <div role="listitem">
+          <span>Save</span>
+          <strong>{result.armourSaveTarget === null ? "No save" : `${result.armourSaveTarget}+`}</strong>
+        </div>
+      </div>
+      <p className="roll-assist-reminder">{result.injuryReminder}</p>
+      <details className="roll-assist-why">
+        <summary>Why?</summary>
+        <div>
+          {result.modifiers.length > 0 && (
+            <div className="lookup-tags roll-assist-modifiers">
+              {result.modifiers.map((modifier) => (
+                <span className="pill" key={`${modifier.label}-${modifier.value}`}>
+                  {modifier.value > 0 ? "+" : ""}
+                  {modifier.value} {modifier.label}
+                </span>
+              ))}
+            </div>
+          )}
+          <ul>
+            {result.explanation.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      </details>
+    </section>
+  );
+}
+
+function AssistChipGroup<T extends string | number | boolean | null>({
+  label,
+  options,
+  value,
+  onChange
+}: {
+  label: string;
+  options: Array<{ value: T; label: string; disabled?: boolean }>;
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <section className="roll-assist-chip-group">
+      <span>{label}</span>
+      <div className="roll-assist-chip-grid">
+        {options.map((option) => (
+          <button
+            aria-pressed={value === option.value}
+            className={value === option.value ? "selected" : ""}
+            disabled={option.disabled}
+            key={`${label}-${String(option.value)}`}
+            onClick={() => onChange(option.value)}
+            type="button"
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -7046,6 +7513,31 @@ function writeRecentRuleIds(ids: string[]) {
   localStorage.setItem("mordheim.recentRules", JSON.stringify(ids));
 }
 
+function readRecentRollAssistTargets(rosterId: string): RollAssistRecentTarget[] {
+  try {
+    return JSON.parse(localStorage.getItem(rollAssistTargetsKey(rosterId)) ?? "[]") as RollAssistRecentTarget[];
+  } catch {
+    return [];
+  }
+}
+
+function writeRecentRollAssistTargets(rosterId: string, targets: RollAssistRecentTarget[]) {
+  localStorage.setItem(rollAssistTargetsKey(rosterId), JSON.stringify(targets));
+}
+
+function resetRollAssistTargetsStorage(rosterId: string) {
+  localStorage.removeItem(rollAssistTargetsKey(rosterId));
+}
+
+function rollAssistTargetsKey(rosterId: string) {
+  return `mordheim.rollAssistTargets.${rosterId}`;
+}
+
+function mergeRecentRollAssistTargets(current: RollAssistRecentTarget[], target: RollAssistRecentTarget) {
+  if (current[0]?.key === target.key) return current;
+  return [target, ...current.filter((entry) => entry.key !== target.key)].slice(0, 8);
+}
+
 function maxBattleWounds(member: RosterMember) {
   return Math.max(1, member.currentProfile.W * memberModelCount(member));
 }
@@ -8316,6 +8808,54 @@ function createRosterDraft(warbandTypeId: string): Roster {
 
 function currentWarband(roster: Roster) {
   return rulesDb.warbandTypes.find((warband) => warband.id === roster.warbandTypeId);
+}
+
+function createRecentCloseCombatTarget(profile: RollAssistCloseCombatTarget): RollAssistRecentTarget {
+  const label = [
+    `WS${formatBracketLabel(profile.ws)}`,
+    `T${formatBracketLabel(profile.toughness)}`,
+    formatArmourSaveLabel(profile.armourSave),
+    profile.state === "standing" ? "" : titleCase(profile.state.replaceAll("_", " "))
+  ].filter(Boolean).join(" · ");
+  return {
+    key: `close:${profile.ws}:${profile.toughness}:${profile.armourSave ?? "none"}:${profile.state}`,
+    mode: "closeCombat",
+    label,
+    profile
+  };
+}
+
+function createRecentShootingTarget(profile: RollAssistShootingContextState): RollAssistRecentTarget {
+  const label = [
+    `T${formatBracketLabel(profile.toughness)}`,
+    formatArmourSaveLabel(profile.armourSave),
+    profile.cover ? "Cover" : "",
+    profile.range === "long" ? "Long" : "",
+    profile.shooterMoved ? "Moved" : "",
+    profile.largeTarget ? "Large" : ""
+  ].filter(Boolean).join(" · ");
+  return {
+    key: `shoot:${profile.toughness}:${profile.armourSave ?? "none"}:${profile.cover ? 1 : 0}:${profile.range}:${profile.shooterMoved ? 1 : 0}:${profile.largeTarget ? 1 : 0}`,
+    mode: "shooting",
+    label,
+    profile
+  };
+}
+
+function formatBracketLabel(value: number) {
+  return value >= 5 ? "5+" : value.toString();
+}
+
+function formatArmourSaveLabel(value: RollAssistArmourSave) {
+  return value === null ? "None" : `${value}+`;
+}
+
+function formatHitTarget(value: RollAssistResult["hitTarget"]) {
+  return value === "auto" ? "Auto" : `${value}+`;
+}
+
+function titleCase(value: string) {
+  return value.replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function campaignLogEntry(

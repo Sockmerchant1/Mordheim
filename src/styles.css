@@ -2626,6 +2626,7 @@ button.blocked,
 }
 
 .play-fighter-card {
+  align-content: start;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.06)),
     var(--paper-grain),
@@ -2724,14 +2725,15 @@ button.blocked,
 }
 
 .battle-status-controls {
+  align-self: start;
   background: rgba(255, 250, 240, 0.58);
   border: 1px solid rgba(107, 84, 51, 0.28);
   border-radius: 8px;
   display: grid;
-  flex: 0 1 360px;
   gap: 0.25rem;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   padding: 0.25rem;
+  width: min(100%, 360px);
 }
 
 .battle-status-controls button {
@@ -2909,6 +2911,197 @@ button.blocked,
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.fighter-card-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.roll-assist-toggle-button {
+  justify-content: center;
+  min-height: 36px;
+  padding: 0.4rem 0.7rem;
+}
+
+.roll-assist-toggle-button.active {
+  background:
+    linear-gradient(180deg, rgba(255, 244, 223, 0.14), transparent 42%),
+    linear-gradient(180deg, #28502a, #1f3e21);
+  border-color: #1f3e21;
+  color: #f8f0de;
+}
+
+.roll-assist-panel {
+  background: rgba(255, 250, 240, 0.72);
+  border: 1px solid rgba(107, 84, 51, 0.28);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.8rem;
+}
+
+.roll-assist-header {
+  align-items: start;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.roll-assist-header strong {
+  font-size: 1rem;
+}
+
+.roll-assist-header p {
+  color: var(--muted);
+  margin: 0.2rem 0 0;
+}
+
+.roll-assist-close {
+  min-height: 34px;
+  padding: 0.35rem 0.6rem;
+}
+
+.roll-assist-mode {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.roll-assist-mode button {
+  justify-content: center;
+  min-height: 36px;
+  padding: 0.35rem 0.55rem;
+}
+
+.roll-assist-recent {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.roll-assist-recent > span,
+.roll-assist-chip-group > span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.roll-assist-body {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.roll-assist-input-grid {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.roll-assist-chip-group {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.roll-assist-chip-grid {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.roll-assist-chip-grid button {
+  background: rgba(255, 250, 240, 0.94);
+  border-color: rgba(107, 84, 51, 0.24);
+  justify-content: center;
+  min-height: 36px;
+  min-width: 0;
+  padding: 0.35rem 0.45rem;
+}
+
+.roll-assist-chip-grid button.selected {
+  background: #dfecd9;
+  border-color: rgba(94, 125, 68, 0.32);
+  color: #28502a;
+}
+
+.roll-assist-summary {
+  background: rgba(251, 240, 216, 0.75);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.75rem;
+}
+
+.roll-assist-summary-header {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.roll-assist-summary-header span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.roll-assist-result-grid {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.roll-assist-result-grid > div {
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(107, 84, 51, 0.22);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.12rem;
+  min-height: 62px;
+  padding: 0.5rem;
+}
+
+.roll-assist-result-grid span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.roll-assist-result-grid strong {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.roll-assist-reminder {
+  color: var(--muted);
+  margin: 0;
+}
+
+.roll-assist-why {
+  border-top: 1px solid rgba(107, 84, 51, 0.22);
+  padding-top: 0.55rem;
+}
+
+.roll-assist-why summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.roll-assist-why > div {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.45rem;
+}
+
+.roll-assist-why ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.roll-assist-modifiers {
+  margin: 0;
 }
 
 .battle-xp-reasons button::before {
@@ -3896,10 +4089,29 @@ button.blocked,
   }
 
   .fighter-battle-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .battle-xp-card {
+    grid-column: auto;
+  }
+
+  .roll-assist-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .roll-assist-close {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .roll-assist-chip-grid,
+  .roll-assist-result-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .roll-assist-result-grid > div:last-child {
     grid-column: 1 / -1;
   }
 

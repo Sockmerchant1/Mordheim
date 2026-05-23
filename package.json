@@ -10,7 +10,7 @@
     "dev:client": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build --configLoader runner",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "vitest run tests/rules-engine.test.ts tests/table-dice.test.ts --configLoader runner",
+    "test": "vitest run tests/rules-engine.test.ts tests/table-dice.test.ts tests/roll-assist-rules.test.ts --configLoader runner",
     "test:node": "node scripts/verifyRulesEngine.mjs",
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
