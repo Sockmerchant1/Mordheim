@@ -25,6 +25,7 @@ import witchHunters from "./warbands/witch-hunters.json";
 import warbandIndexSeed from "./warbandIndex.json";
 import { hiredSwordSchema, rulesDbSchema, warbandSeedCollectionSchema, warbandSeedSchema } from "../rules/schemas";
 import type { EquipmentList, FighterType, RulesDb } from "../rules/types";
+import { maximumProfileForFighterType } from "../rules/advancement";
 
 const warbandSeeds = [
   warbandSeedSchema.parse(averlanders),
@@ -47,6 +48,10 @@ const warbandSeeds = [
 ];
 const warbandSeedCollections = [warbandSeedCollectionSchema.parse(mercenaries)];
 const parsedHiredSwords = hiredSwordSchema.array().parse(hiredSwords);
+const warbandRaceById = new Map([
+  ...warbandSeeds.map((seed) => [seed.warbandType.id, seed.warbandType.race] as const),
+  ...warbandSeedCollections.flatMap((seed) => seed.warbandTypes.map((warband) => [warband.id, warband.race] as const))
+]);
 const hiredSwordFighterTypes: FighterType[] = parsedHiredSwords
   .filter((hiredSword) => hiredSword.profile)
   .map((hiredSword) => ({
@@ -61,6 +66,27 @@ const hiredSwordFighterTypes: FighterType[] = parsedHiredSwords
     hireCost: hiredSword.hireFee,
     startingExperience: hiredSword.startingExperience,
     profile: hiredSword.profile!,
+    maximumProfile: hiredSword.maximumProfile ?? maximumProfileForFighterType({
+      id: `hired-sword-${hiredSword.id}`,
+      warbandTypeId: "hired-swords",
+      name: hiredSword.name,
+      category: "hired_sword",
+      minCount: 0,
+      maxCount: 1,
+      groupMinSize: null,
+      groupMaxSize: null,
+      hireCost: hiredSword.hireFee,
+      startingExperience: hiredSword.startingExperience,
+      profile: hiredSword.profile!,
+      equipmentListIds: [],
+      skillCategoryIds: hiredSword.skillCategoryIds,
+      specialRuleIds: hiredSword.specialRuleIds,
+      canGainExperience: true,
+      isLargeCreature: hiredSword.isLargeCreature,
+      ratingOverride: hiredSword.ratingOverride ?? null,
+      validation: { requiredOneOfEquipmentItemIds: [], warbandMaxWarriorsBonus: 0, maxCountPerFighterTypeIds: [] },
+      source: { sourceDocumentId: hiredSword.sourceDocumentId, sourceUrl: hiredSword.sourceUrl, pageRef: hiredSword.pageRef }
+    }, hiredSword.name),
     equipmentListIds: [`hired-sword-${hiredSword.id}-equipment`],
     skillCategoryIds: hiredSword.skillCategoryIds,
     specialRuleIds: hiredSword.specialRuleIds,
@@ -101,7 +127,7 @@ export const rulesDb: RulesDb = rulesDbSchema.parse({
     ...warbandSeeds.flatMap((seed) => seed.fighterTypes),
     ...warbandSeedCollections.flatMap((seed) => seed.fighterTypes),
     ...hiredSwordFighterTypes
-  ],
+  ].map(withMaximumProfile),
   equipmentItems,
   equipmentLists: [
     ...warbandSeeds.flatMap((seed) => seed.equipmentLists),
@@ -114,6 +140,13 @@ export const rulesDb: RulesDb = rulesDbSchema.parse({
   hiredSwords: parsedHiredSwords,
   ruleReferences
 });
+
+function withMaximumProfile(fighterType: FighterType): FighterType {
+  return {
+    ...fighterType,
+    maximumProfile: fighterType.maximumProfile ?? maximumProfileForFighterType(fighterType, warbandRaceById.get(fighterType.warbandTypeId))
+  };
+}
 
 export type WarbandIndexRecord = {
   id: string;

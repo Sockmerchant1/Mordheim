@@ -63,6 +63,18 @@ import {
 import { rosterSchema } from "./rules/schemas";
 import { GameSchedulerPage } from "./scheduler/GameSchedulerPage";
 import {
+  ADVANCE_STATS,
+  advanceResultLabel,
+  advanceTableForMember,
+  applyStatAdvance,
+  legalAdvanceStats,
+  rollAdvance,
+  type AdvanceKind,
+  type AdvanceRoll,
+  type AdvanceStat,
+  type AdvanceTableType
+} from "./rules/advancement";
+import {
   createMultipleSeriousInjuryRoll,
   createSeriousInjuryFollowUpRolls,
   createTableRoll,
@@ -264,6 +276,19 @@ type AfterBattleAdvanceEntry = {
   xpThreshold: number;
   result: string;
   notes?: string;
+  tableType?: AdvanceTableType;
+  rollDice?: [number, number];
+  rollTotal?: number;
+  advanceKind?: AdvanceKind;
+  advanceLabel?: string;
+  statOptions?: AdvanceStat[];
+  forcedStat?: AdvanceStat;
+  followUpRolls?: number[];
+  selectedStat?: AdvanceStat;
+  selectedSkillId?: string;
+  selectedCastableRuleId?: string;
+  duplicateCastableDecision?: "reroll" | "difficulty";
+  ladGotTalentState?: "pending" | "blocked" | "queued";
 };
 type AfterBattleRosterUpdate = {
   id: string;
@@ -3741,7 +3766,7 @@ function AfterBattleView({
             {stepIndex === 3 && <ExplorationStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
             {stepIndex === 4 && <IncomeStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
             {stepIndex === 5 && <TradingStep draft={draft} roster={roster} onChange={updateDraft} />}
-            {stepIndex === 6 && <AdvancesStep draft={draft} onChange={updateDraft} />}
+            {stepIndex === 6 && <AdvancesStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
             {stepIndex === 7 && <RosterUpdatesStep draft={draft} roster={roster} onChange={updateDraft} />}
             {stepIndex === 8 && (
               <ReviewApplyStep
@@ -5210,15 +5235,180 @@ function TradingStep({
 
 function AdvancesStep({
   draft,
-  onChange
+  roster,
+  onChange,
+  onLookup
 }: {
   draft: AfterBattleDraft;
+  roster: Roster;
   onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
+  onLookup: (item: LookupItem) => void;
 }) {
   function updateAdvance(advanceId: string, patch: Partial<AfterBattleAdvanceEntry>) {
     onChange((current) => ({
       ...current,
       advances: current.advances.map((entry) => (entry.id === advanceId ? { ...entry, ...patch } : entry))
+    }));
+  }
+
+  function memberForAdvance(advance: AfterBattleAdvanceEntry) {
+    return roster.members.find((member) => member.id === advance.fighterId);
+  }
+
+  function fighterTypeForAdvance(advance: AfterBattleAdvanceEntry) {
+    const member = memberForAdvance(advance);
+    return member ? fighterTypeForMember(member) : undefined;
+  }
+
+  function rollAdvanceForEntry(advance: AfterBattleAdvanceEntry) {
+    const member = memberForAdvance(advance);
+    const fighterType = fighterTypeForAdvance(advance);
+    if (!member || !fighterType) return;
+    const table = advanceTableForMember(member);
+    const maximumProfile = fighterType.maximumProfile;
+    const maxHeroes = currentWarband(roster)?.maxHeroes ?? 6;
+    const activeHeroes = activeWarbandRosterMembers(roster).filter((item) => item.kind === "hero").length;
+    const rerolled: string[] = [];
+
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const roll = rollAdvance(table);
+      if (roll.kind === "lad" && activeHeroes >= maxHeroes) {
+        rerolled.push(`${roll.dice.join("+")}=${roll.total} Lad's Got Talent (max Heroes)`);
+        continue;
+      }
+      if (roll.kind === "stat") {
+        if (!maximumProfile) {
+          updateAdvance(advance.id, advancePatchForRoll(roll, {
+            result: "",
+            notes: appendUniqueNote(advance.notes, "Maximum profile data is needed before this characteristic advance can be applied.")
+          }));
+          return;
+        }
+        const legalStats = legalAdvanceStats(member, fighterType, maximumProfile, roll.statOptions.length ? roll.statOptions : ADVANCE_STATS);
+        const fallbackStats = legalAdvanceStats(member, fighterType, maximumProfile);
+        const forcedStat = roll.forcedStat && legalStats.includes(roll.forcedStat) ? roll.forcedStat : undefined;
+        const pairedFallback = roll.forcedStat ? legalStats.find((stat) => stat !== roll.forcedStat) : undefined;
+        const automaticStat = forcedStat ?? pairedFallback ?? (legalStats.length === 1 ? legalStats[0] : undefined);
+        if (!automaticStat && legalStats.length === 0 && fallbackStats.length === 0) {
+          rerolled.push(`${roll.dice.join("+")}=${roll.total} ${roll.label} (no legal stat)`);
+          continue;
+        }
+        const selectedStat = automaticStat ?? (fallbackStats.length === 1 ? fallbackStats[0] : undefined);
+        updateAdvance(advance.id, advancePatchForRoll(roll, {
+          selectedStat,
+          result: selectedStat ? advanceResultLabel(roll, selectedStat) : "",
+          notes: appendUniqueNote(advance.notes, rerollNote(rerolled))
+        }));
+        return;
+      }
+      updateAdvance(advance.id, advancePatchForRoll(roll, {
+        result: roll.kind === "lad" ? "" : "",
+        ladGotTalentState: roll.kind === "lad" ? "pending" : undefined,
+        notes: appendUniqueNote(advance.notes, rerollNote(rerolled))
+      }));
+      return;
+    }
+  }
+
+  function chooseAdvanceStat(advance: AfterBattleAdvanceEntry, stat: AdvanceStat) {
+    const roll = advanceRollFromEntry(advance);
+    if (!roll) return;
+    updateAdvance(advance.id, {
+      selectedStat: stat,
+      result: advanceResultLabel(roll, stat)
+    });
+  }
+
+  function chooseAdvanceSkill(advance: AfterBattleAdvanceEntry, skillId: string) {
+    const skill = rulesDb.skills.find((item) => item.id === skillId);
+    const roll = advanceRollFromEntry(advance);
+    if (!skill || !roll) return;
+    updateAdvance(advance.id, {
+      selectedSkillId: skill.id,
+      selectedCastableRuleId: undefined,
+      duplicateCastableDecision: undefined,
+      result: advanceResultLabel(roll, undefined, skill.name)
+    });
+  }
+
+  function rollCastableAdvance(advance: AfterBattleAdvanceEntry) {
+    const member = memberForAdvance(advance);
+    const roll = advanceRollFromEntry(advance);
+    if (!member || !roll) return;
+    const selectedIds = new Set([
+      ...member.specialRules,
+      ...draft.advances
+        .filter((entry) => entry.id !== advance.id && entry.fighterId === advance.fighterId && entry.duplicateCastableDecision !== "difficulty")
+        .map((entry) => entry.selectedCastableRuleId)
+        .filter((ruleId): ruleId is string => Boolean(ruleId))
+    ]);
+    const step = rollRandomCastableRuleStep(member, roster, selectedIds);
+    if (!step) {
+      updateAdvance(advance.id, {
+        notes: appendUniqueNote(advance.notes, "No legal spell, prayer or ritual table is available for this advance.")
+      });
+      return;
+    }
+    if (step.type === "duplicate") {
+      updateAdvance(advance.id, {
+        selectedCastableRuleId: step.duplicate.rule.id,
+        selectedSkillId: undefined,
+        duplicateCastableDecision: undefined,
+        result: "",
+        notes: appendUniqueNote(advance.notes, duplicateChoiceSummary(step.duplicate))
+      });
+      return;
+    }
+    updateAdvance(advance.id, {
+      selectedCastableRuleId: step.result.rule.id,
+      selectedSkillId: undefined,
+      duplicateCastableDecision: undefined,
+      result: advanceResultLabel(roll, undefined, step.result.rule.name),
+      notes: appendUniqueNote(advance.notes, spellRollSummary(step.result))
+    });
+  }
+
+  function rerollDuplicateCastableAdvance(advance: AfterBattleAdvanceEntry) {
+    const rule = rulesDb.specialRules.find((item) => item.id === advance.selectedCastableRuleId);
+    const rerollingAdvance = {
+      ...advance,
+      selectedCastableRuleId: undefined,
+      duplicateCastableDecision: "reroll" as const,
+      result: "",
+      notes: rule ? appendUniqueNote(advance.notes, `Duplicate spell re-rolled: ${rule.name}.`) : advance.notes
+    };
+    rollCastableAdvance(rerollingAdvance);
+  }
+
+  function keepDuplicateCastableAdvance(advance: AfterBattleAdvanceEntry) {
+    const member = memberForAdvance(advance);
+    const rule = rulesDb.specialRules.find((item) => item.id === advance.selectedCastableRuleId);
+    const roll = advanceRollFromEntry(advance);
+    if (!member || !rule || !roll) return;
+    updateAdvance(advance.id, {
+      duplicateCastableDecision: "difficulty",
+      result: advanceResultLabel(roll, undefined, `${rule.name} difficulty -1`),
+      notes: appendUniqueNote(advance.notes, `Duplicate spell roll kept: ${rule.name}. ${rule.name} difficulty reduced by 1.`)
+    });
+  }
+
+  function queueLadPromotion(advance: AfterBattleAdvanceEntry) {
+    const member = memberForAdvance(advance);
+    if (!member) return;
+    const description = `${member.displayName} rolled Lad's Got Talent at ${advance.xpThreshold} XP. Promote one model to a Hero, choose two eligible skill lists, and roll one Hero advance for the new Hero.`;
+    onChange((current) => ({
+      ...current,
+      advances: current.advances.map((entry) => entry.id === advance.id
+        ? {
+            ...entry,
+            result: `${advance.rollDice?.join("+") ?? "2D6"}=${advance.rollTotal ?? ""}: Lad's Got Talent - promotion queued`,
+            ladGotTalentState: "queued",
+            notes: appendUniqueNote(entry.notes, description)
+          }
+        : entry),
+      rosterUpdates: current.rosterUpdates.some((entry) => entry.description === description)
+        ? current.rosterUpdates
+        : [...current.rosterUpdates, { id: id("update"), type: "advance", targetId: member.id, description }]
     }));
   }
 
@@ -5230,28 +5420,190 @@ function AdvancesStep({
       ) : (
         <div className="advance-grid">
           {draft.advances.map((advance) => (
-            <article className="advance-panel" key={advance.id}>
-              <strong>{advance.fighterName}</strong>
-              <p>XP threshold reached: {advance.xpThreshold}</p>
-              <label>
-                <span>Advance result</span>
-                <select value={advance.result} onChange={(event) => updateAdvance(advance.id, { result: event.target.value })}>
-                  <option value="">Select result</option>
-                  {ADVANCE_RESULTS.map((result) => (
-                    <option key={result}>{result}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Notes</span>
-                <input value={advance.notes ?? ""} onChange={(event) => updateAdvance(advance.id, { notes: event.target.value })} />
-              </label>
-            </article>
+            <AdvanceResolver
+              advance={advance}
+              fighterType={fighterTypeForAdvance(advance)}
+              key={advance.id}
+              member={memberForAdvance(advance)}
+              roster={roster}
+              onChooseSkill={chooseAdvanceSkill}
+              onChooseStat={chooseAdvanceStat}
+              onKeepDuplicateCastable={keepDuplicateCastableAdvance}
+              onLookup={onLookup}
+              onQueueLadPromotion={queueLadPromotion}
+              onRerollDuplicateCastable={rerollDuplicateCastableAdvance}
+              onRoll={rollAdvanceForEntry}
+              onRollCastable={rollCastableAdvance}
+              onUpdate={updateAdvance}
+            />
           ))}
         </div>
       )}
     </section>
   );
+}
+
+function AdvanceResolver({
+  advance,
+  member,
+  fighterType,
+  roster,
+  onChooseSkill,
+  onChooseStat,
+  onKeepDuplicateCastable,
+  onLookup,
+  onQueueLadPromotion,
+  onRerollDuplicateCastable,
+  onRoll,
+  onRollCastable,
+  onUpdate
+}: {
+  advance: AfterBattleAdvanceEntry;
+  member?: RosterMember;
+  fighterType?: FighterType;
+  roster: Roster;
+  onChooseSkill: (advance: AfterBattleAdvanceEntry, skillId: string) => void;
+  onChooseStat: (advance: AfterBattleAdvanceEntry, stat: AdvanceStat) => void;
+  onKeepDuplicateCastable: (advance: AfterBattleAdvanceEntry) => void;
+  onLookup: (item: LookupItem) => void;
+  onQueueLadPromotion: (advance: AfterBattleAdvanceEntry) => void;
+  onRerollDuplicateCastable: (advance: AfterBattleAdvanceEntry) => void;
+  onRoll: (advance: AfterBattleAdvanceEntry) => void;
+  onRollCastable: (advance: AfterBattleAdvanceEntry) => void;
+  onUpdate: (advanceId: string, patch: Partial<AfterBattleAdvanceEntry>) => void;
+}) {
+  const roll = advanceRollFromEntry(advance);
+  const legalStats = member && fighterType && roll?.kind === "stat"
+    ? legalAdvanceStats(member, fighterType, fighterType.maximumProfile, roll.statOptions.length ? roll.statOptions : ADVANCE_STATS)
+    : [];
+  const fallbackStats = member && fighterType && roll?.kind === "stat"
+    ? legalAdvanceStats(member, fighterType, fighterType.maximumProfile)
+    : [];
+  const skillOptions = member ? getAllowedSkills(member, roster, rulesDb).filter((option) => option.allowed) : [];
+  const castableOptions = member ? rollableCastableRulesForMember(member, roster) : [];
+  const selectedSkill = rulesDb.skills.find((skill) => skill.id === advance.selectedSkillId);
+  const selectedCastable = rulesDb.specialRules.find((rule) => rule.id === advance.selectedCastableRuleId);
+  const needsSkillChoice = roll?.kind === "skill" && !advance.result;
+  const duplicatePending = needsSkillChoice && selectedCastable && !advance.duplicateCastableDecision;
+  const needsStatChoice = roll?.kind === "stat" && !advance.result;
+
+  return (
+    <article className="advance-panel">
+      <div className="section-heading compact">
+        <div>
+          <strong>{advance.fighterName}</strong>
+          <p>XP threshold reached: {advance.xpThreshold}</p>
+        </div>
+        <span className="pill">{advance.tableType ?? (member ? advanceTableForMember(member) : "advance")}</span>
+      </div>
+      {!roll ? (
+        <button className="primary" disabled={!member || !fighterType} onClick={() => onRoll(advance)}>
+          <Dices aria-hidden /> Roll advance
+        </button>
+      ) : (
+        <div className="exploration-follow-up-result">
+          <strong>{roll.dice.join(" + ")} = {roll.total}: {roll.label}</strong>
+          {roll.followUpDie && <p>Follow-up D6: {roll.followUpDie}</p>}
+          {advance.result && <p>{advance.result}</p>}
+        </div>
+      )}
+      {needsStatChoice && (
+        <div className="button-row">
+          {(legalStats.length ? legalStats : fallbackStats).map((stat) => (
+            <button key={stat} onClick={() => onChooseStat(advance, stat)}>Take +1 {stat}</button>
+          ))}
+          {!fighterType?.maximumProfile && <p className="muted">Maximum profile data is missing for this fighter type.</p>}
+        </div>
+      )}
+      {needsSkillChoice && !duplicatePending && (
+        <div className="skill-picker">
+          <label>
+            <span>Choose skill</span>
+            <select value={advance.selectedSkillId ?? ""} onChange={(event) => event.target.value && onChooseSkill(advance, event.target.value)}>
+              <option value="">Select legal skill</option>
+              {skillOptions.map((option) => (
+                <option value={option.item.id} key={option.item.id}>{option.item.name}</option>
+              ))}
+            </select>
+          </label>
+          {castableOptions.length > 0 && (
+            <button onClick={() => onRollCastable(advance)}>
+              <Dices aria-hidden /> Roll spell / prayer
+            </button>
+          )}
+        </div>
+      )}
+      {duplicatePending && selectedCastable && (
+        <div className="duplicate-spell-choice" role="alert">
+          <div>
+            <strong>Duplicate rolled: {selectedCastable.name}</strong>
+            <p>Choose whether to re-roll it or keep it and reduce that spell's difficulty by 1.</p>
+          </div>
+          <div className="castable-roll-tools">
+            <button onClick={() => onRerollDuplicateCastable(advance)}>Re-roll duplicate</button>
+            <button onClick={() => onKeepDuplicateCastable(advance)}>Lower difficulty by 1</button>
+          </div>
+        </div>
+      )}
+      {roll?.kind === "lad" && !advance.result && (
+        <div className="exploration-result-callout">
+          <strong>Lad's Got Talent</strong>
+          <p>Queue the required promotion details in Roster Updates before final review.</p>
+          <button onClick={() => onQueueLadPromotion(advance)}>Queue promotion update</button>
+        </div>
+      )}
+      <label>
+        <span>Notes</span>
+        <input value={advance.notes ?? ""} onChange={(event) => onUpdate(advance.id, { notes: event.target.value })} />
+      </label>
+      {(selectedSkill || selectedCastable) && (
+        <div className="chip-list">
+          {selectedSkill && <button className="chip" onClick={() => onLookup({ type: "skill", item: selectedSkill })}>{selectedSkill.name}</button>}
+          {selectedCastable && <button className="chip" onClick={() => onLookup({ type: "specialRule", item: selectedCastable })}>{selectedCastable.name}</button>}
+        </div>
+      )}
+    </article>
+  );
+}
+
+function advancePatchForRoll(roll: AdvanceRoll, patch: Partial<AfterBattleAdvanceEntry> = {}): Partial<AfterBattleAdvanceEntry> {
+  return {
+    tableType: roll.table,
+    rollDice: roll.dice,
+    rollTotal: roll.total,
+    advanceKind: roll.kind,
+    advanceLabel: roll.label,
+    statOptions: roll.statOptions,
+    forcedStat: roll.forcedStat,
+    followUpRolls: roll.followUpDie ? [roll.followUpDie] : [],
+    selectedStat: undefined,
+    selectedSkillId: undefined,
+    selectedCastableRuleId: undefined,
+    duplicateCastableDecision: undefined,
+    ladGotTalentState: undefined,
+    result: "",
+    ...patch
+  };
+}
+
+function advanceRollFromEntry(advance: AfterBattleAdvanceEntry): AdvanceRoll | undefined {
+  if (!advance.tableType || !advance.rollDice || typeof advance.rollTotal !== "number" || !advance.advanceKind || !advance.advanceLabel) {
+    return undefined;
+  }
+  return {
+    table: advance.tableType,
+    dice: advance.rollDice,
+    total: advance.rollTotal,
+    kind: advance.advanceKind,
+    label: advance.advanceLabel,
+    statOptions: advance.statOptions ?? [],
+    followUpDie: advance.followUpRolls?.[0],
+    forcedStat: advance.forcedStat
+  };
+}
+
+function rerollNote(rerolled: string[]) {
+  return rerolled.length ? `Automatic re-rolls: ${rerolled.join("; ")}.` : undefined;
 }
 
 function RosterUpdatesStep({
@@ -7311,21 +7663,6 @@ const SIMPLE_SERIOUS_INJURY_FOLLOW_UPS = {
   }
 } as const;
 
-const ADVANCE_RESULTS = [
-  "+1 M",
-  "+1 WS",
-  "+1 BS",
-  "+1 S",
-  "+1 T",
-  "+1 W",
-  "+1 I",
-  "+1 A",
-  "+1 Ld",
-  "New skill",
-  "New spell / prayer",
-  "Other / custom"
-];
-
 function buildRulesLookupRecords(): RuleLookupRecord[] {
   return uniqueById([
     ...(rulesLookupSeed as RuleLookupRecord[]),
@@ -8228,6 +8565,35 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
     }
 
     if (advances.length) {
+      for (const advance of advances) {
+        if (advance.selectedStat) {
+          next = { ...next, currentProfile: applyStatAdvance(next.currentProfile, advance.selectedStat) };
+        }
+        if (advance.selectedSkillId) {
+          next = { ...next, skills: uniquePreserveOrder([...next.skills, advance.selectedSkillId]) };
+        }
+        if (advance.selectedCastableRuleId) {
+          if (advance.duplicateCastableDecision === "difficulty") {
+            const rule = rulesDb.specialRules.find((item) => item.id === advance.selectedCastableRuleId);
+            next = {
+              ...next,
+              castableDifficultyAdjustments: [
+                ...(next.castableDifficultyAdjustments ?? []),
+                {
+                  id: id("castable-difficulty"),
+                  ruleId: advance.selectedCastableRuleId,
+                  modifier: -1,
+                  source: "advance-duplicate-spell-roll",
+                  date: draft.battleResult.datePlayed || now,
+                  notes: rule ? `${rule.name} duplicate advance roll at ${advance.xpThreshold} XP.` : advance.notes
+                }
+              ]
+            };
+          } else {
+            next = { ...next, specialRules: uniquePreserveOrder([...next.specialRules, advance.selectedCastableRuleId]) };
+          }
+        }
+      }
       next = {
         ...next,
         advances: [...next.advances, ...advances.map((advance) => `${advance.xpThreshold}: ${advance.result}`)],
@@ -8237,6 +8603,17 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
             id: advance.id,
             xpAt: advance.xpThreshold,
             result: advance.result,
+            tableType: advance.tableType,
+            rollDice: advance.rollDice,
+            rollTotal: advance.rollTotal,
+            advanceKind: advance.advanceKind,
+            advanceLabel: advance.advanceLabel,
+            followUpRolls: advance.followUpRolls,
+            selectedStat: advance.selectedStat,
+            selectedSkillId: advance.selectedSkillId,
+            selectedCastableRuleId: advance.selectedCastableRuleId,
+            duplicateCastableDecision: advance.duplicateCastableDecision,
+            ladGotTalentState: advance.ladGotTalentState,
             date: draft.battleResult.datePlayed || now,
             notes: advance.notes
           }))
@@ -8361,6 +8738,17 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
             fighterName: entry.fighterName,
             xpThreshold: entry.xpThreshold,
             result: entry.result,
+            tableType: entry.tableType,
+            rollDice: entry.rollDice,
+            rollTotal: entry.rollTotal,
+            advanceKind: entry.advanceKind,
+            advanceLabel: entry.advanceLabel,
+            followUpRolls: entry.followUpRolls,
+            selectedStat: entry.selectedStat,
+            selectedSkillId: entry.selectedSkillId,
+            selectedCastableRuleId: entry.selectedCastableRuleId,
+            duplicateCastableDecision: entry.duplicateCastableDecision,
+            ladGotTalentState: entry.ladGotTalentState,
             notes: entry.notes
           })),
           rosterUpdates: draft.rosterUpdates.map((entry) => ({
@@ -8471,6 +8859,15 @@ function reviewBlockingMessages(draft: AfterBattleDraft, roster: Roster): string
   }
   for (const advance of draft.advances) {
     if (!advance.result.trim()) messages.push(`${advance.fighterName} needs an advance result for ${advance.xpThreshold} XP.`);
+    if (advance.advanceKind === "stat" && !advance.selectedStat) {
+      messages.push(`${advance.fighterName} needs a characteristic selected for the ${advance.xpThreshold} XP advance.`);
+    }
+    if (advance.selectedCastableRuleId && !advance.result.trim()) {
+      messages.push(`${advance.fighterName} needs the duplicate spell roll decision resolved.`);
+    }
+    if (advance.ladGotTalentState === "pending") {
+      messages.push(`${advance.fighterName} needs Lad's Got Talent promotion details queued or the result re-rolled.`);
+    }
   }
   for (const transaction of draft.transactions) {
     if (!transaction.equipmentItemId && !transaction.itemName.trim()) messages.push("A trading entry needs an item name.");
@@ -8803,8 +9200,9 @@ function prependNote(note: string, existing?: string) {
   return [note, existing].filter(Boolean).join(" ");
 }
 
-function appendUniqueNote(existing: string | undefined, note: string) {
+function appendUniqueNote(existing: string | undefined, note?: string) {
   const current = existing?.trim();
+  if (!note?.trim()) return current ?? "";
   if (!current) return note;
   return current.includes(note) ? current : `${current}\n${note}`;
 }
