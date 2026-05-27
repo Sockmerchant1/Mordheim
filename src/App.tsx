@@ -2257,7 +2257,7 @@ function DiceTablesPanel({ onLookup }: { onLookup: (item: LookupItem) => void })
           recordId="table-exploration"
           tableCaption="Number Of Wyrdstone Shards Found"
           diceCount={explorationDiceCount}
-          diceCountOptions={[1, 2, 3, 4, 5, 6, 7]}
+          diceCountOptions={[1, 2, 3, 4, 5, 6]}
           onDiceCountChange={setExplorationDiceCount}
           helperText="Rolls exploration dice, totals wyrdstone and calls out doubles or better."
           onLookup={onLookup}
@@ -4485,6 +4485,11 @@ function ExplorationStep({
   const [extraWyrdstoneInput, setExtraWyrdstoneInput] = useState(1);
   const standardDice = standardExplorationDiceBreakdown(roster, draft);
   const [diceCount, setDiceCount] = useState(() => draft.exploration.diceValues.length || standardDice.total);
+  const standardDiceOptions = useMemo(
+    () => Array.from({ length: standardDice.total + 1 }, (_, index) => index),
+    [standardDice.total]
+  );
+  const rollerDiceCount = Math.min(diceCount, standardDice.total);
   const incomeWarriors = countIncomeWarriors(roster);
 
   useEffect(() => {
@@ -4671,20 +4676,20 @@ function ExplorationStep({
         rollKind="exploration"
         recordId="table-exploration"
         tableCaption="Number Of Wyrdstone Shards Found"
-        diceCount={diceCount}
-        diceCountOptions={[0, 1, 2, 3, 4, 5, 6, 7]}
+        diceCount={rollerDiceCount}
+        diceCountOptions={standardDiceOptions}
         onDiceCountChange={(value) => {
           setIsDiceCountManual(true);
           setDiceCount(value);
         }}
         autoApply
-        helperText={`Defaults to ${standardDice.total} standard exploration dice; edit it here for scenario or campaign modifiers.`}
+        helperText={`${standardDice.total} standard exploration dice from surviving Heroes${standardDice.winBonus ? " and the winner's die" : ""}.`}
         onLookup={onLookup}
         onUseResult={applyExplorationRoll}
       />
       <div className="button-row">
-        <button disabled={draft.exploration.diceValues.length >= 7} onClick={() => {
-          const diceValues = [...draft.exploration.diceValues, rollD6()].slice(0, 7);
+        <button disabled={draft.exploration.diceValues.length >= standardDice.total} onClick={() => {
+          const diceValues = [...draft.exploration.diceValues, rollD6()].slice(0, standardDice.total);
           setDiceInput(diceValues.join(", "));
           updateExploration({ diceValues });
         }}>
@@ -7724,7 +7729,7 @@ function standardExplorationDiceBreakdown(roster: Roster, draft: AfterBattleDraf
   return {
     survivingHeroes,
     winBonus,
-    total: Math.max(0, Math.min(7, survivingHeroes + winBonus))
+    total: Math.max(0, Math.min(6, survivingHeroes + winBonus))
   };
 }
 

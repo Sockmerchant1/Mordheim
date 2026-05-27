@@ -84,18 +84,18 @@ describe("smart table dice helpers", () => {
     expect(summary.combinations[0].effect).toContain("Dagger");
   });
 
-  it("parses comma-separated dice values and keeps a maximum of seven dice", () => {
-    expect(parseDiceValues("1, 2, 6, 7, bad, 3 4 5 6")).toEqual([1, 2, 6, 3, 4, 5, 6]);
+  it("parses comma-separated dice values and keeps a maximum of six dice", () => {
+    expect(parseDiceValues("1, 2, 6, 7, bad, 3 4 5 6")).toEqual([1, 2, 6, 3, 4, 5]);
   });
 
-  it("allows exploration rolls from zero to seven dice", () => {
+  it("allows exploration rolls from zero to six dice", () => {
     const noDiceRoll = createTableRoll(records, { kind: "exploration", diceCount: 0 });
-    const sevenDiceRoll = createTableRoll(records, { kind: "exploration", diceCount: 7 }, () => 0);
+    const sixDiceRoll = createTableRoll(records, { kind: "exploration", diceCount: 7 }, () => 0);
 
     expect(noDiceRoll.diceValues).toEqual([]);
     expect(noDiceRoll.result).toBe("No exploration dice");
-    expect(sevenDiceRoll.diceValues).toHaveLength(7);
-    expect(sevenDiceRoll.specialResults ?? []).toEqual(expect.arrayContaining([expect.stringContaining("Six or more of 1s - The Pit")]));
+    expect(sixDiceRoll.diceValues).toHaveLength(6);
+    expect(sixDiceRoll.specialResults ?? []).toEqual(expect.arrayContaining([expect.stringContaining("Six of a kind of 1s - The Pit")]));
   });
 
   it("resolves Shop exploration follow-up rolls", () => {

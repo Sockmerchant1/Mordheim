@@ -76,7 +76,7 @@ export type ExplorationFollowUpResult = {
 };
 
 const FORBIDDEN_MULTIPLE_INJURY_RESULTS = new Set(["Dead", "Captured", "Multiple Injuries"]);
-const MAX_EXPLORATION_DICE = 7;
+const MAX_EXPLORATION_DICE = 6;
 
 export function rollD6(random = Math.random) {
   return Math.floor(random() * 6) + 1;
