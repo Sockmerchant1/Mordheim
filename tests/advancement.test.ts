@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { rulesDb } from "../src/data/rulesDb";
 import {
   applyStatAdvance,
   canAdvanceStat,
@@ -139,4 +140,36 @@ describe("advancement legality", () => {
     expect(maximum.S).toBe(5);
     expect(maximum.WS).toBe(6);
   });
+
+  it("uses implemented warband racial maximums for Orcs, Black Orcs and Goblins", () => {
+    expect(fighterMaximum("orc-boss")).toMatchObject({ WS: 6, BS: 6, T: 5, Ld: 9 });
+    expect(fighterMaximum("black-orc-boss")).toMatchObject({ WS: 7, S: 5, T: 6, Ld: 9 });
+    expect(fighterMaximum("black-orc-boy")).toMatchObject({ WS: 6, S: 4, T: 5, Ld: 9 });
+    expect(fighterMaximum("goblin-warrior")).toMatchObject({ WS: 5, T: 4, Ld: 7 });
+  });
+
+  it("uses implemented warband racial maximums for Beastmen variants", () => {
+    expect(fighterMaximum("beastman-chief")).toMatchObject({ M: 5, WS: 7, T: 5, W: 4, Ld: 9 });
+    expect(fighterMaximum("ungor")).toMatchObject({ M: 6, WS: 6, T: 4, W: 3, Ld: 7 });
+    expect(fighterMaximum("centigor")).toMatchObject({ M: 9, WS: 7, T: 5, W: 4, Ld: 9 });
+    expect(fighterMaximum("minotaur")).toMatchObject({ BS: 5, S: 5, T: 5, W: 5, I: 6 });
+  });
+
+  it("uses implemented warband racial maximums for Lizardmen and Clan Pestilens", () => {
+    expect(fighterMaximum("skink-priest")).toMatchObject({ M: 6, WS: 5, T: 3, Ld: 8 });
+    expect(fighterMaximum("saurus-totem-warrior")).toMatchObject({ WS: 6, BS: 0, A: 5, Ld: 10 });
+    expect(fighterMaximum("plague-priest")).toMatchObject({ M: 5, T: 5, I: 7, Ld: 7 });
+  });
+
+  it("does not invent advancement caps for warriors that cannot gain experience", () => {
+    const troll = rulesDb.fighterTypes.find((item) => item.id === "troll");
+
+    expect(troll?.maximumProfile).toEqual(troll?.profile);
+  });
 });
+
+function fighterMaximum(fighterTypeId: string): Profile {
+  const fighter = rulesDb.fighterTypes.find((item) => item.id === fighterTypeId);
+  if (!fighter?.maximumProfile) throw new Error(`Missing fighter maximum profile: ${fighterTypeId}`);
+  return fighter.maximumProfile;
+}

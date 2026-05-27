@@ -142,9 +142,10 @@ export const rulesDb: RulesDb = rulesDbSchema.parse({
 });
 
 function withMaximumProfile(fighterType: FighterType): FighterType {
+  const warbandRace = [warbandRaceById.get(fighterType.warbandTypeId), fighterType.warbandTypeId].filter(Boolean).join(" ");
   return {
     ...fighterType,
-    maximumProfile: fighterType.maximumProfile ?? maximumProfileForFighterType(fighterType, warbandRaceById.get(fighterType.warbandTypeId))
+    maximumProfile: fighterType.maximumProfile ?? maximumProfileForFighterType(fighterType, warbandRace)
   };
 }
 

@@ -27,12 +27,16 @@ export const CORE_MAXIMUM_PROFILES: Record<string, Profile> = {
   possessed: { M: 6, WS: 8, BS: 0, S: 6, T: 6, W: 4, I: 7, A: 5, Ld: 10 },
   vampire: { M: 6, WS: 8, BS: 6, S: 7, T: 6, W: 4, I: 9, A: 4, Ld: 10 },
   skaven: { M: 6, WS: 6, BS: 6, S: 4, T: 4, W: 3, I: 7, A: 4, Ld: 7 },
+  skavenPestilens: { M: 5, WS: 6, BS: 6, S: 4, T: 5, W: 3, I: 7, A: 4, Ld: 7 },
   ghoul: { M: 5, WS: 5, BS: 2, S: 4, T: 5, W: 3, I: 5, A: 5, Ld: 7 },
-  orc: { M: 4, WS: 6, BS: 5, S: 4, T: 5, W: 3, I: 5, A: 4, Ld: 9 },
+  orc: { M: 4, WS: 6, BS: 6, S: 4, T: 5, W: 3, I: 5, A: 4, Ld: 9 },
+  blackOrc: { M: 4, WS: 7, BS: 6, S: 5, T: 6, W: 3, I: 5, A: 4, Ld: 9 },
   goblin: { M: 4, WS: 5, BS: 6, S: 4, T: 4, W: 3, I: 6, A: 4, Ld: 7 },
-  skink: { M: 6, WS: 5, BS: 6, S: 4, T: 4, W: 3, I: 7, A: 4, Ld: 8 },
-  saurus: { M: 4, WS: 6, BS: 0, S: 5, T: 5, W: 3, I: 4, A: 4, Ld: 9 },
-  minotaur: { M: 6, WS: 6, BS: 3, S: 6, T: 6, W: 4, I: 5, A: 5, Ld: 9 }
+  skink: { M: 6, WS: 5, BS: 6, S: 4, T: 3, W: 3, I: 7, A: 4, Ld: 8 },
+  saurus: { M: 4, WS: 6, BS: 0, S: 5, T: 5, W: 3, I: 4, A: 5, Ld: 10 },
+  ungor: { M: 6, WS: 6, BS: 6, S: 4, T: 4, W: 3, I: 7, A: 4, Ld: 7 },
+  centigor: { M: 9, WS: 7, BS: 6, S: 4, T: 5, W: 4, I: 6, A: 4, Ld: 9 },
+  minotaur: { M: 6, WS: 6, BS: 5, S: 5, T: 5, W: 5, I: 6, A: 5, Ld: 9 }
 };
 
 export function rollAdvance(table: AdvanceTableType, random = Math.random): AdvanceRoll {
@@ -74,6 +78,7 @@ export function applyStatAdvance(profile: Profile, stat: AdvanceStat): Profile {
 }
 
 export function maximumProfileForFighterType(fighterType: FighterType, warbandRace?: string): Profile {
+  if (!fighterType.canGainExperience) return fighterType.profile;
   const key = maximumProfileKeyForFighterType(fighterType, warbandRace);
   const maximum = CORE_MAXIMUM_PROFILES[key] ?? CORE_MAXIMUM_PROFILES.human;
   return maxProfileValues(maximum, fighterType.profile);
@@ -126,15 +131,19 @@ function maximumProfileKeyForFighterType(fighterType: FighterType, warbandRace =
   if (id.includes("possessed")) return "possessed";
   if (id.includes("halfling")) return "halfling";
   if (id.includes("ogre")) return "ogre";
+  if (name.includes("black orc")) return "blackOrc";
   if (id.includes("minotaur")) return "minotaur";
-  if (id.includes("centigor") || name.includes("beastman") || id.includes("bestigor") || id.includes("ungor") || id.includes("gor")) return "beastman";
+  if (id.includes("centigor")) return "centigor";
+  if (id.includes("ungor")) return "ungor";
+  if (name.includes("beastman") || id.includes("bestigor") || id === "gor" || id.endsWith("-gor")) return "beastman";
   if (id.includes("saurus")) return "saurus";
   if (id.includes("skink")) return "skink";
   if (race.includes("elf")) return "elf";
   if (race.includes("dwarf")) return "dwarf";
+  if (id.includes("pestilens") || race.includes("pestilens")) return "skavenPestilens";
   if (race.includes("skaven")) return "skaven";
-  if (race.includes("goblin") || id.includes("goblin")) return "goblin";
-  if (race.includes("orc") || id.includes("orc")) return "orc";
+  if (id.includes("goblin") || race.includes("goblin") && !race.includes("orc")) return "goblin";
+  if (id.includes("orc") || race.includes("orc")) return "orc";
   return "human";
 }
 
