@@ -57,7 +57,7 @@ export type SchedulerSnapshot = {
   games: ScheduledGame[];
   invitations: GameInvitation[];
   players: PlayerProfile[];
-  backend: "google-sheet" | "local";
+  backend: "supabase" | "google-sheet" | "local";
   warning?: string;
 };
 

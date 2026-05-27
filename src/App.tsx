@@ -24,6 +24,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { deleteRoster, listRosters, saveRoster } from "./api/rosters";
+import { subscribeToSupabaseAuth, supabaseEnabled } from "./lib/supabase";
 import rulesLookupSeed from "./data/rulesLookup.json";
 import { rulesDb, warbandIndex, type WarbandIndexRecord } from "./data/rulesDb";
 import {
@@ -322,10 +323,17 @@ export default function App() {
   const importInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    void listRosters().then((items) => {
+    async function loadRosters() {
+      const items = await listRosters();
       const normalized = uniqueRostersById(items).map(syncRosterHenchmanModels);
       setRosters(normalized);
-      setActiveRosterId(normalized[0]?.id);
+      setActiveRosterId((current) => current && normalized.some((roster) => roster.id === current) ? current : normalized[0]?.id);
+    }
+
+    void loadRosters();
+    if (!supabaseEnabled) return;
+    return subscribeToSupabaseAuth(() => {
+      void loadRosters();
     });
   }, []);
 
@@ -4474,6 +4482,7 @@ function ExplorationStep({
 }) {
   const [diceInput, setDiceInput] = useState(() => draft.exploration.diceValues.join(", "));
   const [isDiceCountManual, setIsDiceCountManual] = useState(false);
+  const [extraWyrdstoneInput, setExtraWyrdstoneInput] = useState(1);
   const standardDice = standardExplorationDiceBreakdown(roster, draft);
   const [diceCount, setDiceCount] = useState(() => draft.exploration.diceValues.length || standardDice.total);
   const incomeWarriors = countIncomeWarriors(roster);
@@ -4508,18 +4517,48 @@ function ExplorationStep({
     }));
   }
 
+  function chartShardCountForDice(diceValues: number[]) {
+    return getExplorationDiceSummary(rulesLookupRecords, diceValues).wyrdstoneShards ?? 0;
+  }
+
+  function totalWithPreservedExtra(current: AfterBattleDraft, chartShardCount: number) {
+    const previousChartShards = chartShardCountForDice(current.exploration.diceValues);
+    const extraShards = Math.max(0, current.exploration.wyrdstoneShards - previousChartShards);
+    return Math.max(0, chartShardCount) + extraShards;
+  }
+
   function useExplorationShardCount(value: number) {
     onChange((current) => ({
       ...current,
       exploration: {
         ...current.exploration,
-        wyrdstoneShards: Math.max(0, value),
+        wyrdstoneShards: totalWithPreservedExtra(current, value),
         notes: appendUniqueNote(current.exploration.notes, `Recorded ${value} wyrdstone from exploration.`)
       },
       treasury: current.treasury.wyrdstoneSold === 0
-        ? treasuryWithWyrdstoneSale(current.treasury, Math.max(0, value), incomeWarriors)
+        ? treasuryWithWyrdstoneSale(current.treasury, totalWithPreservedExtra(current, value), incomeWarriors)
         : current.treasury
     }));
+  }
+
+  function addExtraWyrdstoneFound() {
+    const extraShards = Math.max(0, Math.floor(extraWyrdstoneInput));
+    if (extraShards === 0) return;
+
+    onChange((current) => {
+      const found = current.exploration.wyrdstoneShards + extraShards;
+      return {
+        ...current,
+        exploration: {
+          ...current.exploration,
+          wyrdstoneShards: found,
+          notes: appendUniqueNote(current.exploration.notes, `Added ${extraShards} extra wyrdstone from scenario or campaign rewards.`)
+        },
+        treasury: current.treasury.wyrdstoneSold === 0
+          ? treasuryWithWyrdstoneSale(current.treasury, found, incomeWarriors)
+          : current.treasury
+      };
+    });
   }
 
   function useExplorationSpecialResults(values: string[]) {
@@ -4558,11 +4597,13 @@ function ExplorationStep({
       exploration: {
         ...current.exploration,
         diceValues: roll.diceValues,
-        wyrdstoneShards: roll.wyrdstoneShards ?? current.exploration.wyrdstoneShards,
+        wyrdstoneShards: roll.wyrdstoneShards !== undefined
+          ? totalWithPreservedExtra(current, roll.wyrdstoneShards)
+          : current.exploration.wyrdstoneShards,
         specialResults: roll.specialResults ?? current.exploration.specialResults
       },
       treasury: current.treasury.wyrdstoneSold === 0 && roll.wyrdstoneShards !== undefined
-        ? treasuryWithWyrdstoneSale(current.treasury, roll.wyrdstoneShards, incomeWarriors)
+        ? treasuryWithWyrdstoneSale(current.treasury, totalWithPreservedExtra(current, roll.wyrdstoneShards), incomeWarriors)
         : current.treasury
     }));
   }
@@ -4613,6 +4654,10 @@ function ExplorationStep({
           />
         </label>
         <NumberField label="Wyrdstone found" value={draft.exploration.wyrdstoneShards} onChange={updateWyrdstoneFound} />
+      </div>
+      <div className="button-row">
+        <NumberField label="Extra wyrdstone" value={extraWyrdstoneInput} onChange={setExtraWyrdstoneInput} />
+        <button onClick={addExtraWyrdstoneFound}>Add extra wyrdstone</button>
       </div>
       <ExplorationDiceInsight
         diceValues={draft.exploration.diceValues}
@@ -7642,6 +7687,11 @@ function memberHasOutOfAction(member: RosterMember, battleState?: BattleMemberSt
   return outOfActionCountForBattle(member, battleState) > 0;
 }
 
+function survivedBattleXp(member: RosterMember, battleState?: BattleMemberState) {
+  if (memberModelCount(member) === 0) return 0;
+  return outOfActionCountForBattle(member, battleState) < memberModelCount(member) ? 1 : 0;
+}
+
 function hasMissNextGameReminder(member: RosterMember) {
   return member.injuries.some(isMissNextGameInjury);
 }
@@ -7923,12 +7973,19 @@ function mergeAfterBattleDraftWithBattleState(draft: AfterBattleDraft, roster: R
     if (!fighterType?.canGainExperience) return [];
     return [afterBattleXpEntryForMember(member, fighterType, snapshot)];
   });
+  const memberById = new Map(activeMembers.map((member) => [member.id, member]));
   const xp = [...draft.xp.map((entry) => {
+    const member = memberById.get(entry.fighterId);
     const memberState = snapshot.members[entry.fighterId];
     const previousState = previousSnapshot.members[entry.fighterId];
     if (!memberState) return recalculateXpEntry(entry);
+    const previousSurvived = member ? survivedBattleXp(member, previousState) : entry.survived;
+    const nextSurvived = member ? survivedBattleXp(member, memberState) : entry.survived;
     return recalculateXpEntry({
       ...entry,
+      survived: entry.survived === previousSurvived || (entry.survived === 0 && previousSurvived === 1)
+        ? nextSurvived
+        : entry.survived,
       enemyOoa: !previousState || entry.enemyOoa === previousState.enemyOoaXp ? memberState.enemyOoaXp : entry.enemyOoa,
       objective: !previousState || entry.objective === previousState.objectiveXp ? memberState.objectiveXp : entry.objective,
       other: !previousState || entry.other === previousState.otherXp ? memberState.otherXp : entry.other
@@ -7976,7 +8033,7 @@ function afterBattleXpEntryForMember(member: RosterMember, fighterType: FighterT
     fighterName: member.displayName || fighterType.name,
     startingXp,
     previousXp,
-    survived: 0,
+    survived: survivedBattleXp(member, memberBattleState),
     leaderBonus: 0,
     enemyOoa: memberBattleState.enemyOoaXp,
     objective: memberBattleState.objectiveXp,

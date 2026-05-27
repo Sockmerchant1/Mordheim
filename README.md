@@ -17,7 +17,7 @@ The first fully seeded warbands are **Witch Hunters**, the official **Mercenarie
 
 This app is ready to deploy to Netlify as a static Vite site. Netlify uses `netlify.toml`, runs `npm run build`, and publishes `dist`.
 
-On Netlify, roster data is saved in each player's browser storage. No paid database or server is required, but players should use JSON export/import to back up or move rosters between devices. Players can also use Export PDF from Play Mode or the roster editor, then choose "Save as PDF" in the browser print dialog.
+On Netlify, the app can still run local-first in each player's browser storage, but it now also supports Supabase-backed cloud accounts for shared scheduler data and cross-device roster saves. If Supabase is not configured, players should use JSON export/import to back up or move rosters between devices. Players can also use Export PDF from Play Mode or the roster editor, then choose "Save as PDF" in the browser print dialog.
 
 See `NETLIFY_DEPLOY.md` for step-by-step setup and the GitHub upload checklist.
 
@@ -59,6 +59,17 @@ npm run dev
 ```
 
 The Vite app runs at `http://127.0.0.1:5173` and the local API runs at `http://127.0.0.1:5174`. Roster state is stored in `.local/mordheim.sqlite`; rules data stays in `src/data`.
+
+To enable the Supabase cloud path, set:
+
+```text
+VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+VITE_SCHEDULER_CAMPAIGN_ID=autumn-in-the-city
+VITE_SCHEDULER_CAMPAIGN_NAME=Autumn in the City
+```
+
+See `.env.example` for the current project values.
 
 ## Tests
 
@@ -117,6 +128,8 @@ The Trading step is a post-battle ledger. Canonical equipment records can be bou
 
 The Schedule page is separate from local warband storage. It stores the local player profile in browser storage, then uses a scheduler store abstraction in `src/scheduler/store.ts`.
 
+When Supabase is configured, scheduler login uses Supabase Auth, shared schedule data lives in Postgres tables with RLS, and roster saves are mirrored to the signed-in player's cloud account. If Supabase is not configured, the scheduler can still use the older Apps Script backend or local fallback mode.
+
 Scheduler data is designed to be shared through this Google Sheet:
 
 `https://docs.google.com/spreadsheets/d/1n2hA3dIFmkJ_gha16WkRD0hqNC5Zt9tmiUHwuJsVCkE/edit`
@@ -139,9 +152,9 @@ Suggested Google Sheet tabs are created by the Apps Script if missing:
 - `Invitations`
 - `Players`
 
-Google Calendar invites are also created by Apps Script. The app calls `createGoogleCalendarInvite`, Apps Script creates the event with attendee emails, then writes the event id/link fields back to the `Games` tab. No private Google credentials are stored in the frontend.
+Google Calendar invites are still created by Apps Script. The app calls `createGoogleCalendarInvite`, Apps Script creates the event with attendee emails, then writes the event id/link fields back to the `Games` tab. No private Google credentials are stored in the frontend. The new Supabase backend does not yet replace that calendar automation path.
 
-Scheduler player login is also handled by Apps Script. Players register with a name, optional email and password. The script stores a salted password hash and a session token hash in the `Players` tab; the frontend stores only the returned session token in that player's browser. If the Apps Script endpoint is not configured, login falls back to local test mode and is not shared protection.
+If Supabase is configured, scheduler login uses Supabase Auth email/password accounts and the shared scheduler data lives in Supabase tables. If Supabase is not configured but the Apps Script endpoint is, scheduler login is handled by Apps Script. Players register with a name, optional email and password. The script stores a salted password hash and a session token hash in the `Players` tab; the frontend stores only the returned session token in that player's browser. If neither backend is configured, login falls back to local test mode and is not shared protection.
 
 ## Rules Validation
 

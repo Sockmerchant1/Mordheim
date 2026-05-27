@@ -1,3 +1,5 @@
+import type { Session } from "@supabase/supabase-js";
+import { getSupabaseSession, subscribeToSupabaseAuth, supabase, supabaseEnabled } from "../lib/supabase";
 import type {
   CreateGameInput,
   GameInvitation,
@@ -13,12 +15,54 @@ import type {
 const profileKey = "mordheim.scheduler.playerProfile";
 const localScheduleKey = "mordheim.scheduler.localSnapshot";
 
+type SchedulerBackend = SchedulerSnapshot["backend"];
+
+type SupabaseProfileRow = {
+  id: string;
+  player_name: string;
+  email: string | null;
+  updated_at: string | null;
+};
+
+type SupabaseGameRow = {
+  id: string;
+  campaign_id: string;
+  title: string;
+  date: string;
+  time: string;
+  duration_minutes: number;
+  location_type: ScheduledGame["locationType"];
+  location_name: string;
+  host_user_id: string;
+  host_name: string;
+  max_players: number;
+  notes: string | null;
+  status: SchedulerGameStatus;
+  google_calendar_event_id: string | null;
+  google_calendar_event_url: string | null;
+  google_calendar_invite_created_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type SupabaseInvitationRow = {
+  game_id: string;
+  player_id: string;
+  player_name: string;
+  email: string | null;
+  warband_name: string | null;
+  invite_status: SchedulerInviteStatus;
+  responded_at: string | null;
+};
+
 export const schedulerConfig = {
   campaignId: import.meta.env.VITE_SCHEDULER_CAMPAIGN_ID ?? "autumn-in-the-city",
   campaignName: import.meta.env.VITE_SCHEDULER_CAMPAIGN_NAME ?? "Autumn in the City",
   appsScriptUrl: (import.meta.env.VITE_SCHEDULER_APPS_SCRIPT_URL ?? "").trim(),
   googleSheetId: import.meta.env.VITE_SCHEDULER_GOOGLE_SHEET_ID ?? "1n2hA3dIFmkJ_gha16WkRD0hqNC5Zt9tmiUHwuJsVCkE",
-  googleCalendarId: import.meta.env.VITE_SCHEDULER_GOOGLE_CALENDAR_ID ?? ""
+  googleCalendarId: import.meta.env.VITE_SCHEDULER_GOOGLE_CALENDAR_ID ?? "",
+  supabaseUrl: (import.meta.env.VITE_SUPABASE_URL ?? "").trim(),
+  supabaseEnabled
 };
 
 export function readPlayerProfile(): PlayerProfile | undefined {
@@ -28,6 +72,28 @@ export function readPlayerProfile(): PlayerProfile | undefined {
   } catch {
     return undefined;
   }
+}
+
+export async function loadAuthenticatedPlayerProfile(): Promise<PlayerProfile | undefined> {
+  if (!schedulerConfig.supabaseEnabled || !supabase) return readPlayerProfile();
+  const session = await getSupabaseSession();
+  if (!session?.user) {
+    localStorage.removeItem(profileKey);
+    return undefined;
+  }
+  const profile = await ensureSupabaseProfile(session);
+  await ensureSupabaseCampaignMembership(profile);
+  return savePlayerProfile({
+    ...profile,
+    sessionExpiresAt: session.expires_at ? new Date(session.expires_at * 1000).toISOString() : undefined
+  });
+}
+
+export function subscribeToSchedulerAuth(callback: (profile: PlayerProfile | undefined) => void) {
+  if (!schedulerConfig.supabaseEnabled) return () => {};
+  return subscribeToSupabaseAuth(async () => {
+    callback(await loadAuthenticatedPlayerProfile());
+  });
 }
 
 export function savePlayerProfile(profile: PlayerProfile): PlayerProfile {
@@ -44,6 +110,7 @@ export function savePlayerProfile(profile: PlayerProfile): PlayerProfile {
 
 export function isSchedulerAuthenticated(profile: PlayerProfile | undefined) {
   if (!profile?.playerId || !profile.playerName) return false;
+  if (schedulerConfig.supabaseEnabled) return true;
   if (!schedulerConfig.appsScriptUrl) return true;
   if (!profile.sessionToken || !profile.sessionExpiresAt) return false;
   return new Date(profile.sessionExpiresAt).getTime() > Date.now();
@@ -51,10 +118,35 @@ export function isSchedulerAuthenticated(profile: PlayerProfile | undefined) {
 
 export function logoutPlayer() {
   localStorage.removeItem(profileKey);
+  if (schedulerConfig.supabaseEnabled && supabase) {
+    void supabase.auth.signOut();
+  }
 }
 
 export async function registerPlayer(input: SchedulerAuthInput): Promise<PlayerProfile> {
   validateAuthInput(input);
+  if (schedulerConfig.supabaseEnabled && supabase) {
+    if (!input.email?.trim()) throw new Error("Email is required for cloud accounts.");
+    const { data, error } = await supabase.auth.signUp({
+      email: input.email.trim(),
+      password: input.password,
+      options: {
+        data: {
+          player_name: input.playerName.trim()
+        }
+      }
+    });
+    if (error) throw error;
+    if (!data.session) {
+      throw new Error("Account created. Confirm the email from Supabase, then log in.");
+    }
+    const profile = await ensureSupabaseProfile(data.session, input.playerName.trim());
+    await ensureSupabaseCampaignMembership(profile);
+    return savePlayerProfile({
+      ...profile,
+      sessionExpiresAt: data.session.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : undefined
+    });
+  }
   if (schedulerConfig.appsScriptUrl) {
     const profile = await callSchedulerApi<PlayerProfile>("registerPlayer", {
       campaignId: schedulerConfig.campaignId,
@@ -77,6 +169,22 @@ export async function registerPlayer(input: SchedulerAuthInput): Promise<PlayerP
 
 export async function loginPlayer(input: SchedulerLoginInput): Promise<PlayerProfile> {
   if (!input.playerNameOrEmail.trim() || !input.password) throw new Error("Player name/email and password are required.");
+  if (schedulerConfig.supabaseEnabled && supabase) {
+    const login = input.playerNameOrEmail.trim();
+    if (!login.includes("@")) throw new Error("Use your email address to log in to the cloud account.");
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: login,
+      password: input.password
+    });
+    if (error) throw error;
+    if (!data.session) throw new Error("Login did not return a session.");
+    const profile = await ensureSupabaseProfile(data.session);
+    await ensureSupabaseCampaignMembership(profile);
+    return savePlayerProfile({
+      ...profile,
+      sessionExpiresAt: data.session.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : undefined
+    });
+  }
   if (schedulerConfig.appsScriptUrl) {
     const profile = await callSchedulerApi<PlayerProfile>("loginPlayer", {
       campaignId: schedulerConfig.campaignId,
@@ -97,6 +205,48 @@ export async function loginPlayer(input: SchedulerLoginInput): Promise<PlayerPro
 }
 
 export async function listSchedule(profile?: PlayerProfile): Promise<SchedulerSnapshot> {
+  if (schedulerConfig.supabaseEnabled && supabase) {
+    if (!isSchedulerAuthenticated(profile)) {
+      return {
+        games: [],
+        invitations: [],
+        players: [],
+        backend: "supabase",
+        warning: "Log in to load the shared cloud campaign schedule."
+      };
+    }
+    try {
+      await ensureSupabaseCampaignMembership(profile!);
+      const [gamesResult, playersResult] = await Promise.all([
+        supabase
+          .from("scheduled_games")
+          .select("*")
+          .eq("campaign_id", schedulerConfig.campaignId)
+          .order("date", { ascending: true })
+          .order("time", { ascending: true }),
+        supabase
+          .from("profiles")
+          .select("id, player_name, email, updated_at, campaign_members!inner(campaign_id)")
+          .eq("campaign_members.campaign_id", schedulerConfig.campaignId)
+          .order("player_name", { ascending: true })
+      ]);
+      if (gamesResult.error) throw gamesResult.error;
+      if (playersResult.error) throw playersResult.error;
+      const games = (gamesResult.data ?? []).map(mapSupabaseGame);
+      const gameIds = games.map((game) => game.gameId);
+      const invitations = gameIds.length
+        ? await listSupabaseInvitations(gameIds)
+        : [];
+      const players = rosterPlayersFromRows(playersResult.data ?? []);
+      return normalizeSnapshot({ games, invitations, players, backend: "supabase" });
+    } catch (error) {
+      return {
+        ...readLocalSnapshot(),
+        backend: "local",
+        warning: `Could not load the shared cloud schedule. Showing local fallback data. ${errorMessage(error)}`
+      };
+    }
+  }
   if (schedulerConfig.appsScriptUrl) {
     if (!isSchedulerAuthenticated(profile)) {
       return {
@@ -124,12 +274,28 @@ export async function listSchedule(profile?: PlayerProfile): Promise<SchedulerSn
   return {
     ...readLocalSnapshot(),
     backend: "local",
-    warning: "Google Apps Script endpoint is not configured yet. Schedule changes are stored locally on this device."
+    warning: "Shared scheduler is not configured yet. Schedule changes are stored locally on this device."
   };
 }
 
 export async function upsertPlayer(profile: PlayerProfile): Promise<PlayerProfile> {
   const saved = savePlayerProfile(profile);
+  if (schedulerConfig.supabaseEnabled && supabase) {
+    const session = await getSupabaseSession();
+    if (session?.user.id === saved.playerId) {
+      await supabase
+        .from("profiles")
+        .upsert({
+          id: saved.playerId,
+          player_name: saved.playerName,
+          email: saved.email ?? session.user.email ?? null
+        })
+        .select("id")
+        .single();
+      await ensureSupabaseCampaignMembership(saved);
+    }
+    return saved;
+  }
   if (schedulerConfig.appsScriptUrl) {
     try {
       await callSchedulerApi("upsertPlayer", { campaignId: schedulerConfig.campaignId, player: saved, auth: authFor(saved) });
@@ -183,6 +349,42 @@ export async function createGame(input: CreateGameInput, host: PlayerProfile): P
   ];
   const gameWithStatus = { ...game, status: calculateGameStatus(game, invitations) };
 
+  if (schedulerConfig.supabaseEnabled && supabase) {
+    await ensureSupabaseCampaignMembership(host);
+    const { error: gameError } = await supabase.from("scheduled_games").insert({
+      id: gameWithStatus.gameId,
+      campaign_id: gameWithStatus.campaignId,
+      title: gameWithStatus.title,
+      date: gameWithStatus.date,
+      time: gameWithStatus.time,
+      duration_minutes: gameWithStatus.durationMinutes,
+      location_type: gameWithStatus.locationType,
+      location_name: gameWithStatus.locationName,
+      host_user_id: gameWithStatus.hostPlayerId,
+      host_name: gameWithStatus.hostName,
+      max_players: gameWithStatus.maxPlayers,
+      notes: gameWithStatus.notes,
+      status: gameWithStatus.status,
+      created_at: gameWithStatus.createdAt,
+      updated_at: gameWithStatus.updatedAt
+    });
+    if (gameError) throw gameError;
+    const { error: inviteError } = await supabase.from("game_invitations").upsert(
+      invitations.map((invite) => ({
+        game_id: invite.gameId,
+        player_id: invite.playerId,
+        player_name: invite.playerName,
+        email: invite.email ?? null,
+        warband_name: invite.warbandName ?? null,
+        invite_status: invite.inviteStatus,
+        responded_at: invite.respondedAt ?? null
+      })),
+      { onConflict: "game_id,player_id" }
+    );
+    if (inviteError) throw inviteError;
+    return listSchedule(host);
+  }
+
   if (schedulerConfig.appsScriptUrl) {
     try {
       return normalizeSnapshot(await callSchedulerApi<SchedulerSnapshot>("createGame", {
@@ -201,6 +403,20 @@ export async function createGame(input: CreateGameInput, host: PlayerProfile): P
 }
 
 export async function respondToInvite(gameId: string, player: PlayerProfile, inviteStatus: Exclude<SchedulerInviteStatus, "host">): Promise<SchedulerSnapshot> {
+  if (schedulerConfig.supabaseEnabled && supabase) {
+    const { error } = await supabase
+      .from("game_invitations")
+      .update({
+        invite_status: inviteStatus,
+        responded_at: new Date().toISOString(),
+        email: player.email ?? null
+      })
+      .eq("game_id", gameId)
+      .eq("player_id", player.playerId);
+    if (error) throw error;
+    await syncSupabaseGameStatus(gameId);
+    return listSchedule(player);
+  }
   if (schedulerConfig.appsScriptUrl) {
     try {
       return normalizeSnapshot(await callSchedulerApi<SchedulerSnapshot>("respondToInvite", {
@@ -218,6 +434,14 @@ export async function respondToInvite(gameId: string, player: PlayerProfile, inv
 }
 
 export async function updateGameStatus(gameId: string, status: SchedulerGameStatus): Promise<SchedulerSnapshot> {
+  if (schedulerConfig.supabaseEnabled && supabase) {
+    const { error } = await supabase
+      .from("scheduled_games")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", gameId);
+    if (error) throw error;
+    return listSchedule(readPlayerProfile());
+  }
   if (schedulerConfig.appsScriptUrl) {
     try {
       return normalizeSnapshot(await callSchedulerApi<SchedulerSnapshot>("updateGame", {
@@ -234,6 +458,9 @@ export async function updateGameStatus(gameId: string, status: SchedulerGameStat
 }
 
 export async function createGoogleCalendarInvite(gameId: string): Promise<SchedulerSnapshot> {
+  if (schedulerConfig.supabaseEnabled) {
+    throw new Error("Google Calendar invite creation is not wired for the Supabase backend yet.");
+  }
   if (!schedulerConfig.appsScriptUrl) {
     throw new Error("Google Apps Script endpoint is not configured.");
   }
@@ -276,6 +503,124 @@ async function callSchedulerApi<T>(action: string, payload: Record<string, unkno
   const body = await response.json();
   if (body?.ok === false) throw new Error(body.error ?? "Scheduler API request failed.");
   return (body?.data ?? body) as T;
+}
+
+async function ensureSupabaseProfile(session: Session, preferredName?: string): Promise<PlayerProfile> {
+  if (!supabase) throw new Error("Supabase is not configured.");
+  const fallbackName = preferredName
+    ?? stringValue(session.user.user_metadata.player_name)
+    ?? stringValue(session.user.user_metadata.full_name)
+    ?? session.user.email?.split("@")[0]
+    ?? "Player";
+  const { data, error } = await supabase
+    .from("profiles")
+    .upsert({
+      id: session.user.id,
+      player_name: fallbackName,
+      email: session.user.email ?? null
+    })
+    .select("id, player_name, email, updated_at")
+    .single();
+  if (error) throw error;
+  return mapSupabaseProfile(data);
+}
+
+async function ensureSupabaseCampaignMembership(profile: PlayerProfile) {
+  if (!supabase) return;
+  const { error } = await supabase.from("campaign_members").upsert(
+    {
+      campaign_id: schedulerConfig.campaignId,
+      user_id: profile.playerId,
+      role: "member"
+    },
+    { onConflict: "campaign_id,user_id" }
+  );
+  if (error) throw error;
+}
+
+async function listSupabaseInvitations(gameIds: string[]): Promise<GameInvitation[]> {
+  if (!supabase || !gameIds.length) return [];
+  const { data, error } = await supabase
+    .from("game_invitations")
+    .select("*")
+    .in("game_id", gameIds);
+  if (error) throw error;
+  return (data ?? []).map(mapSupabaseInvitation);
+}
+
+async function syncSupabaseGameStatus(gameId: string) {
+  if (!supabase) return;
+  const [{ data: gameRows, error: gameError }, { data: inviteRows, error: inviteError }] = await Promise.all([
+    supabase.from("scheduled_games").select("*").eq("id", gameId).limit(1),
+    supabase.from("game_invitations").select("*").eq("game_id", gameId)
+  ]);
+  if (gameError) throw gameError;
+  if (inviteError) throw inviteError;
+  const gameRow = gameRows?.[0] as SupabaseGameRow | undefined;
+  if (!gameRow) return;
+  const game = mapSupabaseGame(gameRow);
+  const invitations = (inviteRows ?? []).map((row) => mapSupabaseInvitation(row as SupabaseInvitationRow));
+  const status = calculateGameStatus(game, invitations);
+  if (status !== game.status) {
+    const { error } = await supabase
+      .from("scheduled_games")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", gameId);
+    if (error) throw error;
+  }
+}
+
+function mapSupabaseProfile(row: SupabaseProfileRow): PlayerProfile {
+  return {
+    playerId: row.id,
+    playerName: row.player_name,
+    email: row.email ?? undefined,
+    lastSeenAt: row.updated_at ?? undefined
+  };
+}
+
+function mapSupabaseGame(row: SupabaseGameRow): ScheduledGame {
+  return {
+    gameId: row.id,
+    campaignId: row.campaign_id,
+    title: row.title,
+    date: row.date,
+    time: row.time,
+    durationMinutes: row.duration_minutes,
+    locationType: row.location_type,
+    locationName: row.location_name,
+    hostPlayerId: row.host_user_id,
+    hostName: row.host_name,
+    maxPlayers: row.max_players,
+    notes: row.notes ?? "",
+    status: row.status,
+    googleCalendarEventId: row.google_calendar_event_id ?? undefined,
+    googleCalendarEventUrl: row.google_calendar_event_url ?? undefined,
+    googleCalendarInviteCreatedAt: row.google_calendar_invite_created_at ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function mapSupabaseInvitation(row: SupabaseInvitationRow): GameInvitation {
+  return {
+    gameId: row.game_id,
+    playerId: row.player_id,
+    playerName: row.player_name,
+    email: row.email ?? undefined,
+    warbandName: row.warband_name ?? undefined,
+    inviteStatus: row.invite_status,
+    respondedAt: row.responded_at ?? undefined
+  };
+}
+
+function rosterPlayersFromRows(rows: Array<Record<string, unknown>>) {
+  return rows.map((row) => mapSupabaseProfile({
+    id: String(row.id),
+    player_name: String(row.player_name),
+    email: typeof row.email === "string" ? row.email : null,
+    updated_at: typeof row.updated_at === "string" ? row.updated_at : null
+  }));
 }
 
 function validateGameInput(input: CreateGameInput, host: PlayerProfile) {
@@ -384,9 +729,15 @@ function normalizeSnapshot(snapshot?: Partial<SchedulerSnapshot> | null): Schedu
     games: games.map((game) => ({ ...game, status: calculateGameStatus(game, invitations) })),
     invitations,
     players: current.players ?? [],
-    backend: current.backend ?? (schedulerConfig.appsScriptUrl ? "google-sheet" : "local"),
+    backend: current.backend ?? defaultBackend(),
     warning: current.warning
   };
+}
+
+function defaultBackend(): SchedulerBackend {
+  if (schedulerConfig.supabaseEnabled) return "supabase";
+  if (schedulerConfig.appsScriptUrl) return "google-sheet";
+  return "local";
 }
 
 function upsertPlayerList(existing: PlayerProfile[], players: PlayerProfile[]) {
@@ -423,4 +774,8 @@ function errorMessage(error: unknown) {
 
 function slug(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "player";
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }

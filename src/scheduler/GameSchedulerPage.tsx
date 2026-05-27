@@ -23,12 +23,14 @@ import {
   invitationsForGame,
   isSchedulerAuthenticated,
   listSchedule,
+  loadAuthenticatedPlayerProfile,
   loginPlayer,
   logoutPlayer,
   readPlayerProfile,
   registerPlayer,
   respondToInvite,
   schedulerConfig,
+  subscribeToSchedulerAuth,
   updateGameStatus
 } from "./store";
 import type {
@@ -72,6 +74,12 @@ export function GameSchedulerPage({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const authenticated = isSchedulerAuthenticated(profile);
+
+  useEffect(() => {
+    if (!schedulerConfig.supabaseEnabled) return;
+    void loadAuthenticatedPlayerProfile().then((loaded) => setProfile(loaded));
+    return subscribeToSchedulerAuth((loaded) => setProfile(loaded));
+  }, []);
 
   useEffect(() => {
     if (authenticated) {
@@ -122,7 +130,7 @@ export function GameSchedulerPage({
   function handleLogout() {
     logoutPlayer();
     setProfile(undefined);
-    setSnapshot({ games: [], invitations: [], players: [], backend: schedulerConfig.appsScriptUrl ? "google-sheet" : "local" });
+    setSnapshot({ games: [], invitations: [], players: [], backend: schedulerConfig.supabaseEnabled ? "supabase" : schedulerConfig.appsScriptUrl ? "google-sheet" : "local" });
     setMessage("Logged out.");
   }
 
@@ -361,7 +369,7 @@ export function GameSchedulerPage({
         </div>
       )}
       <p className="muted scheduler-footnote">
-        Shared sheet: {schedulerConfig.googleSheetId}. Backend: {snapshot.backend === "google-sheet" ? "Google Sheet via Apps Script" : "local fallback"}.
+        {schedulerBackendFootnote(snapshot.backend)}
       </p>
     </section>
   );
@@ -413,8 +421,8 @@ function PlayerAuthPanel({
           {mode === "login" ? (
             <div className="form-grid compact-form">
               <label>
-                <span>Player name or email</span>
-                <input value={loginName} onChange={(event) => setLoginName(event.target.value)} placeholder="Paul" />
+                <span>{schedulerConfig.supabaseEnabled ? "Email" : "Player name or email"}</span>
+                <input value={loginName} onChange={(event) => setLoginName(event.target.value)} placeholder={schedulerConfig.supabaseEnabled ? "name@example.com" : "Paul"} />
               </label>
               <label>
                 <span>Password</span>
@@ -431,14 +439,14 @@ function PlayerAuthPanel({
                 <input value={playerName} onChange={(event) => setPlayerName(event.target.value)} placeholder="Paul" />
               </label>
               <label>
-                <span>Email, optional</span>
+                <span>{schedulerConfig.supabaseEnabled ? "Email" : "Email, optional"}</span>
                 <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@example.com" />
               </label>
               <label>
                 <span>Password</span>
                 <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
               </label>
-              <button className="primary" disabled={!playerName.trim() || password.length < 6} onClick={() => onRegister({ playerName, email, password })}>
+              <button className="primary" disabled={!playerName.trim() || password.length < 6 || (schedulerConfig.supabaseEnabled && !email.trim())} onClick={() => onRegister({ playerName, email, password })}>
                 <CheckCircle2 aria-hidden /> Register
               </button>
             </div>
@@ -447,6 +455,16 @@ function PlayerAuthPanel({
       )}
     </section>
   );
+}
+
+function schedulerBackendFootnote(backend: SchedulerSnapshot["backend"]) {
+  if (backend === "supabase") {
+    return `Shared cloud backend: Supabase. Campaign: ${schedulerConfig.campaignName} (${schedulerConfig.campaignId}).`;
+  }
+  if (backend === "google-sheet") {
+    return `Shared sheet: ${schedulerConfig.googleSheetId}. Backend: Google Sheet via Apps Script.`;
+  }
+  return "Backend: local fallback on this device only.";
 }
 
 function GameCreateForm({

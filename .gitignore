@@ -4,5 +4,7 @@ dist/
 .tools/
 .npm-cache/
 .netlify/
+.env.local
+supabase/.temp/
 playwright-report/
 test-results/
