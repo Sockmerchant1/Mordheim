@@ -296,6 +296,78 @@ import {
   validBeastmenRaiders,
   warhoundWithWeapon
 } from "./fixtures/beastmenRosters";
+import {
+  amazonsLustriaNoPriest,
+  amazonsLustriaNoWarriors,
+  amazonsLustriaTwoPriestesses,
+  amazonsLustriaWithWarlock,
+  amazonsMordheimNoPriestess,
+  amazonsMordheimNoWarriors,
+  amazonsMordheimTwoPriestesses,
+  amazonsMordheimWithWarlock,
+  invalidLustriaAmazonSkill,
+  invalidMordheimAmazonSkill,
+  lustriaEagleWithAmazonSkill,
+  lustriaEagleWithConch,
+  lustriaEagleWithRitual,
+  lustriaJaguarWithBuckler,
+  lustriaPiranhaWithConch,
+  lustriaSerpentWithRitual,
+  lustriaWarriorWithStarsword,
+  mordheimChampionWithRitual,
+  mordheimChampionWithSunGauntlet,
+  mordheimPriestessWithRitual,
+  mordheimScoutWithSunGauntlet,
+  mordheimTotemWithQuickShot,
+  mordheimWarriorWithAmulet,
+  tooManyAmazonChampions,
+  tooManyAmazonEagleWarriors,
+  tooManyAmazonJaguarWarriors,
+  tooManyAmazonPiranhaWarriors,
+  tooManyAmazonScouts,
+  tooManyAmazonTotemWarriors,
+  tooManyAmazonsLustriaWarriors,
+  tooManyAmazonsMordheimWarriors,
+  validAmazonsLustria,
+  validAmazonsMordheim
+} from "./fixtures/amazonRosters";
+import {
+  crewWithSwivelGun,
+  gunnerWithAmmoNoSwivelGun,
+  gunnerWithSwivelGunBallShot,
+  invalidPirateSkill,
+  pirateCaptainWithSeaShanty,
+  piratesNoCaptain,
+  piratesTwoCaptains,
+  swabbieWithExperience,
+  swabbieWithPistol,
+  tooManyBoatswains,
+  tooManyCabinBoys,
+  tooManyPirateGunners,
+  tooManyPirateMates,
+  tooManyPiratesWarriors,
+  tooManySwabbiesForFreeCrew,
+  validPirates
+} from "./fixtures/pirateRosters";
+import {
+  gunnerySchoolNoOfficer,
+  gunnerySchoolTwoOfficers,
+  invalidNulnSkill,
+  nulnInstructorWithMortar,
+  nulnMarksmanWithDuellingPistol,
+  nulnMarksmanWithRepeaterHandgun,
+  nulnOfficerWithBow,
+  nulnOfficerWithHunterSkill,
+  nulnOfficerWithWeaponsExpertAndBow,
+  nulnPistolierWithRepeaterPistol,
+  tooManyNulnInstructors,
+  tooManyNulnMarksmen,
+  tooManyNulnPistoliers,
+  tooManyNulnWarriors,
+  tooManySeniorStudents,
+  tooManyUnderclassmen,
+  validGunnerySchoolOfNuln
+} from "./fixtures/gunnerySchoolRosters";
 
 describe("rules engine - Witch Hunters", () => {
   it("calculates pending advance thresholds from XP crossings", () => {
@@ -1045,6 +1117,219 @@ describe("rules engine - Lizardmen", () => {
     expect(crestSkills.find((option) => option.item.id === "great-hunter")?.allowed).toBe(true);
     expect(priestSpells.find((option) => option.item.id === "lizardmen-chotecs-wrath")?.allowed).toBe(true);
     expect(totemSpells.find((option) => option.item.id === "lizardmen-chotecs-wrath")?.allowed).toBe(false);
+  });
+});
+
+describe("rules engine - Amazons", () => {
+  it("loads both Grade 1b Amazon warbands", () => {
+    const ids = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+    expect(ids).toContain("amazons-lustria");
+    expect(ids).toContain("amazons-mordheim");
+  });
+
+  it("validates basic starting Amazon rosters", () => {
+    expect(errorCodes(validAmazonsLustria())).toEqual([]);
+    expect(errorCodes(validAmazonsMordheim())).toEqual([]);
+    expect(calculateRosterCost(validAmazonsLustria(), rulesDb)).toBe(321);
+    expect(calculateWarbandRating(validAmazonsLustria(), rulesDb)).toBe(71);
+    expect(calculateRosterCost(validAmazonsMordheim(), rulesDb)).toBe(351);
+    expect(calculateWarbandRating(validAmazonsMordheim(), rulesDb)).toBe(71);
+  });
+
+  it("enforces Lustria Amazon leader, fighter caps and warrior limit", () => {
+    expect(codes(amazonsLustriaNoPriest())).toContain("REQUIRED_LEADER");
+    expect(codes(amazonsLustriaTwoPriestesses())).toContain("REQUIRED_LEADER");
+    expect(codes(amazonsLustriaNoWarriors())).toContain("FIGHTER_MIN_COUNT");
+    expect(codes(tooManyAmazonEagleWarriors())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyAmazonPiranhaWarriors())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyAmazonJaguarWarriors())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyAmazonsLustriaWarriors())).toContain("MAX_WARRIORS");
+  });
+
+  it("enforces Mordheim Amazon leader, fighter caps and warrior limit", () => {
+    expect(codes(amazonsMordheimNoPriestess())).toContain("REQUIRED_LEADER");
+    expect(codes(amazonsMordheimTwoPriestesses())).toContain("REQUIRED_LEADER");
+    expect(codes(amazonsMordheimNoWarriors())).toContain("FIGHTER_MIN_COUNT");
+    expect(codes(tooManyAmazonChampions())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyAmazonTotemWarriors())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyAmazonScouts())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyAmazonsMordheimWarriors())).toContain("MAX_WARRIORS");
+  });
+
+  it("enforces Amazon equipment lists and item restrictions", () => {
+    expect(codes(lustriaJaguarWithBuckler())).toContain("INVALID_EQUIPMENT");
+    expect(codes(lustriaEagleWithConch())).toContain("INVALID_EQUIPMENT");
+    expect(errorCodes(lustriaPiranhaWithConch())).toEqual([]);
+    expect(codes(lustriaWarriorWithStarsword())).toContain("INVALID_EQUIPMENT");
+    expect(codes(mordheimScoutWithSunGauntlet())).toContain("INVALID_EQUIPMENT");
+    expect(codes(mordheimWarriorWithAmulet())).toContain("INVALID_EQUIPMENT");
+    expect(errorCodes(mordheimChampionWithSunGauntlet())).toEqual([]);
+
+    const lustria = validAmazonsLustria();
+    const serpentOptions = getAllowedEquipment({ ...lustria.members[0], equipment: ["dagger"] }, lustria, rulesDb);
+    const jaguarOptions = getAllowedEquipment(lustria.members[4], lustria, rulesDb);
+    const piranhaOptions = getAllowedEquipment(lustria.members[2], lustria, rulesDb);
+    expect(serpentOptions.find((option) => option.item.id === "amazon-lustria-sunstaff")?.allowed).toBe(true);
+    expect(jaguarOptions.find((option) => option.item.id === "amazon-bolas")?.allowed).toBe(true);
+    expect(jaguarOptions.find((option) => option.item.id === "buckler")?.allowed).toBe(false);
+    expect(piranhaOptions.find((option) => option.item.id === "amazon-conch-shell-horn")?.allowed).toBe(true);
+
+    const mordheim = validAmazonsMordheim();
+    const priestessOptions = getAllowedEquipment({ ...mordheim.members[0], equipment: ["dagger"] }, mordheim, rulesDb);
+    const scoutOptions = getAllowedEquipment(mordheim.members[4], mordheim, rulesDb);
+    expect(priestessOptions.find((option) => option.item.id === "amazon-sunstaff")?.allowed).toBe(true);
+    expect(priestessOptions.find((option) => option.item.id === "amazon-sun-gauntlet")?.allowed).toBe(true);
+    expect(scoutOptions.find((option) => option.item.id === "amazon-javelins")?.allowed).toBe(true);
+    expect(scoutOptions.find((option) => option.item.id === "amazon-sun-gauntlet")?.allowed).toBe(false);
+  });
+
+  it("enforces Amazon skills, rituals and hired sword restrictions", () => {
+    expect(codes(invalidLustriaAmazonSkill())).toContain("INVALID_SKILL");
+    expect(errorCodes(lustriaEagleWithAmazonSkill())).toEqual([]);
+    expect(errorCodes(lustriaSerpentWithRitual())).toEqual([]);
+    expect(codes(lustriaEagleWithRitual())).toContain("INVALID_SPECIAL_RULE");
+    expect(codes(invalidMordheimAmazonSkill())).toContain("INVALID_SKILL");
+    expect(codes(mordheimTotemWithQuickShot())).toContain("INVALID_SKILL");
+    expect(errorCodes(mordheimPriestessWithRitual())).toEqual([]);
+    expect(codes(mordheimChampionWithRitual())).toContain("INVALID_SPECIAL_RULE");
+    expect(codes(amazonsLustriaWithWarlock())).toContain("HIRED_SWORD_NOT_AVAILABLE");
+    expect(codes(amazonsMordheimWithWarlock())).toContain("HIRED_SWORD_NOT_AVAILABLE");
+
+    const lustria = validAmazonsLustria();
+    const serpentSkills = getAllowedSkills(lustria.members[0], lustria, rulesDb);
+    const eagleSkills = getAllowedSkills(lustria.members[1], lustria, rulesDb);
+    const serpentRituals = getAllowedSpecialRules(lustria.members[0], lustria, rulesDb);
+    expect(serpentSkills.find((option) => option.item.id === "amazon-concealment")?.allowed).toBe(true);
+    expect(serpentSkills.find((option) => option.item.id === "quick-shot")?.allowed).toBe(false);
+    expect(eagleSkills.find((option) => option.item.id === "amazon-savage-fury")?.allowed).toBe(true);
+    expect(serpentRituals.find((option) => option.item.id === "amazon-singing-wind")?.allowed).toBe(true);
+
+    const mordheim = validAmazonsMordheim();
+    const priestessSkills = getAllowedSkills(mordheim.members[0], mordheim, rulesDb);
+    const totemSkills = getAllowedSkills(mordheim.members[2], mordheim, rulesDb);
+    const priestessRituals = getAllowedSpecialRules(mordheim.members[0], mordheim, rulesDb);
+    expect(priestessSkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(true);
+    expect(priestessSkills.find((option) => option.item.id === "amazon-skink-hunter")?.allowed).toBe(false);
+    expect(totemSkills.find((option) => option.item.id === "quick-shot")?.allowed).toBe(false);
+    expect(priestessRituals.find((option) => option.item.id === "amazon-sirens-dreams")?.allowed).toBe(true);
+  });
+});
+
+describe("rules engine - Pirates", () => {
+  it("loads the Grade 1b Pirates warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+    expect(ids).toContain("pirates");
+  });
+
+  it("validates a basic starting Pirates roster", () => {
+    expect(errorCodes(validPirates())).toEqual([]);
+    expect(calculateRosterCost(validPirates(), rulesDb)).toBe(351);
+    expect(calculateWarbandRating(validPirates(), rulesDb)).toBe(78);
+  });
+
+  it("enforces Pirates leader, fighter caps, warrior limit and Swabbie rules", () => {
+    expect(codes(piratesNoCaptain())).toContain("REQUIRED_LEADER");
+    expect(codes(piratesTwoCaptains())).toContain("REQUIRED_LEADER");
+    expect(codes(tooManyPirateMates())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyCabinBoys())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyPirateGunners())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyBoatswains())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyPiratesWarriors())).toContain("MAX_WARRIORS");
+    expect(codes(tooManySwabbiesForFreeCrew())).toContain("FIGHTER_RATIO_LIMIT");
+    expect(codes(swabbieWithExperience())).toContain("EXPERIENCE_NOT_ALLOWED");
+  });
+
+  it("enforces Pirates equipment lists and Swivel Gun companion ammo", () => {
+    expect(codes(crewWithSwivelGun())).toContain("INVALID_EQUIPMENT");
+    expect(codes(gunnerWithAmmoNoSwivelGun())).toContain("MISSING_REQUIRED_EQUIPMENT");
+    expect(errorCodes(gunnerWithSwivelGunBallShot())).toEqual([]);
+    expect(codes(swabbieWithPistol())).toContain("INVALID_EQUIPMENT");
+
+    const roster = validPirates();
+    const captainOptions = getAllowedEquipment({ ...roster.members[0], equipment: ["dagger"] }, roster, rulesDb);
+    const gunnerOptions = getAllowedEquipment({ ...roster.members[4], equipment: ["dagger", "swivel-gun"] }, roster, rulesDb);
+    const crewOptions = getAllowedEquipment(roster.members[3], roster, rulesDb);
+    const boatswainOptions = getAllowedEquipment({ ...roster.members[5], equipment: ["dagger"] }, roster, rulesDb);
+    const swabbieOptions = getAllowedEquipment(roster.members[6], roster, rulesDb);
+    expect(captainOptions.find((option) => option.item.id === "cat-o-nine-tails")?.allowed).toBe(true);
+    expect(captainOptions.find((option) => option.item.id === "swivel-gun")?.allowed).toBe(false);
+    expect(gunnerOptions.find((option) => option.item.id === "swivel-gun-ball-shot")?.allowed).toBe(true);
+    expect(crewOptions.find((option) => option.item.id === "swivel-gun")?.allowed).toBe(false);
+    expect(boatswainOptions.find((option) => option.item.id === "boat-hook")?.allowed).toBe(true);
+    expect(swabbieOptions.find((option) => option.item.id === "pistol")?.allowed).toBe(false);
+  });
+
+  it("enforces Pirate special skills", () => {
+    expect(codes(invalidPirateSkill())).toContain("INVALID_SKILL");
+    expect(errorCodes(pirateCaptainWithSeaShanty())).toEqual([]);
+
+    const roster = validPirates();
+    const captainSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const cabinBoySkills = getAllowedSkills(roster.members[2], roster, rulesDb);
+    const crewSkills = getAllowedSkills(roster.members[3], roster, rulesDb);
+    expect(captainSkills.find((option) => option.item.id === "sea-shanty")?.allowed).toBe(true);
+    expect(cabinBoySkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(false);
+    expect(crewSkills.find((option) => option.item.id === "sea-shanty")?.allowed).toBe(false);
+  });
+});
+
+describe("rules engine - Gunnery School of Nuln", () => {
+  it("loads the Grade 1b Gunnery School of Nuln warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+    expect(ids).toContain("gunnery-school-of-nuln");
+  });
+
+  it("validates a basic starting Gunnery School roster", () => {
+    expect(errorCodes(validGunnerySchoolOfNuln())).toEqual([]);
+    expect(calculateRosterCost(validGunnerySchoolOfNuln(), rulesDb)).toBe(464);
+    expect(calculateWarbandRating(validGunnerySchoolOfNuln(), rulesDb)).toBe(85);
+  });
+
+  it("enforces Gunnery School leader, fighter caps and warrior limit", () => {
+    expect(codes(gunnerySchoolNoOfficer())).toContain("REQUIRED_LEADER");
+    expect(codes(gunnerySchoolTwoOfficers())).toContain("REQUIRED_LEADER");
+    expect(codes(tooManyNulnInstructors())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManySeniorStudents())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyUnderclassmen())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyNulnMarksmen())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyNulnPistoliers())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyNulnWarriors())).toContain("MAX_WARRIORS");
+  });
+
+  it("enforces Gunnery School equipment lists and blackpowder-only ranged weapons", () => {
+    expect(codes(nulnOfficerWithBow())).toContain("INVALID_EQUIPMENT");
+    expect(codes(nulnOfficerWithWeaponsExpertAndBow())).toContain("INVALID_EQUIPMENT");
+    expect(codes(nulnMarksmanWithDuellingPistol())).toContain("INVALID_EQUIPMENT");
+    expect(errorCodes(nulnMarksmanWithRepeaterHandgun())).toEqual([]);
+    expect(errorCodes(nulnInstructorWithMortar())).toEqual([]);
+    expect(codes(nulnPistolierWithRepeaterPistol())).toContain("INVALID_EQUIPMENT");
+
+    const roster = validGunnerySchoolOfNuln();
+    const officerOptions = getAllowedEquipment({ ...roster.members[0], equipment: ["dagger"] }, roster, rulesDb);
+    const instructorOptions = getAllowedEquipment({ ...roster.members[1], equipment: ["dagger"] }, roster, rulesDb);
+    const marksmanOptions = getAllowedEquipment({ ...roster.members[5], equipment: ["dagger"] }, roster, rulesDb);
+    const pistolierOptions = getAllowedEquipment({ ...roster.members[6], equipment: ["dagger"] }, roster, rulesDb);
+    expect(officerOptions.find((option) => option.item.id === "nuln-double-barrelled-duelling-pistol")?.allowed).toBe(true);
+    expect(officerOptions.find((option) => option.item.id === "bow")?.allowed).toBe(false);
+    expect(instructorOptions.find((option) => option.item.id === "hand-held-mortar")?.allowed).toBe(true);
+    expect(marksmanOptions.find((option) => option.item.id === "nuln-repeater-handgun")?.allowed).toBe(true);
+    expect(marksmanOptions.find((option) => option.item.id === "nuln-duelling-pistol")?.allowed).toBe(false);
+    expect(pistolierOptions.find((option) => option.item.id === "nuln-repeater-pistol")?.allowed).toBe(false);
+  });
+
+  it("enforces Gunnery School skill and special-rule access", () => {
+    expect(codes(invalidNulnSkill())).toContain("INVALID_SKILL");
+    expect(errorCodes(nulnOfficerWithHunterSkill())).toEqual([]);
+
+    const roster = validGunnerySchoolOfNuln();
+    const officerSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const instructorSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+    const underclassmanSkills = getAllowedSkills(roster.members[3], roster, rulesDb);
+    const marksmanSkills = getAllowedSkills(roster.members[5], roster, rulesDb);
+    expect(officerSkills.find((option) => option.item.id === "hunter")?.allowed).toBe(true);
+    expect(instructorSkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(false);
+    expect(underclassmanSkills.find((option) => option.item.id === "pistolier")?.allowed).toBe(true);
+    expect(marksmanSkills.find((option) => option.item.id === "hunter")?.allowed).toBe(false);
   });
 });
 

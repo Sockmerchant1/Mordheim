@@ -269,6 +269,78 @@ import {
   validForestGoblins
 } from "../tests/fixtures/forestGoblinRosters.ts";
 import {
+  amazonsLustriaNoPriest,
+  amazonsLustriaNoWarriors,
+  amazonsLustriaTwoPriestesses,
+  amazonsLustriaWithWarlock,
+  amazonsMordheimNoPriestess,
+  amazonsMordheimNoWarriors,
+  amazonsMordheimTwoPriestesses,
+  amazonsMordheimWithWarlock,
+  invalidLustriaAmazonSkill,
+  invalidMordheimAmazonSkill,
+  lustriaEagleWithAmazonSkill,
+  lustriaEagleWithConch,
+  lustriaEagleWithRitual,
+  lustriaJaguarWithBuckler,
+  lustriaPiranhaWithConch,
+  lustriaSerpentWithRitual,
+  lustriaWarriorWithStarsword,
+  mordheimChampionWithRitual,
+  mordheimChampionWithSunGauntlet,
+  mordheimPriestessWithRitual,
+  mordheimScoutWithSunGauntlet,
+  mordheimTotemWithQuickShot,
+  mordheimWarriorWithAmulet,
+  tooManyAmazonChampions,
+  tooManyAmazonEagleWarriors,
+  tooManyAmazonJaguarWarriors,
+  tooManyAmazonPiranhaWarriors,
+  tooManyAmazonScouts,
+  tooManyAmazonTotemWarriors,
+  tooManyAmazonsLustriaWarriors,
+  tooManyAmazonsMordheimWarriors,
+  validAmazonsLustria,
+  validAmazonsMordheim
+} from "../tests/fixtures/amazonRosters.ts";
+import {
+  crewWithSwivelGun,
+  gunnerWithAmmoNoSwivelGun,
+  gunnerWithSwivelGunBallShot,
+  invalidPirateSkill,
+  pirateCaptainWithSeaShanty,
+  piratesNoCaptain,
+  piratesTwoCaptains,
+  swabbieWithExperience,
+  swabbieWithPistol,
+  tooManyBoatswains,
+  tooManyCabinBoys,
+  tooManyPirateGunners,
+  tooManyPirateMates,
+  tooManyPiratesWarriors,
+  tooManySwabbiesForFreeCrew,
+  validPirates
+} from "../tests/fixtures/pirateRosters.ts";
+import {
+  gunnerySchoolNoOfficer,
+  gunnerySchoolTwoOfficers,
+  invalidNulnSkill,
+  nulnInstructorWithMortar,
+  nulnMarksmanWithDuellingPistol,
+  nulnMarksmanWithRepeaterHandgun,
+  nulnOfficerWithBow,
+  nulnOfficerWithHunterSkill,
+  nulnOfficerWithWeaponsExpertAndBow,
+  nulnPistolierWithRepeaterPistol,
+  tooManyNulnInstructors,
+  tooManyNulnMarksmen,
+  tooManyNulnPistoliers,
+  tooManyNulnWarriors,
+  tooManySeniorStudents,
+  tooManyUnderclassmen,
+  validGunnerySchoolOfNuln
+} from "../tests/fixtures/gunnerySchoolRosters.ts";
+import {
   createRosterFromStarterTemplate,
   starterRosterTemplates
 } from "../src/data/starterRosters.ts";
@@ -1036,6 +1108,167 @@ assert.equal(rulesDb.skills.find((skill) => skill.id === "bellowing-battle-roar"
 assert.equal(rulesDb.equipmentItems.find((item) => item.id === "bolas")?.sourceDocumentId, "tc11-lizardmen");
 assert.ok(rulesDb.hiredSwords.find((hiredSword) => hiredSword.id === "warlock")?.blockedWarbandTypeIds.includes("lizardmen"));
 
+const grade1bWarbands = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+assert.ok(grade1bWarbands.includes("amazons-lustria"));
+assert.ok(grade1bWarbands.includes("amazons-mordheim"));
+assert.deepEqual(errorCodes(validAmazonsLustria()), []);
+assert.deepEqual(errorCodes(validAmazonsMordheim()), []);
+assert.equal(calculateRosterCost(validAmazonsLustria(), rulesDb), 321);
+assert.equal(calculateWarbandRating(validAmazonsLustria(), rulesDb), 71);
+assert.equal(calculateRosterCost(validAmazonsMordheim(), rulesDb), 351);
+assert.equal(calculateWarbandRating(validAmazonsMordheim(), rulesDb), 71);
+assert.ok(codes(amazonsLustriaNoPriest()).includes("REQUIRED_LEADER"));
+assert.ok(codes(amazonsLustriaTwoPriestesses()).includes("REQUIRED_LEADER"));
+assert.ok(codes(amazonsLustriaNoWarriors()).includes("FIGHTER_MIN_COUNT"));
+assert.ok(codes(tooManyAmazonEagleWarriors()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyAmazonPiranhaWarriors()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyAmazonJaguarWarriors()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyAmazonsLustriaWarriors()).includes("MAX_WARRIORS"));
+assert.ok(codes(amazonsMordheimNoPriestess()).includes("REQUIRED_LEADER"));
+assert.ok(codes(amazonsMordheimTwoPriestesses()).includes("REQUIRED_LEADER"));
+assert.ok(codes(amazonsMordheimNoWarriors()).includes("FIGHTER_MIN_COUNT"));
+assert.ok(codes(tooManyAmazonChampions()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyAmazonTotemWarriors()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyAmazonScouts()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyAmazonsMordheimWarriors()).includes("MAX_WARRIORS"));
+assert.ok(codes(lustriaJaguarWithBuckler()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(lustriaEagleWithConch()).includes("INVALID_EQUIPMENT"));
+assert.deepEqual(errorCodes(lustriaPiranhaWithConch()), []);
+assert.ok(codes(lustriaWarriorWithStarsword()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(mordheimScoutWithSunGauntlet()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(mordheimWarriorWithAmulet()).includes("INVALID_EQUIPMENT"));
+assert.deepEqual(errorCodes(mordheimChampionWithSunGauntlet()), []);
+assert.ok(codes(invalidLustriaAmazonSkill()).includes("INVALID_SKILL"));
+assert.deepEqual(errorCodes(lustriaEagleWithAmazonSkill()), []);
+assert.deepEqual(errorCodes(lustriaSerpentWithRitual()), []);
+assert.ok(codes(lustriaEagleWithRitual()).includes("INVALID_SPECIAL_RULE"));
+assert.ok(codes(invalidMordheimAmazonSkill()).includes("INVALID_SKILL"));
+assert.ok(codes(mordheimTotemWithQuickShot()).includes("INVALID_SKILL"));
+assert.deepEqual(errorCodes(mordheimPriestessWithRitual()), []);
+assert.ok(codes(mordheimChampionWithRitual()).includes("INVALID_SPECIAL_RULE"));
+assert.ok(codes(amazonsLustriaWithWarlock()).includes("HIRED_SWORD_NOT_AVAILABLE"));
+assert.ok(codes(amazonsMordheimWithWarlock()).includes("HIRED_SWORD_NOT_AVAILABLE"));
+
+const amazonsLustriaRoster = validAmazonsLustria();
+const amazonSerpentOptions = getAllowedEquipment({ ...amazonsLustriaRoster.members[0], equipment: ["dagger"] }, amazonsLustriaRoster, rulesDb);
+const amazonJaguarOptions = getAllowedEquipment(amazonsLustriaRoster.members[4], amazonsLustriaRoster, rulesDb);
+const amazonPiranhaOptions = getAllowedEquipment(amazonsLustriaRoster.members[2], amazonsLustriaRoster, rulesDb);
+const amazonSerpentSkills = getAllowedSkills(amazonsLustriaRoster.members[0], amazonsLustriaRoster, rulesDb);
+const amazonEagleSkills = getAllowedSkills(amazonsLustriaRoster.members[1], amazonsLustriaRoster, rulesDb);
+const amazonSerpentRituals = getAllowedSpecialRules(amazonsLustriaRoster.members[0], amazonsLustriaRoster, rulesDb);
+assert.equal(amazonSerpentOptions.find((option) => option.item.id === "amazon-lustria-sunstaff")?.allowed, true);
+assert.equal(amazonJaguarOptions.find((option) => option.item.id === "amazon-bolas")?.allowed, true);
+assert.equal(amazonJaguarOptions.find((option) => option.item.id === "buckler")?.allowed, false);
+assert.equal(amazonPiranhaOptions.find((option) => option.item.id === "amazon-conch-shell-horn")?.allowed, true);
+assert.equal(amazonSerpentSkills.find((option) => option.item.id === "amazon-concealment")?.allowed, true);
+assert.equal(amazonSerpentSkills.find((option) => option.item.id === "quick-shot")?.allowed, false);
+assert.equal(amazonEagleSkills.find((option) => option.item.id === "amazon-savage-fury")?.allowed, true);
+assert.equal(amazonSerpentRituals.find((option) => option.item.id === "amazon-singing-wind")?.allowed, true);
+
+const amazonsMordheimRoster = validAmazonsMordheim();
+const amazonPriestessOptions = getAllowedEquipment({ ...amazonsMordheimRoster.members[0], equipment: ["dagger"] }, amazonsMordheimRoster, rulesDb);
+const amazonScoutOptions = getAllowedEquipment(amazonsMordheimRoster.members[4], amazonsMordheimRoster, rulesDb);
+const amazonPriestessSkills = getAllowedSkills(amazonsMordheimRoster.members[0], amazonsMordheimRoster, rulesDb);
+const amazonTotemSkills = getAllowedSkills(amazonsMordheimRoster.members[2], amazonsMordheimRoster, rulesDb);
+const amazonPriestessRituals = getAllowedSpecialRules(amazonsMordheimRoster.members[0], amazonsMordheimRoster, rulesDb);
+assert.equal(amazonPriestessOptions.find((option) => option.item.id === "amazon-sunstaff")?.allowed, true);
+assert.equal(amazonPriestessOptions.find((option) => option.item.id === "amazon-sun-gauntlet")?.allowed, true);
+assert.equal(amazonScoutOptions.find((option) => option.item.id === "amazon-javelins")?.allowed, true);
+assert.equal(amazonScoutOptions.find((option) => option.item.id === "amazon-sun-gauntlet")?.allowed, false);
+assert.equal(amazonPriestessSkills.find((option) => option.item.id === "mighty-blow")?.allowed, true);
+assert.equal(amazonPriestessSkills.find((option) => option.item.id === "amazon-skink-hunter")?.allowed, false);
+assert.equal(amazonTotemSkills.find((option) => option.item.id === "quick-shot")?.allowed, false);
+assert.equal(amazonPriestessRituals.find((option) => option.item.id === "amazon-sirens-dreams")?.allowed, true);
+assert.equal(rulesDb.specialRules.find((rule) => rule.id === "amazon-rituals")?.sourceDocumentId, "tc15-amazons-lustria");
+assert.equal(rulesDb.equipmentItems.find((item) => item.id === "amazon-sunstaff")?.sourceDocumentId, "tc23-amazons-mordheim");
+assert.ok(rulesDb.hiredSwords.find((hiredSword) => hiredSword.id === "warlock")?.blockedWarbandTypeIds.includes("amazons-mordheim"));
+
+assert.ok(grade1bWarbands.includes("pirates"));
+assert.deepEqual(errorCodes(validPirates()), []);
+assert.equal(calculateRosterCost(validPirates(), rulesDb), 351);
+assert.equal(calculateWarbandRating(validPirates(), rulesDb), 78);
+assert.ok(codes(piratesNoCaptain()).includes("REQUIRED_LEADER"));
+assert.ok(codes(piratesTwoCaptains()).includes("REQUIRED_LEADER"));
+assert.ok(codes(tooManyPirateMates()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyCabinBoys()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyPirateGunners()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyBoatswains()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyPiratesWarriors()).includes("MAX_WARRIORS"));
+assert.ok(codes(tooManySwabbiesForFreeCrew()).includes("FIGHTER_RATIO_LIMIT"));
+assert.ok(codes(swabbieWithExperience()).includes("EXPERIENCE_NOT_ALLOWED"));
+assert.ok(codes(crewWithSwivelGun()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(gunnerWithAmmoNoSwivelGun()).includes("MISSING_REQUIRED_EQUIPMENT"));
+assert.deepEqual(errorCodes(gunnerWithSwivelGunBallShot()), []);
+assert.ok(codes(swabbieWithPistol()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(invalidPirateSkill()).includes("INVALID_SKILL"));
+assert.deepEqual(errorCodes(pirateCaptainWithSeaShanty()), []);
+
+const pirateRoster = validPirates();
+const pirateCaptainOptions = getAllowedEquipment({ ...pirateRoster.members[0], equipment: ["dagger"] }, pirateRoster, rulesDb);
+const pirateGunnerOptions = getAllowedEquipment({ ...pirateRoster.members[4], equipment: ["dagger", "swivel-gun"] }, pirateRoster, rulesDb);
+const pirateCrewOptions = getAllowedEquipment(pirateRoster.members[3], pirateRoster, rulesDb);
+const pirateBoatswainOptions = getAllowedEquipment({ ...pirateRoster.members[5], equipment: ["dagger"] }, pirateRoster, rulesDb);
+const pirateSwabbieOptions = getAllowedEquipment(pirateRoster.members[6], pirateRoster, rulesDb);
+assert.equal(pirateCaptainOptions.find((option) => option.item.id === "cat-o-nine-tails")?.allowed, true);
+assert.equal(pirateCaptainOptions.find((option) => option.item.id === "swivel-gun")?.allowed, false);
+assert.equal(pirateGunnerOptions.find((option) => option.item.id === "swivel-gun-ball-shot")?.allowed, true);
+assert.equal(pirateCrewOptions.find((option) => option.item.id === "swivel-gun")?.allowed, false);
+assert.equal(pirateBoatswainOptions.find((option) => option.item.id === "boat-hook")?.allowed, true);
+assert.equal(pirateSwabbieOptions.find((option) => option.item.id === "pistol")?.allowed, false);
+const pirateCaptainSkills = getAllowedSkills(pirateRoster.members[0], pirateRoster, rulesDb);
+const pirateCabinBoySkills = getAllowedSkills(pirateRoster.members[2], pirateRoster, rulesDb);
+const pirateCrewSkills = getAllowedSkills(pirateRoster.members[3], pirateRoster, rulesDb);
+assert.equal(pirateCaptainSkills.find((option) => option.item.id === "sea-shanty")?.allowed, true);
+assert.equal(pirateCabinBoySkills.find((option) => option.item.id === "mighty-blow")?.allowed, false);
+assert.equal(pirateCrewSkills.find((option) => option.item.id === "sea-shanty")?.allowed, false);
+assert.equal(rulesDb.specialRules.find((rule) => rule.id === "pirate-shanghaied")?.sourceDocumentId, "tc9-pirates");
+assert.equal(rulesDb.equipmentItems.find((item) => item.id === "swivel-gun")?.sourceDocumentId, "tc9-pirates");
+assert.equal(rulesDb.skills.find((skill) => skill.id === "sea-shanty")?.sourceDocumentId, "tc9-pirates");
+
+assert.ok(grade1bWarbands.includes("gunnery-school-of-nuln"));
+assert.deepEqual(errorCodes(validGunnerySchoolOfNuln()), []);
+assert.equal(calculateRosterCost(validGunnerySchoolOfNuln(), rulesDb), 464);
+assert.equal(calculateWarbandRating(validGunnerySchoolOfNuln(), rulesDb), 85);
+assert.ok(codes(gunnerySchoolNoOfficer()).includes("REQUIRED_LEADER"));
+assert.ok(codes(gunnerySchoolTwoOfficers()).includes("REQUIRED_LEADER"));
+assert.ok(codes(tooManyNulnInstructors()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManySeniorStudents()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyUnderclassmen()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyNulnMarksmen()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyNulnPistoliers()).includes("FIGHTER_MAX_COUNT"));
+assert.ok(codes(tooManyNulnWarriors()).includes("MAX_WARRIORS"));
+assert.ok(codes(nulnOfficerWithBow()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(nulnOfficerWithWeaponsExpertAndBow()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(nulnMarksmanWithDuellingPistol()).includes("INVALID_EQUIPMENT"));
+assert.deepEqual(errorCodes(nulnMarksmanWithRepeaterHandgun()), []);
+assert.deepEqual(errorCodes(nulnInstructorWithMortar()), []);
+assert.ok(codes(nulnPistolierWithRepeaterPistol()).includes("INVALID_EQUIPMENT"));
+assert.ok(codes(invalidNulnSkill()).includes("INVALID_SKILL"));
+assert.deepEqual(errorCodes(nulnOfficerWithHunterSkill()), []);
+
+const nulnRoster = validGunnerySchoolOfNuln();
+const nulnOfficerOptions = getAllowedEquipment({ ...nulnRoster.members[0], equipment: ["dagger"] }, nulnRoster, rulesDb);
+const nulnInstructorOptions = getAllowedEquipment({ ...nulnRoster.members[1], equipment: ["dagger"] }, nulnRoster, rulesDb);
+const nulnMarksmanOptions = getAllowedEquipment({ ...nulnRoster.members[5], equipment: ["dagger"] }, nulnRoster, rulesDb);
+const nulnPistolierOptions = getAllowedEquipment({ ...nulnRoster.members[6], equipment: ["dagger"] }, nulnRoster, rulesDb);
+assert.equal(nulnOfficerOptions.find((option) => option.item.id === "nuln-double-barrelled-duelling-pistol")?.allowed, true);
+assert.equal(nulnOfficerOptions.find((option) => option.item.id === "bow")?.allowed, false);
+assert.equal(nulnInstructorOptions.find((option) => option.item.id === "hand-held-mortar")?.allowed, true);
+assert.equal(nulnMarksmanOptions.find((option) => option.item.id === "nuln-repeater-handgun")?.allowed, true);
+assert.equal(nulnMarksmanOptions.find((option) => option.item.id === "nuln-duelling-pistol")?.allowed, false);
+assert.equal(nulnPistolierOptions.find((option) => option.item.id === "nuln-repeater-pistol")?.allowed, false);
+const nulnOfficerSkills = getAllowedSkills(nulnRoster.members[0], nulnRoster, rulesDb);
+const nulnInstructorSkills = getAllowedSkills(nulnRoster.members[1], nulnRoster, rulesDb);
+const nulnUnderclassmanSkills = getAllowedSkills(nulnRoster.members[3], nulnRoster, rulesDb);
+const nulnMarksmanSkills = getAllowedSkills(nulnRoster.members[5], nulnRoster, rulesDb);
+assert.equal(nulnOfficerSkills.find((option) => option.item.id === "hunter")?.allowed, true);
+assert.equal(nulnInstructorSkills.find((option) => option.item.id === "mighty-blow")?.allowed, false);
+assert.equal(nulnUnderclassmanSkills.find((option) => option.item.id === "pistolier")?.allowed, true);
+assert.equal(nulnMarksmanSkills.find((option) => option.item.id === "hunter")?.allowed, false);
+assert.equal(rulesDb.specialRules.find((rule) => rule.id === "nuln-proud-to-a-fault")?.sourceDocumentId, "nc-gunnery-school-of-nuln");
+assert.equal(rulesDb.equipmentItems.find((item) => item.id === "nuln-repeater-handgun")?.sourceDocumentId, "nc-gunnery-school-of-nuln");
+assert.equal(rulesDb.skills.find((skill) => skill.id === "hunter")?.sourceDocumentId, "mordheim-core-rules");
+
 assert.ok(getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).some((warband) => warband.id === "forest-goblins"));
 assert.deepEqual(errorCodes(validForestGoblins()), []);
 assert.equal(calculateRosterCost(validForestGoblins(), rulesDb), 240);
@@ -1104,13 +1337,17 @@ function errorCodes(roster) {
 }
 
 async function loadRulesDb() {
-  const [sourceDocuments, equipmentItems, skillSeed, specialRules, hiredSwords, ruleReferences, witchHunters, mercenaries, averlanders, kislevites, ostlanders, sisters, carnival, cultOfThePossessed, skaven, pestilens, undead, orcMob, beastmenRaiders, blackOrcs, dwarfTreasureHunters, shadowWarriors, lizardmen, forestGoblins] = await Promise.all([
+  const [sourceDocuments, equipmentItems, skillSeed, specialRules, hiredSwords, ruleReferences, amazonsLustria, amazonsMordheim, pirates, gunnerySchoolOfNuln, witchHunters, mercenaries, averlanders, kislevites, ostlanders, sisters, carnival, cultOfThePossessed, skaven, pestilens, undead, orcMob, beastmenRaiders, blackOrcs, dwarfTreasureHunters, shadowWarriors, lizardmen, forestGoblins] = await Promise.all([
     readJson("../src/data/sources.json"),
     readJson("../src/data/equipment.json"),
     readJson("../src/data/skills.json"),
     readJson("../src/data/specialRules.json"),
     readJson("../src/data/hiredSwords.json"),
     readJson("../src/data/ruleReferences.json"),
+    readJson("../src/data/warbands/amazons-lustria.json"),
+    readJson("../src/data/warbands/amazons-mordheim.json"),
+    readJson("../src/data/warbands/pirates.json"),
+    readJson("../src/data/warbands/gunnery-school-of-nuln.json"),
     readJson("../src/data/warbands/witch-hunters.json"),
     readJson("../src/data/warbands/mercenaries.json"),
     readJson("../src/data/warbands/averlanders.json"),
@@ -1130,6 +1367,10 @@ async function loadRulesDb() {
     readJson("../src/data/warbands/lizardmen.json"),
     readJson("../src/data/warbands/forest-goblins.json")
   ]);
+  const amazonsLustriaSeed = warbandSeedSchema.parse(amazonsLustria);
+  const amazonsMordheimSeed = warbandSeedSchema.parse(amazonsMordheim);
+  const piratesSeed = warbandSeedSchema.parse(pirates);
+  const gunnerySchoolOfNulnSeed = warbandSeedSchema.parse(gunnerySchoolOfNuln);
   const warbandSeed = warbandSeedSchema.parse(witchHunters);
   const averlandersSeed = warbandSeedSchema.parse(averlanders);
   const kislevitesSeed = warbandSeedSchema.parse(kislevites);
@@ -1194,10 +1435,10 @@ async function loadRulesDb() {
     }));
   return rulesDbSchema.parse({
     sourceDocuments,
-    warbandTypes: [warbandSeed.warbandType, averlandersSeed.warbandType, kislevitesSeed.warbandType, ostlandersSeed.warbandType, sistersSeed.warbandType, carnivalSeed.warbandType, cultOfThePossessedSeed.warbandType, skavenSeed.warbandType, pestilensSeed.warbandType, undeadSeed.warbandType, orcMobSeed.warbandType, beastmenRaidersSeed.warbandType, blackOrcsSeed.warbandType, dwarfTreasureHuntersSeed.warbandType, shadowWarriorsSeed.warbandType, lizardmenSeed.warbandType, forestGoblinsSeed.warbandType, ...mercenarySeed.warbandTypes],
-    fighterTypes: [...warbandSeed.fighterTypes, ...averlandersSeed.fighterTypes, ...kislevitesSeed.fighterTypes, ...ostlandersSeed.fighterTypes, ...sistersSeed.fighterTypes, ...carnivalSeed.fighterTypes, ...cultOfThePossessedSeed.fighterTypes, ...skavenSeed.fighterTypes, ...pestilensSeed.fighterTypes, ...undeadSeed.fighterTypes, ...orcMobSeed.fighterTypes, ...beastmenRaidersSeed.fighterTypes, ...blackOrcsSeed.fighterTypes, ...dwarfTreasureHuntersSeed.fighterTypes, ...shadowWarriorsSeed.fighterTypes, ...lizardmenSeed.fighterTypes, ...forestGoblinsSeed.fighterTypes, ...mercenarySeed.fighterTypes, ...hiredSwordFighterTypes],
+    warbandTypes: [amazonsLustriaSeed.warbandType, amazonsMordheimSeed.warbandType, piratesSeed.warbandType, gunnerySchoolOfNulnSeed.warbandType, warbandSeed.warbandType, averlandersSeed.warbandType, kislevitesSeed.warbandType, ostlandersSeed.warbandType, sistersSeed.warbandType, carnivalSeed.warbandType, cultOfThePossessedSeed.warbandType, skavenSeed.warbandType, pestilensSeed.warbandType, undeadSeed.warbandType, orcMobSeed.warbandType, beastmenRaidersSeed.warbandType, blackOrcsSeed.warbandType, dwarfTreasureHuntersSeed.warbandType, shadowWarriorsSeed.warbandType, lizardmenSeed.warbandType, forestGoblinsSeed.warbandType, ...mercenarySeed.warbandTypes],
+    fighterTypes: [...amazonsLustriaSeed.fighterTypes, ...amazonsMordheimSeed.fighterTypes, ...piratesSeed.fighterTypes, ...gunnerySchoolOfNulnSeed.fighterTypes, ...warbandSeed.fighterTypes, ...averlandersSeed.fighterTypes, ...kislevitesSeed.fighterTypes, ...ostlandersSeed.fighterTypes, ...sistersSeed.fighterTypes, ...carnivalSeed.fighterTypes, ...cultOfThePossessedSeed.fighterTypes, ...skavenSeed.fighterTypes, ...pestilensSeed.fighterTypes, ...undeadSeed.fighterTypes, ...orcMobSeed.fighterTypes, ...beastmenRaidersSeed.fighterTypes, ...blackOrcsSeed.fighterTypes, ...dwarfTreasureHuntersSeed.fighterTypes, ...shadowWarriorsSeed.fighterTypes, ...lizardmenSeed.fighterTypes, ...forestGoblinsSeed.fighterTypes, ...mercenarySeed.fighterTypes, ...hiredSwordFighterTypes],
     equipmentItems,
-    equipmentLists: [...warbandSeed.equipmentLists, ...averlandersSeed.equipmentLists, ...kislevitesSeed.equipmentLists, ...ostlandersSeed.equipmentLists, ...sistersSeed.equipmentLists, ...carnivalSeed.equipmentLists, ...cultOfThePossessedSeed.equipmentLists, ...skavenSeed.equipmentLists, ...pestilensSeed.equipmentLists, ...undeadSeed.equipmentLists, ...orcMobSeed.equipmentLists, ...beastmenRaidersSeed.equipmentLists, ...blackOrcsSeed.equipmentLists, ...dwarfTreasureHuntersSeed.equipmentLists, ...shadowWarriorsSeed.equipmentLists, ...lizardmenSeed.equipmentLists, ...forestGoblinsSeed.equipmentLists, ...mercenarySeed.equipmentLists, ...hiredSwordEquipmentLists],
+    equipmentLists: [...amazonsLustriaSeed.equipmentLists, ...amazonsMordheimSeed.equipmentLists, ...piratesSeed.equipmentLists, ...gunnerySchoolOfNulnSeed.equipmentLists, ...warbandSeed.equipmentLists, ...averlandersSeed.equipmentLists, ...kislevitesSeed.equipmentLists, ...ostlandersSeed.equipmentLists, ...sistersSeed.equipmentLists, ...carnivalSeed.equipmentLists, ...cultOfThePossessedSeed.equipmentLists, ...skavenSeed.equipmentLists, ...pestilensSeed.equipmentLists, ...undeadSeed.equipmentLists, ...orcMobSeed.equipmentLists, ...beastmenRaidersSeed.equipmentLists, ...blackOrcsSeed.equipmentLists, ...dwarfTreasureHuntersSeed.equipmentLists, ...shadowWarriorsSeed.equipmentLists, ...lizardmenSeed.equipmentLists, ...forestGoblinsSeed.equipmentLists, ...mercenarySeed.equipmentLists, ...hiredSwordEquipmentLists],
     skillCategories: skillSeed.categories,
     skills: skillSeed.skills,
     specialRules,

@@ -26,3 +26,19 @@ export function subscribeToSupabaseAuth(callback: (session: Session | null) => v
   const { data } = supabase.auth.onAuthStateChange((_event, session) => callback(session));
   return () => data.subscription.unsubscribe();
 }
+
+export async function ensureSupabaseProfile(session: Session, preferredName?: string) {
+  if (!supabase) throw new Error("Supabase is not configured.");
+  const email = session.user.email ?? "";
+  const playerName = preferredName?.trim() || email.split("@")[0] || "Player";
+  const { error } = await supabase
+    .from("profiles")
+    .upsert({
+      id: session.user.id,
+      player_name: playerName,
+      email: email || null
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+}

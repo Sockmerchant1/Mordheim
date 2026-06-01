@@ -4,6 +4,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardList,
+  Cloud,
   Coins,
   Copy,
   Crosshair,
@@ -21,10 +22,25 @@ import {
   Trash2,
   Upload
 } from "lucide-react";
+import type { Session } from "@supabase/supabase-js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { deleteRoster, listRosters, saveRoster } from "./api/rosters";
-import { subscribeToSupabaseAuth, supabaseEnabled } from "./lib/supabase";
+import {
+  deleteRoster,
+  disableRosterCloudSync,
+  enableRosterCloudSync,
+  getRosterCloudState,
+  listRosters,
+  saveRoster,
+  type RosterCloudState
+} from "./api/rosters";
+import {
+  ensureSupabaseProfile,
+  getSupabaseSession,
+  subscribeToSupabaseAuth,
+  supabase,
+  supabaseEnabled
+} from "./lib/supabase";
 import rulesLookupSeed from "./data/rulesLookup.json";
 import { rulesDb, warbandIndex, type WarbandIndexRecord } from "./data/rulesDb";
 import {
@@ -345,21 +361,42 @@ export default function App() {
   const [allowDraftSave, setAllowDraftSave] = useState(false);
   const [includeCampaignInPdf, setIncludeCampaignInPdf] = useState(false);
   const [lookupItem, setLookupItem] = useState<LookupItem>();
+  const [cloudSession, setCloudSession] = useState<Session | null>(null);
+  const [cloudAuthBusy, setCloudAuthBusy] = useState(false);
+  const [cloudAuthMessage, setCloudAuthMessage] = useState("");
+  const [cloudStateVersion, setCloudStateVersion] = useState(0);
   const importInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    async function loadRosters() {
-      const items = await listRosters();
-      const normalized = uniqueRostersById(items).map(syncRosterHenchmanModels);
-      setRosters(normalized);
-      setActiveRosterId((current) => current && normalized.some((roster) => roster.id === current) ? current : normalized[0]?.id);
-    }
+  async function loadRosterList() {
+    const items = await listRosters();
+    const normalized = uniqueRostersById(items).map(syncRosterHenchmanModels);
+    setRosters(normalized);
+    setActiveRosterId((current) => current && normalized.some((roster) => roster.id === current) ? current : normalized[0]?.id);
+    setCloudStateVersion((current) => current + 1);
+  }
 
-    void loadRosters();
+  useEffect(() => {
+    void loadRosterList();
     if (!supabaseEnabled) return;
     return subscribeToSupabaseAuth(() => {
-      void loadRosters();
+      void loadRosterList();
     });
+  }, []);
+
+  useEffect(() => {
+    if (!supabaseEnabled) return;
+    let isCurrent = true;
+    void getSupabaseSession().then((session) => {
+      if (isCurrent) setCloudSession(session);
+    });
+    const unsubscribe = subscribeToSupabaseAuth((session) => {
+      setCloudSession(session);
+      setCloudAuthMessage("");
+    });
+    return () => {
+      isCurrent = false;
+      unsubscribe();
+    };
   }, []);
 
   const activeRoster = useMemo(
@@ -394,9 +431,107 @@ export default function App() {
   }
 
   async function removeRoster(id: string) {
-    await deleteRoster(id);
-    setRosters((current) => current.filter((roster) => roster.id !== id));
-    if (activeRosterId === id) setActiveRosterId(undefined);
+    const roster = rosters.find((item) => item.id === id);
+    const cloudState = getRosterCloudState(id);
+    if ((cloudState.enabled || cloudState.remote) && roster) {
+      const confirmed = window.confirm(`Delete "${roster.name}" from this device and your cloud saves?`);
+      if (!confirmed) return;
+    }
+    try {
+      await deleteRoster(id);
+      setCloudStateVersion((current) => current + 1);
+      setRosters((current) => current.filter((roster) => roster.id !== id));
+      if (activeRosterId === id) setActiveRosterId(undefined);
+    } catch (error) {
+      setCloudAuthMessage(errorMessage(error));
+    }
+  }
+
+  async function setRosterCloudSync(id: string, enabled: boolean) {
+    const roster = rosters.find((item) => item.id === id);
+    if (!roster) return;
+    setCloudAuthMessage("");
+    try {
+      if (enabled) {
+        if (!supabaseEnabled || !supabase) {
+          setCloudAuthMessage("Cloud saves are not configured for this build.");
+          return;
+        }
+        if (!cloudSession) {
+          setCloudAuthMessage("Log in before saving a warband to cloud.");
+          return;
+        }
+        const saved = await enableRosterCloudSync(roster);
+        setRosters((current) => mergeSavedRoster(current, syncRosterHenchmanModels(saved), id, false));
+      } else {
+        const confirmed = window.confirm(`Stop cloud saving "${roster.name}"? The local roster stays here and the cloud copy is removed.`);
+        if (!confirmed) return;
+        await disableRosterCloudSync(id);
+      }
+    } catch (error) {
+      setCloudAuthMessage(errorMessage(error));
+    } finally {
+      setCloudStateVersion((current) => current + 1);
+    }
+  }
+
+  async function loginCloudAccount(email: string, password: string) {
+    if (!supabase) return;
+    setCloudAuthBusy(true);
+    setCloudAuthMessage("");
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) throw error;
+      if (!data.session) throw new Error("Login did not return a session.");
+      await ensureSupabaseProfile(data.session);
+      setCloudSession(data.session);
+      await loadRosterList();
+    } catch (error) {
+      setCloudAuthMessage(errorMessage(error));
+    } finally {
+      setCloudAuthBusy(false);
+    }
+  }
+
+  async function registerCloudAccount(playerName: string, email: string, password: string) {
+    if (!supabase) return;
+    setCloudAuthBusy(true);
+    setCloudAuthMessage("");
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { data: { player_name: playerName.trim() } }
+      });
+      if (error) throw error;
+      if (!data.session) {
+        setCloudAuthMessage("Account created. Confirm the email from Supabase, then log in.");
+        return;
+      }
+      await ensureSupabaseProfile(data.session, playerName);
+      setCloudSession(data.session);
+      await loadRosterList();
+    } catch (error) {
+      setCloudAuthMessage(errorMessage(error));
+    } finally {
+      setCloudAuthBusy(false);
+    }
+  }
+
+  async function logoutCloudAccount() {
+    if (!supabase) return;
+    setCloudAuthBusy(true);
+    setCloudAuthMessage("");
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setCloudSession(null);
+      await loadRosterList();
+    } catch (error) {
+      setCloudAuthMessage(errorMessage(error));
+    } finally {
+      setCloudAuthBusy(false);
+    }
   }
 
   function updateActiveRoster(updater: (roster: Roster) => Roster) {
@@ -472,6 +607,14 @@ export default function App() {
           <p className="eyebrow">Mordheim campaign helper</p>
           <h1>Warband Manager</h1>
         </div>
+        <CloudAccountControl
+          session={cloudSession}
+          busy={cloudAuthBusy}
+          message={cloudAuthMessage}
+          onLogin={loginCloudAccount}
+          onRegister={registerCloudAccount}
+          onLogout={logoutCloudAccount}
+        />
         <nav aria-label="Main">
           <button className={mode === "list" ? "active" : ""} onClick={() => setMode("list")}>
             <ClipboardList aria-hidden /> Warbands
@@ -522,6 +665,9 @@ export default function App() {
           onDelete={removeRoster}
           onExport={exportRoster}
           onImportClick={() => importInputRef.current?.click()}
+          cloudAuthenticated={Boolean(cloudSession)}
+          cloudStateVersion={cloudStateVersion}
+          onCloudSyncChange={setRosterCloudSync}
         />
       )}
 
@@ -691,6 +837,83 @@ function InstallAppPrompt() {
   );
 }
 
+function CloudAccountControl({
+  session,
+  busy,
+  message,
+  onLogin,
+  onRegister,
+  onLogout
+}: {
+  session: Session | null;
+  busy: boolean;
+  message: string;
+  onLogin: (email: string, password: string) => void;
+  onRegister: (playerName: string, email: string, password: string) => void;
+  onLogout: () => void;
+}) {
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [playerName, setPlayerName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  if (!supabaseEnabled) {
+    return (
+      <div className="cloud-account-control unavailable">
+        <div className="cloud-account-title">
+          <Cloud aria-hidden />
+          <span>Cloud saves</span>
+        </div>
+        <strong>Unavailable</strong>
+      </div>
+    );
+  }
+
+  if (session) {
+    return (
+      <div className="cloud-account-control">
+        <div className="cloud-account-title">
+          <Cloud aria-hidden />
+          <span>Cloud saves</span>
+        </div>
+        <div className="cloud-account-row">
+          <strong>{session.user.email ?? "Signed in"}</strong>
+          <button disabled={busy} onClick={onLogout}>Log out</button>
+        </div>
+        {message && <p className="cloud-account-message">{message}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="cloud-account-control">
+      <div className="cloud-account-title">
+        <Cloud aria-hidden />
+        <span>Cloud saves</span>
+      </div>
+      <div className="cloud-account-tabs" role="group" aria-label="Cloud account mode">
+        <button className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>Log in</button>
+        <button className={mode === "register" ? "active" : ""} onClick={() => setMode("register")}>Register</button>
+      </div>
+      <div className="cloud-account-fields">
+        {mode === "register" && (
+          <input value={playerName} onChange={(event) => setPlayerName(event.target.value)} placeholder="Player name" />
+        )}
+        <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" />
+        <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" />
+        <button
+          className="primary"
+          disabled={busy || !email.trim() || password.length < 6 || (mode === "register" && !playerName.trim())}
+          onClick={() => mode === "login" ? onLogin(email, password) : onRegister(playerName, email, password)}
+        >
+          {mode === "login" ? "Log in" : "Register"}
+        </button>
+      </div>
+      {message && <p className="cloud-account-message">{message}</p>}
+    </div>
+  );
+}
+
 function WarbandList({
   rosters,
   onCreate,
@@ -700,7 +923,10 @@ function WarbandList({
   onDuplicate,
   onDelete,
   onExport,
-  onImportClick
+  onImportClick,
+  cloudAuthenticated,
+  cloudStateVersion,
+  onCloudSyncChange
 }: {
   rosters: Roster[];
   onCreate: () => void;
@@ -711,6 +937,9 @@ function WarbandList({
   onDelete: (id: string) => void;
   onExport: (roster: Roster) => void;
   onImportClick: () => void;
+  cloudAuthenticated: boolean;
+  cloudStateVersion: number;
+  onCloudSyncChange: (id: string, enabled: boolean) => void;
 }) {
   const [grade, setGrade] = useState("");
   const [race, setRace] = useState("");
@@ -733,7 +962,7 @@ function WarbandList({
       <section className="toolbar-band">
         <div>
           <h2>Saved Rosters</h2>
-          <p>{rosters.length} local roster{rosters.length === 1 ? "" : "s"}</p>
+          <p>{rosters.length} saved roster{rosters.length === 1 ? "" : "s"}</p>
         </div>
         <div className="button-row">
           <button className="primary" onClick={onCreate}>
@@ -749,36 +978,54 @@ function WarbandList({
         {rosters.length === 0 ? (
           <div className="empty-state">No saved rosters yet.</div>
         ) : (
-          rosters.map((roster) => (
-            <article className="roster-row" key={roster.id}>
-              <div className="roster-identity">
-                <WarbandBadge warbandTypeId={roster.warbandTypeId} />
-                <div>
-                <h3>{roster.name}</h3>
-                <p>
-                  {warbandName(roster.warbandTypeId)} · {calculateWarbandRating(roster, rulesDb)} rating ·{" "}
-                  {calculateRosterCost(roster, rulesDb)} gc
-                </p>
-              </div>
+          rosters.map((roster) => {
+            const cloudState = getRosterCloudState(roster.id);
+            const cloudStatus = rosterCloudStatus(cloudState, cloudAuthenticated);
+            const cloudOn = cloudState.enabled || cloudState.remote;
+            const nextCloudState = cloudState.lastError ? true : !cloudOn;
+            return (
+              <article className="roster-row" key={`${roster.id}-${cloudStateVersion}`}>
+                <div className="roster-identity">
+                  <WarbandBadge warbandTypeId={roster.warbandTypeId} />
+                  <div>
+                    <div className="roster-title-line">
+                      <h3>{roster.name}</h3>
+                      <span className={`pill ${cloudStatus.tone}`}>{cloudStatus.label}</span>
+                    </div>
+                    <p>
+                      {warbandName(roster.warbandTypeId)} · {calculateWarbandRating(roster, rulesDb)} rating ·{" "}
+                      {calculateRosterCost(roster, rulesDb)} gc
+                    </p>
+                    <small className="roster-cloud-detail">{cloudStatus.detail}</small>
+                  </div>
                 </div>
-              <div className="icon-row">
-                <button onClick={() => onSelect(roster.id)}>Play</button>
-                <button onClick={() => onEdit(roster.id)}>
-                  <Edit3 aria-hidden /> Edit warband
-                </button>
-                <button onClick={() => onCampaign(roster.id)}>Campaign</button>
-                <button aria-label={`Duplicate ${roster.name}`} onClick={() => onDuplicate(roster)}>
-                  <Copy aria-hidden />
-                </button>
-                <button aria-label={`Export ${roster.name}`} onClick={() => onExport(roster)}>
-                  <Download aria-hidden />
-                </button>
-                <button aria-label={`Delete ${roster.name}`} onClick={() => onDelete(roster.id)}>
-                  <Trash2 aria-hidden />
-                </button>
-              </div>
-            </article>
-          ))
+                <div className="icon-row">
+                  <button onClick={() => onSelect(roster.id)}>Play</button>
+                  <button onClick={() => onEdit(roster.id)}>
+                    <Edit3 aria-hidden /> Edit warband
+                  </button>
+                  <button onClick={() => onCampaign(roster.id)}>Campaign</button>
+                  {supabaseEnabled && (
+                    <button
+                      disabled={!cloudAuthenticated}
+                      onClick={() => onCloudSyncChange(roster.id, nextCloudState)}
+                    >
+                      <Cloud aria-hidden /> {cloudState.lastError ? "Retry cloud" : cloudOn ? "Stop cloud" : "Save to cloud"}
+                    </button>
+                  )}
+                  <button aria-label={`Duplicate ${roster.name}`} onClick={() => onDuplicate(roster)}>
+                    <Copy aria-hidden />
+                  </button>
+                  <button aria-label={`Export ${roster.name}`} onClick={() => onExport(roster)}>
+                    <Download aria-hidden />
+                  </button>
+                  <button aria-label={`Delete ${roster.name}`} onClick={() => onDelete(roster.id)}>
+                    <Trash2 aria-hidden />
+                  </button>
+                </div>
+              </article>
+            );
+          })
         )}
       </section>
 
@@ -7566,7 +7813,11 @@ function warbandBadgeMeta(warbandTypeId: string, warband?: WarbandType): { mark:
     ostlanders: { mark: "OS", title: "Ostlanders" },
     reiklanders: { mark: "RK", title: "Reiklanders" },
     middenheimers: { mark: "MH", title: "Middenheimers" },
-    marienburgers: { mark: "MB", title: "Marienburgers" }
+    marienburgers: { mark: "MB", title: "Marienburgers" },
+    "amazons-lustria": { mark: "AL", title: "Amazons (Lustria)" },
+    "amazons-mordheim": { mark: "AM", title: "Amazons (Mordheim)" },
+    pirates: { mark: "PI", title: "Pirates" },
+    "gunnery-school-of-nuln": { mark: "GN", title: "Gunnery School of Nuln" }
   };
   if (known[warbandTypeId]) return known[warbandTypeId];
 
@@ -9226,6 +9477,39 @@ function uniqueById<T extends { id: string }>(items: T[]): T[] {
 
 function uniqueRostersById(items: Roster[]) {
   return uniqueById(items);
+}
+
+function rosterCloudStatus(state: RosterCloudState, authenticated: boolean) {
+  if (!supabaseEnabled) {
+    return { label: "Cloud unavailable", detail: "This build is saving rosters on this device.", tone: "warning" };
+  }
+  if (state.lastError) {
+    return { label: "Sync failed", detail: state.lastError, tone: "error" };
+  }
+  if (state.enabled || state.remote) {
+    if (!authenticated) {
+      return { label: "Cloud paused", detail: "Log in to resume cloud syncing for this roster.", tone: "warning" };
+    }
+    return {
+      label: "Cloud synced",
+      detail: state.lastSyncedAt ? `Last cloud save: ${formatDateTime(state.lastSyncedAt)}` : "This roster will sync on its next save.",
+      tone: "success"
+    };
+  }
+  if (authenticated) {
+    return { label: "Local only", detail: "Use Save to cloud when you want this warband on your account.", tone: "" };
+  }
+  return { label: "Local only", detail: "Log in to make cloud saves available.", tone: "" };
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function mergeSavedRoster(current: Roster[], saved: Roster, existingId?: string, moveToTop = true) {

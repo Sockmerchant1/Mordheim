@@ -1,0 +1,245 @@
+{
+  "warbandType": {
+    "id": "pirates",
+    "name": "Pirates",
+    "race": "Human",
+    "broheimGrade": "1b",
+    "sourceCode": "TC9",
+    "sourceDocumentId": "tc9-pirates",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
+    "implementationStatus": "tested",
+    "startingGold": 500,
+    "minWarriors": 3,
+    "maxWarriors": 15,
+    "maxHeroes": 5,
+    "leaderFighterTypeId": "pirate-captain",
+    "notes": "Town Cryer #9 Pirates warband. Includes Captain, Mates, Cabin Boys, Crew, Gunners, Boatswains, Swabbies, Pirate equipment and Pirate special skills."
+  },
+  "fighterTypes": [
+    {
+      "id": "pirate-captain",
+      "warbandTypeId": "pirates",
+      "name": "Captain",
+      "category": "hero",
+      "minCount": 1,
+      "maxCount": 1,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 60,
+      "startingExperience": 20,
+      "profile": { "M": 4, "WS": 4, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 4, "A": 1, "Ld": 8 },
+      "equipmentListIds": ["pirate-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "academic", "strength", "speed", "pirate-special"],
+      "specialRuleIds": ["leader"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Required leader with access to Pirate special skills.",
+      "source": {
+        "sourceDocumentId": "tc9-pirates",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
+        "pageRef": "Pirates p. 1",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "pirate-mate",
+      "warbandTypeId": "pirates",
+      "name": "Mate",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 35,
+      "startingExperience": 8,
+      "profile": { "M": 4, "WS": 4, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["pirate-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "strength", "speed", "pirate-special"],
+      "specialRuleIds": [],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to two may be hired.",
+      "source": {
+        "sourceDocumentId": "tc9-pirates",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
+        "pageRef": "Pirates p. 1",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "cabin-boy",
+      "warbandTypeId": "pirates",
+      "name": "Cabin Boy",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 15,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 2, "BS": 2, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 6 },
+      "equipmentListIds": ["pirate-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "speed", "pirate-special"],
+      "specialRuleIds": [],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to two may be hired.",
+      "source": {
+        "sourceDocumentId": "tc9-pirates",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
+        "pageRef": "Pirates p. 1",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "pirate-crew",
+      "warbandTypeId": "pirates",
+      "name": "Crew",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": null,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 25,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["pirate-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": [],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Free pirates who count toward the Swabbie limit.",
+      "source": {
+        "sourceDocumentId": "tc9-pirates",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
+        "pageRef": "Pirates p. 2",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "pirate-gunner",
+      "warbandTypeId": "pirates",
+      "name": "Gunner",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": 7,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 25,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["pirate-gunner-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": [],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to seven Gunners may be hired; they count toward the Swabbie limit.",
+      "source": {
+        "sourceDocumentId": "tc9-pirates",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
+        "pageRef": "Pirates p. 2",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "boatswain",
+      "warbandTypeId": "pirates",
+      "name": "Boatswain",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": 5,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 32,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["boatswain-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": [],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to five Boatswains may be hired; they count toward the Swabbie limit.",
+      "source": {
+        "sourceDocumentId": "tc9-pirates",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
+        "pageRef": "Pirates p. 2",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "swabbie",
+      "warbandTypeId": "pirates",
+      "name": "Swabbie",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": null,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 15,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 2, "BS": 2, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 6 },
+      "equipmentListIds": ["swabbie-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["pirate-shanghaied"],
+      "canGainExperience": false,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Swabbies may not gain experience and may not outnumber Crew, Gunners and Boatswains combined.",
+      "validation": {
+        "maxCountPerFighterTypeIds": [
+          {
+            "fighterTypeIds": ["pirate-crew", "pirate-gunner", "boatswain"],
+            "multiplier": 1,
+            "description": "Pirates may not have more Swabbies than Crew, Gunners and Boatswains combined."
+          }
+        ]
+      },
+      "source": {
+        "sourceDocumentId": "tc9-pirates",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
+        "pageRef": "Pirates p. 2",
+        "label": "Henchmen"
+      }
+    }
+  ],
+  "equipmentLists": [
+    {
+      "id": "pirate-equipment",
+      "name": "Pirate Equipment List",
+      "warbandTypeId": "pirates",
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "double-handed-weapon", "spear", "halberd", "cat-o-nine-tails", "brace-of-pistols", "duelling-pistol", "brace-of-duelling-pistols", "bow", "light-armour", "buckler", "helmet", "rope-and-hook", "toughened-leathers"],
+      "appliesToFighterTypeIds": ["pirate-captain", "pirate-mate", "cabin-boy", "pirate-crew"],
+      "notes": "Pirate equipment list for heroes and Crew."
+    },
+    {
+      "id": "pirate-gunner-equipment",
+      "name": "Gunner Equipment List",
+      "warbandTypeId": "pirates",
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "cat-o-nine-tails", "pistol", "brace-of-pistols", "duelling-pistol", "brace-of-duelling-pistols", "blunderbuss", "handgun", "swivel-gun", "swivel-gun-ball-shot", "swivel-gun-chain-shot", "swivel-gun-grape-shot", "rope-and-hook", "toughened-leathers"],
+      "appliesToFighterTypeIds": ["pirate-gunner"],
+      "notes": "Gunner equipment list. Swivel Gun ammunition is bought separately and recorded as equipment."
+    },
+    {
+      "id": "boatswain-equipment",
+      "name": "Boatswain Equipment List",
+      "warbandTypeId": "pirates",
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "boat-hook", "light-armour", "helmet", "rope-and-hook", "toughened-leathers"],
+      "appliesToFighterTypeIds": ["boatswain"],
+      "notes": "Boatswain equipment list."
+    },
+    {
+      "id": "swabbie-equipment",
+      "name": "Swabbie Equipment List",
+      "warbandTypeId": "pirates",
+      "allowedEquipmentItemIds": ["dagger", "mace", "hammer", "axe", "sword", "bow"],
+      "appliesToFighterTypeIds": ["swabbie"],
+      "notes": "Swabbie equipment list."
+    }
+  ]
+}

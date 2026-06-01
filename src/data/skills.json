@@ -8,7 +8,7 @@
     {
       "id": "shooting",
       "name": "Shooting",
-      "skillIds": ["quick-shot", "pistolier", "weapons-expert"]
+      "skillIds": ["quick-shot", "pistolier", "weapons-expert", "hunter"]
     },
     {
       "id": "academic",
@@ -64,6 +64,16 @@
       "id": "lizardmen-special",
       "name": "Lizardmen Special",
       "skillIds": ["lizardmen-infiltration", "great-hunter", "bellowing-battle-roar", "toughened-hide"]
+    },
+    {
+      "id": "amazon-special",
+      "name": "Amazon Special",
+      "skillIds": ["amazon-skink-hunter", "amazon-elixir-of-life", "amazon-mesmerising-dance", "amazon-savage-fury", "amazon-concealment"]
+    },
+    {
+      "id": "pirate-special",
+      "name": "Pirate Special",
+      "skillIds": ["sea-shanty", "boom-boom", "pirate-swashbuckler", "sailor", "perfect-killer", "wrecker"]
     },
     {
       "id": "forest-goblin-special",
@@ -152,6 +162,17 @@
       "sourceUrl": "https://www.broheim.net/downloads/rules/Mordheim%20Core%20Rules%20Printable.pdf",
       "pageRef": "Core p. 84",
       "relatedRuleIds": ["weapon-use-limits"]
+    },
+    {
+      "id": "hunter",
+      "name": "Hunter",
+      "categoryId": "shooting",
+      "effectSummary": "The warrior may move and fire with weapons that normally use the Move or Fire restriction.",
+      "restrictions": "Only heroes with Shooting skill access unless another rule grants access.",
+      "sourceDocumentId": "mordheim-core-rules",
+      "sourceUrl": "https://www.broheim.net/downloads/rules/Mordheim%20Core%20Rules%20Printable.pdf",
+      "pageRef": "Core p. 84",
+      "relatedRuleIds": ["move-or-fire"]
     },
     {
       "id": "battle-tongue",
@@ -783,6 +804,81 @@
         "requiredSpecialRuleIds": []
       }
     },
+    {
+      "id": "amazon-skink-hunter",
+      "name": "Skink Hunter",
+      "categoryId": "amazon-special",
+      "effectSummary": "The Amazon always strikes first in the first round of combat against Skink models, regardless of who charged.",
+      "restrictions": "Amazons (Lustria) Heroines with Amazon Special skill access.",
+      "sourceDocumentId": "tc15-amazons-lustria",
+      "sourceUrl": "https://broheim.net/downloads/towncryer/TownCryer15.pdf#page=20",
+      "pageRef": "Town Cryer #15 p. 21",
+      "relatedRuleIds": [],
+      "validation": {
+        "allowedFighterTypeIds": ["amazon-serpent-priestess", "amazon-eagle-warrior", "amazon-piranha-warrior"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "amazon-elixir-of-life",
+      "name": "Elixir of Life",
+      "categoryId": "amazon-special",
+      "effectSummary": "After a battle, the Amazon may re-roll one Out of Action roll for herself and must accept the second result.",
+      "restrictions": "Amazons (Lustria) Heroines with Amazon Special skill access.",
+      "sourceDocumentId": "tc15-amazons-lustria",
+      "sourceUrl": "https://broheim.net/downloads/towncryer/TownCryer15.pdf#page=20",
+      "pageRef": "Town Cryer #15 p. 21",
+      "relatedRuleIds": ["battle-out-of-action"],
+      "validation": {
+        "allowedFighterTypeIds": ["amazon-serpent-priestess", "amazon-eagle-warrior", "amazon-piranha-warrior"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "amazon-mesmerising-dance",
+      "name": "Mesmerising Dance",
+      "categoryId": "amazon-special",
+      "effectSummary": "Models in base contact must pass a Leadership test at the start of each turn or cannot attack that turn; Lizardmen and Undead are immune.",
+      "restrictions": "Amazons (Lustria) Heroines with Amazon Special skill access.",
+      "sourceDocumentId": "tc15-amazons-lustria",
+      "sourceUrl": "https://broheim.net/downloads/towncryer/TownCryer15.pdf#page=20",
+      "pageRef": "Town Cryer #15 p. 21",
+      "relatedRuleIds": [],
+      "validation": {
+        "allowedFighterTypeIds": ["amazon-serpent-priestess", "amazon-eagle-warrior", "amazon-piranha-warrior"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "amazon-savage-fury",
+      "name": "Savage Fury",
+      "categoryId": "amazon-special",
+      "effectSummary": "The Amazon gains +1 Attack when charging and is immune to charm effects and Fear.",
+      "restrictions": "Amazons (Lustria) Heroines with Amazon Special skill access.",
+      "sourceDocumentId": "tc15-amazons-lustria",
+      "sourceUrl": "https://broheim.net/downloads/towncryer/TownCryer15.pdf#page=20",
+      "pageRef": "Town Cryer #15 p. 21",
+      "relatedRuleIds": ["fear"],
+      "validation": {
+        "allowedFighterTypeIds": ["amazon-serpent-priestess", "amazon-eagle-warrior", "amazon-piranha-warrior"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "amazon-concealment",
+      "name": "Concealment",
+      "categoryId": "amazon-special",
+      "effectSummary": "When the Amazon is hiding in jungle terrain, enemies halve the range at which they can spot her.",
+      "restrictions": "Amazons (Lustria) Heroines with Amazon Special skill access.",
+      "sourceDocumentId": "tc15-amazons-lustria",
+      "sourceUrl": "https://broheim.net/downloads/towncryer/TownCryer15.pdf#page=20",
+      "pageRef": "Town Cryer #15 p. 21",
+      "relatedRuleIds": ["battle-hidden"],
+      "validation": {
+        "allowedFighterTypeIds": ["amazon-serpent-priestess", "amazon-eagle-warrior", "amazon-piranha-warrior"],
+        "requiredSpecialRuleIds": []
+      }
+    },
   {
       "id": "shed-animosity",
       "name": "Shed Animosity",
@@ -970,6 +1066,96 @@
       "relatedRuleIds": ["rout-tests"],
       "validation": {
         "allowedFighterTypeIds": ["ostlander-elder"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "sea-shanty",
+      "name": "Sea Shanty",
+      "categoryId": "pirate-special",
+      "effectSummary": "Once per turn, if not in close combat, knocked down or stunned, the Pirate may sing a shanty. Pirate models within 6 inches may re-roll failed Leadership tests until the singer is knocked down, stunned, out of action or sings another shanty.",
+      "restrictions": "Pirate Captains, Mates and Cabin Boys with Pirate Special skill access.",
+      "sourceDocumentId": "tc9-pirates",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
+      "pageRef": "Pirates p. 3",
+      "relatedRuleIds": ["leadership-tests"],
+      "validation": {
+        "allowedFighterTypeIds": ["pirate-captain", "pirate-mate", "cabin-boy"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "boom-boom",
+      "name": "Boom Boom",
+      "categoryId": "pirate-special",
+      "effectSummary": "The Pirate may re-roll Injury dice for wounds he causes with black powder weapons, but must accept the second result.",
+      "restrictions": "Pirate Captains, Mates and Cabin Boys with Pirate Special skill access.",
+      "sourceDocumentId": "tc9-pirates",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
+      "pageRef": "Pirates p. 3",
+      "relatedRuleIds": ["black-powder"],
+      "validation": {
+        "allowedFighterTypeIds": ["pirate-captain", "pirate-mate", "cabin-boy"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "pirate-swashbuckler",
+      "name": "Swashbuckler",
+      "categoryId": "pirate-special",
+      "effectSummary": "When armed with a normal sword, the Pirate may re-roll missed attacks with that sword.",
+      "restrictions": "Pirate Captains, Mates and Cabin Boys with Pirate Special skill access. Applies to normal swords, not double-handed swords or other weapons.",
+      "sourceDocumentId": "tc9-pirates",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
+      "pageRef": "Pirates p. 3",
+      "relatedRuleIds": ["sword"],
+      "validation": {
+        "allowedFighterTypeIds": ["pirate-captain", "pirate-mate", "cabin-boy"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "sailor",
+      "name": "Sailor",
+      "categoryId": "pirate-special",
+      "effectSummary": "The Pirate may re-roll failed Initiative tests to avoid falling and while climbing, including climbing charges made by leaping.",
+      "restrictions": "Pirate Captains, Mates and Cabin Boys with Pirate Special skill access.",
+      "sourceDocumentId": "tc9-pirates",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
+      "pageRef": "Pirates p. 3",
+      "relatedRuleIds": ["climbing", "falling"],
+      "validation": {
+        "allowedFighterTypeIds": ["pirate-captain", "pirate-mate", "cabin-boy"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "perfect-killer",
+      "name": "Perfect Killer",
+      "categoryId": "pirate-special",
+      "effectSummary": "If armed with a loaded missile weapon, the Pirate may make one quick close-combat shooting attack before the first round begins. It automatically hits and is resolved at the weapon's Strength; it may use black powder weapons but not a Swivel Gun.",
+      "restrictions": "Pirate Captains, Mates and Cabin Boys with Pirate Special skill access.",
+      "sourceDocumentId": "tc9-pirates",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
+      "pageRef": "Pirates p. 3",
+      "relatedRuleIds": ["black-powder", "swivel-gun"],
+      "validation": {
+        "allowedFighterTypeIds": ["pirate-captain", "pirate-mate", "cabin-boy"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "wrecker",
+      "name": "Wrecker",
+      "categoryId": "pirate-special",
+      "effectSummary": "After deployment, the Pirate may be set up within 8 inches of the enemy deployment area and at least 8 inches from enemy models. If both players have infiltrators, roll off to decide who sets up first.",
+      "restrictions": "Pirate Captains, Mates and Cabin Boys with Pirate Special skill access.",
+      "sourceDocumentId": "tc9-pirates",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
+      "pageRef": "Pirates p. 3",
+      "relatedRuleIds": ["infiltration"],
+      "validation": {
+        "allowedFighterTypeIds": ["pirate-captain", "pirate-mate", "cabin-boy"],
         "requiredSpecialRuleIds": []
       }
     }

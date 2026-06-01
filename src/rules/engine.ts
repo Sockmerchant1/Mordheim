@@ -19,6 +19,29 @@ export const DEFAULT_MORDHEIM_ADVANCE_THRESHOLDS = [
 ];
 
 const HERO_ADVANCE_XP = DEFAULT_MORDHEIM_ADVANCE_THRESHOLDS;
+const NULN_BLACKPOWDER_EQUIPMENT_IDS = new Set([
+  "pistol",
+  "brace-of-pistols",
+  "duelling-pistol",
+  "brace-of-duelling-pistols",
+  "blunderbuss",
+  "handgun",
+  "hunting-rifle",
+  "nuln-pistol",
+  "nuln-brace-of-pistols",
+  "nuln-double-barrelled-pistol",
+  "nuln-brace-of-double-barrelled-pistols",
+  "nuln-duelling-pistol",
+  "nuln-brace-of-duelling-pistols",
+  "nuln-double-barrelled-duelling-pistol",
+  "nuln-brace-of-double-barrelled-duelling-pistols",
+  "nuln-handgun",
+  "nuln-double-barrelled-handgun",
+  "nuln-repeater-pistol",
+  "nuln-repeater-handgun",
+  "hand-held-mortar",
+  "hersten-wenkler-pigeon-bombs"
+]);
 
 export function getPendingAdvances(previousXp: number, newXp: number, thresholds = DEFAULT_MORDHEIM_ADVANCE_THRESHOLDS): number[] {
   return thresholds.filter((threshold) => previousXp < threshold && newXp >= threshold);
@@ -479,6 +502,13 @@ function equipmentOptionFor(
 
   if (!listAllowed && !skillAllowed) {
     return blocked(item, `${item.name} is not in the ${fighterType.name} equipment list.`, source);
+  }
+  if (
+    fighterType.warbandTypeId === "gunnery-school-of-nuln" &&
+    item.category === "missile" &&
+    !NULN_BLACKPOWDER_EQUIPMENT_IDS.has(item.id)
+  ) {
+    return blocked(item, "Gunnery School of Nuln warriors never use non-blackpowder ranged weapons.", source);
   }
   if (
     item.validation.allowedFighterTypeIds.length > 0 &&

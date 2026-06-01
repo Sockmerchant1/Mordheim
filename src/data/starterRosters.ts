@@ -26,6 +26,66 @@ export type StarterRosterTemplate = {
 
 export const starterRosterTemplates: StarterRosterTemplate[] = [
   {
+    id: "amazons-lustria-balanced",
+    warbandTypeId: "amazons-lustria",
+    name: "Heart of Darkness Hunt",
+    summary: "A Lustria Amazon start with Serpent Priestess, Eagle Warrior, Piranha Warrior, Warriors and Jaguars.",
+    playStyle: "Ritual support, flexible short-ranged pressure and fast jungle fighters.",
+    members: [
+      { fighterTypeId: "amazon-serpent-priestess", displayName: "Yara of the Serpent", equipment: ["dagger", "amazon-lustria-sunstaff"] },
+      { fighterTypeId: "amazon-eagle-warrior", displayName: "Ixchel", equipment: ["dagger", "amazon-starblade"] },
+      { fighterTypeId: "amazon-piranha-warrior", displayName: "Nayeli", equipment: ["dagger", "bow"] },
+      { fighterTypeId: "amazon-lustria-warrior", displayName: "River Guard", groupSize: 2, equipment: ["dagger", "club"] },
+      { fighterTypeId: "amazon-jaguar-warrior", displayName: "Jaguar Stalkers", groupSize: 2, equipment: ["dagger", "amazon-javelins"] }
+    ]
+  },
+  {
+    id: "amazons-mordheim-balanced",
+    warbandTypeId: "amazons-mordheim",
+    name: "The Broken Chain",
+    summary: "A Mordheim Amazon start with Priestess, Champion, Totem Warrior, Warriors and Scouts.",
+    playStyle: "Elite artefact users, frenzied melee threat and mobile javelin support.",
+    members: [
+      { fighterTypeId: "amazon-priestess", displayName: "Priestess Teyacapan", equipment: ["dagger", "amazon-sunstaff"] },
+      { fighterTypeId: "amazon-champion", displayName: "Mireya", equipment: ["dagger", "sword"] },
+      { fighterTypeId: "amazon-totem-warrior", displayName: "Coatl", equipment: ["dagger", "amazon-claw-of-the-old-ones"] },
+      { fighterTypeId: "amazon-mordheim-warrior", displayName: "Freed Warriors", groupSize: 2, equipment: ["dagger", "club"] },
+      { fighterTypeId: "amazon-scout", displayName: "Ruin Scouts", groupSize: 2, equipment: ["dagger", "amazon-javelins"] }
+    ]
+  },
+  {
+    id: "pirates-balanced",
+    warbandTypeId: "pirates",
+    name: "The Salt Saint's Due",
+    summary: "A broad Pirate start with Captain, Mate, Cabin Boy, Crew, Gunners, Boatswain and Swabbies.",
+    playStyle: "Many bodies, mixed pistols and bows, with a Boatswain to keep the deck clear.",
+    members: [
+      { fighterTypeId: "pirate-captain", displayName: "Captain Rosk", equipment: ["dagger", "sword"] },
+      { fighterTypeId: "pirate-mate", displayName: "Mara Finch", equipment: ["dagger", "axe"] },
+      { fighterTypeId: "cabin-boy", displayName: "Pip Lowtide", equipment: ["dagger"] },
+      { fighterTypeId: "pirate-crew", displayName: "Deck Crew", groupSize: 2, equipment: ["dagger", "mace"] },
+      { fighterTypeId: "pirate-gunner", displayName: "Powder Gunners", groupSize: 2, equipment: ["dagger", "pistol"] },
+      { fighterTypeId: "boatswain", displayName: "Bosun Mott", groupSize: 1, equipment: ["dagger", "boat-hook"] },
+      { fighterTypeId: "swabbie", displayName: "Pressed Hands", groupSize: 2, equipment: ["dagger", "bow"] }
+    ]
+  },
+  {
+    id: "gunnery-school-of-nuln-balanced",
+    warbandTypeId: "gunnery-school-of-nuln",
+    name: "The Blackpowder Thesis",
+    summary: "A Nuln fieldwork party with Officer, Instructor, Senior Student, Underclassman, support crew, Marksmen and a Pistolier.",
+    playStyle: "Blackpowder range control, careful positioning and expensive but accurate shooting.",
+    members: [
+      { fighterTypeId: "senior-gunnery-officer", displayName: "Officer Steiger", equipment: ["dagger", "sword", "nuln-pistol"] },
+      { fighterTypeId: "nuln-instructor", displayName: "Instructor Lotte", equipment: ["dagger", "nuln-handgun"] },
+      { fighterTypeId: "senior-student", displayName: "Jannik von Meissen", equipment: ["dagger", "axe", "nuln-brace-of-pistols"] },
+      { fighterTypeId: "underclassman", displayName: "Otto", equipment: ["dagger", "mace"] },
+      { fighterTypeId: "son-of-the-guns", displayName: "Powder Runners", groupSize: 2, equipment: ["dagger", "mace"] },
+      { fighterTypeId: "nuln-marksman", displayName: "Range Marksmen", groupSize: 2, equipment: ["dagger", "nuln-handgun"] },
+      { fighterTypeId: "nuln-pistolier", displayName: "Ruprecht", groupSize: 1, equipment: ["dagger", "nuln-brace-of-pistols"] }
+    ]
+  },
+  {
     id: "averlanders-balanced",
     warbandTypeId: "averlanders",
     name: "Black Fire Patrol",

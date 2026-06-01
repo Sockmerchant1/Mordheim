@@ -2,7 +2,7 @@
 
 An unofficial local-first Mordheim roster and campaign helper. The app separates canonical rules data from player roster state so rosters reference structured records for fighter types, equipment, skills, special rules, source documents and campaign log entries.
 
-The first fully seeded warbands are **Witch Hunters**, the official **Mercenaries** variants, **Averlanders**, **Kislevites**, **Ostlanders**, **Sisters of Sigmar**, **Carnival of Chaos**, **Cult of the Possessed**, **Skaven**, **Skaven of Clan Pestilens**, **Undead**, **Orc Mob**, **Dwarf Treasure Hunters**, **Beastmen Raiders**, **Shadow Warriors**, **Lizardmen**, **Forest Goblins**, and **Black Orcs**. The attached workbook was used as a roster layout and data-entry reference only; Broheim-hosted rule documents are treated as the source references.
+The first fully seeded warbands are **Witch Hunters**, the official **Mercenaries** variants, **Averlanders**, **Kislevites**, **Ostlanders**, **Sisters of Sigmar**, **Carnival of Chaos**, **Cult of the Possessed**, **Skaven**, **Skaven of Clan Pestilens**, **Undead**, **Orc Mob**, **Dwarf Treasure Hunters**, **Beastmen Raiders**, **Shadow Warriors**, **Lizardmen**, **Forest Goblins**, **Black Orcs**, **Amazons (Lustria)**, **Amazons (Mordheim)**, **Pirates**, and **Gunnery School of Nuln**. The attached workbook was used as a roster layout and data-entry reference only; Broheim-hosted rule documents are treated as the source references.
 
 ## Stack
 
@@ -191,6 +191,10 @@ Hired swords are seeded from local data and can be hired from the Roster Editor.
 - Lizardmen
 - Forest Goblins
 - Black Orcs
+- Amazons (Lustria)
+- Amazons (Mordheim)
+- Pirates
+- Gunnery School of Nuln
 
 The currently tracked Grade 1a official warbands in `src/data/warbandIndex.json` are seeded and covered by rules-engine verification.
 

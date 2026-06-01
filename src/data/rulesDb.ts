@@ -4,6 +4,8 @@ import ruleReferences from "./ruleReferences.json";
 import skillsSeed from "./skills.json";
 import sourceDocuments from "./sources.json";
 import specialRules from "./specialRules.json";
+import amazonsLustria from "./warbands/amazons-lustria.json";
+import amazonsMordheim from "./warbands/amazons-mordheim.json";
 import averlanders from "./warbands/averlanders.json";
 import beastmenRaiders from "./warbands/beastmen-raiders.json";
 import blackOrcs from "./warbands/black-orcs.json";
@@ -11,11 +13,13 @@ import carnivalOfChaos from "./warbands/carnival-of-chaos.json";
 import cultOfThePossessed from "./warbands/cult-of-the-possessed.json";
 import dwarfTreasureHunters from "./warbands/dwarf-treasure-hunters.json";
 import forestGoblins from "./warbands/forest-goblins.json";
+import gunnerySchoolOfNuln from "./warbands/gunnery-school-of-nuln.json";
 import kislevites from "./warbands/kislevites.json";
 import lizardmen from "./warbands/lizardmen.json";
 import mercenaries from "./warbands/mercenaries.json";
 import orcMob from "./warbands/orc-mob.json";
 import ostlanders from "./warbands/ostlanders.json";
+import pirates from "./warbands/pirates.json";
 import shadowWarriors from "./warbands/shadow-warriors.json";
 import sistersOfSigmar from "./warbands/sisters-of-sigmar.json";
 import skaven from "./warbands/skaven.json";
@@ -28,7 +32,10 @@ import type { EquipmentList, FighterType, RulesDb } from "../rules/types";
 import { maximumProfileForFighterType } from "../rules/advancement";
 
 const warbandSeeds = [
+  warbandSeedSchema.parse(amazonsLustria),
+  warbandSeedSchema.parse(amazonsMordheim),
   warbandSeedSchema.parse(averlanders),
+  warbandSeedSchema.parse(pirates),
   warbandSeedSchema.parse(witchHunters),
   warbandSeedSchema.parse(sistersOfSigmar),
   warbandSeedSchema.parse(carnivalOfChaos),
@@ -44,6 +51,7 @@ const warbandSeeds = [
   warbandSeedSchema.parse(shadowWarriors),
   warbandSeedSchema.parse(lizardmen),
   warbandSeedSchema.parse(forestGoblins),
+  warbandSeedSchema.parse(gunnerySchoolOfNuln),
   warbandSeedSchema.parse(skavenPestilens)
 ];
 const warbandSeedCollections = [warbandSeedCollectionSchema.parse(mercenaries)];

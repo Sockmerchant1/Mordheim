@@ -341,6 +341,90 @@ h3 {
   color: #fff4df;
 }
 
+.cloud-account-control {
+  align-self: stretch;
+  background: rgba(255, 244, 223, 0.08);
+  border: 1px solid rgba(217, 201, 168, 0.35);
+  border-radius: 8px;
+  color: #fff4df;
+  display: grid;
+  gap: 0.45rem;
+  min-width: min(100%, 300px);
+  padding: 0.65rem;
+}
+
+.cloud-account-control.unavailable {
+  align-content: center;
+  min-width: 190px;
+}
+
+.cloud-account-title,
+.cloud-account-row,
+.cloud-account-tabs,
+.cloud-account-fields {
+  align-items: center;
+  display: flex;
+  gap: 0.45rem;
+}
+
+.cloud-account-title {
+  color: #d9c9a8;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cloud-account-title svg {
+  height: 1rem;
+  width: 1rem;
+}
+
+.cloud-account-row {
+  justify-content: space-between;
+}
+
+.cloud-account-row strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cloud-account-tabs button,
+.cloud-account-row button {
+  min-height: 30px;
+  padding: 0.3rem 0.55rem;
+}
+
+.cloud-account-tabs button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+.cloud-account-fields {
+  flex-wrap: wrap;
+}
+
+.cloud-account-fields input {
+  background: rgba(255, 250, 240, 0.95);
+  min-height: 34px;
+  min-width: 0;
+  padding: 0.35rem 0.5rem;
+  width: 9.5rem;
+}
+
+.cloud-account-fields button {
+  min-height: 34px;
+}
+
+.cloud-account-message {
+  color: #ffe2a9;
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin: 0;
+}
+
 .install-app-prompt {
   align-items: center;
   background:
@@ -571,6 +655,24 @@ h3 {
   display: flex;
   gap: 0.85rem;
   min-width: 0;
+}
+
+.roster-title-line {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.roster-title-line h3 {
+  margin: 0;
+}
+
+.roster-cloud-detail {
+  color: var(--muted);
+  display: block;
+  font-weight: 700;
+  margin-top: 0.18rem;
 }
 
 .warband-badge {
@@ -855,6 +957,16 @@ h3 {
 .pill.success {
   background: #dcebdd;
   color: var(--success);
+}
+
+.pill.warning {
+  background: #fff1cf;
+  color: #745518;
+}
+
+.pill.error {
+  background: #f8e7e1;
+  color: #7a211a;
 }
 
 .toggle {
