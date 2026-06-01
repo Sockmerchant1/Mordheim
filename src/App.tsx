@@ -34,6 +34,7 @@ import {
   saveRoster,
   type RosterCloudState
 } from "./api/rosters";
+import { errorMessage } from "./lib/errors";
 import {
   ensureSupabaseProfile,
   getSupabaseSession,
@@ -9506,10 +9507,6 @@ function formatDateTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-}
-
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
 }
 
 function mergeSavedRoster(current: Roster[], saved: Roster, existingId?: string, moveToTop = true) {

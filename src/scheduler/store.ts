@@ -1,4 +1,5 @@
 import type { Session } from "@supabase/supabase-js";
+import { errorMessage } from "../lib/errors";
 import { getSupabaseSession, subscribeToSupabaseAuth, supabase, supabaseEnabled } from "../lib/supabase";
 import type {
   CreateGameInput,
@@ -766,10 +767,6 @@ function invitationToPlayer(invitation: GameInvitation): PlayerProfile {
     playerName: invitation.playerName,
     email: invitation.email
   };
-}
-
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
 }
 
 function slug(value: string) {

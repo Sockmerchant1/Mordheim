@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { errorMessage } from "../lib/errors";
 import type { Roster } from "../rules/types";
 import {
   acceptedPlayerCount,
@@ -910,5 +911,5 @@ function formatDateLong(value: string) {
 }
 
 function errorText(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
+  return errorMessage(error);
 }

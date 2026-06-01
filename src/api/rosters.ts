@@ -1,5 +1,6 @@
 import { rosterSchema } from "../rules/schemas";
 import type { Roster } from "../rules/types";
+import { errorMessage } from "../lib/errors";
 import { getSupabaseSession, supabase, supabaseEnabled } from "../lib/supabase";
 
 const localKey = "mordheim.rosters";
@@ -265,7 +266,7 @@ function markRosterCloudSynced(id: string, syncedAt: string) {
 
 function markRosterCloudError(id: string, error: unknown) {
   const state = readCloudState();
-  state.lastError[id] = error instanceof Error ? error.message : String(error);
+  state.lastError[id] = errorMessage(error);
   writeCloudState(state);
 }
 
