@@ -34,14 +34,9 @@ import {
   saveRoster,
   type RosterCloudState
 } from "./api/rosters";
+import { useAppAccount } from "./lib/account";
 import { errorMessage } from "./lib/errors";
-import {
-  ensureSupabaseProfile,
-  getSupabaseSession,
-  subscribeToSupabaseAuth,
-  supabase,
-  supabaseEnabled
-} from "./lib/supabase";
+import { supabaseEnabled } from "./lib/supabase";
 import rulesLookupSeed from "./data/rulesLookup.json";
 import { rulesDb, warbandIndex, type WarbandIndexRecord } from "./data/rulesDb";
 import {
@@ -362,9 +357,7 @@ export default function App() {
   const [allowDraftSave, setAllowDraftSave] = useState(false);
   const [includeCampaignInPdf, setIncludeCampaignInPdf] = useState(false);
   const [lookupItem, setLookupItem] = useState<LookupItem>();
-  const [cloudSession, setCloudSession] = useState<Session | null>(null);
-  const [cloudAuthBusy, setCloudAuthBusy] = useState(false);
-  const [cloudAuthMessage, setCloudAuthMessage] = useState("");
+  const account = useAppAccount();
   const [cloudStateVersion, setCloudStateVersion] = useState(0);
   const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -378,27 +371,7 @@ export default function App() {
 
   useEffect(() => {
     void loadRosterList();
-    if (!supabaseEnabled) return;
-    return subscribeToSupabaseAuth(() => {
-      void loadRosterList();
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!supabaseEnabled) return;
-    let isCurrent = true;
-    void getSupabaseSession().then((session) => {
-      if (isCurrent) setCloudSession(session);
-    });
-    const unsubscribe = subscribeToSupabaseAuth((session) => {
-      setCloudSession(session);
-      setCloudAuthMessage("");
-    });
-    return () => {
-      isCurrent = false;
-      unsubscribe();
-    };
-  }, []);
+  }, [account.profile?.playerId]);
 
   const activeRoster = useMemo(
     () => (mode === "create" ? draftRoster : rosters.find((roster) => roster.id === activeRosterId)),
@@ -444,22 +417,23 @@ export default function App() {
       setRosters((current) => current.filter((roster) => roster.id !== id));
       if (activeRosterId === id) setActiveRosterId(undefined);
     } catch (error) {
-      setCloudAuthMessage(errorMessage(error));
+      account.clearMessage();
+      window.alert(errorMessage(error));
     }
   }
 
   async function setRosterCloudSync(id: string, enabled: boolean) {
     const roster = rosters.find((item) => item.id === id);
     if (!roster) return;
-    setCloudAuthMessage("");
+    account.clearMessage();
     try {
       if (enabled) {
-        if (!supabaseEnabled || !supabase) {
-          setCloudAuthMessage("Cloud saves are not configured for this build.");
+        if (!supabaseEnabled) {
+          window.alert("Cloud saves are not configured for this build.");
           return;
         }
-        if (!cloudSession) {
-          setCloudAuthMessage("Log in before saving a warband to cloud.");
+        if (!account.authenticated) {
+          window.alert("Log in before saving a warband to cloud.");
           return;
         }
         const saved = await enableRosterCloudSync(roster);
@@ -470,68 +444,9 @@ export default function App() {
         await disableRosterCloudSync(id);
       }
     } catch (error) {
-      setCloudAuthMessage(errorMessage(error));
+      window.alert(errorMessage(error));
     } finally {
       setCloudStateVersion((current) => current + 1);
-    }
-  }
-
-  async function loginCloudAccount(email: string, password: string) {
-    if (!supabase) return;
-    setCloudAuthBusy(true);
-    setCloudAuthMessage("");
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      if (error) throw error;
-      if (!data.session) throw new Error("Login did not return a session.");
-      await ensureSupabaseProfile(data.session);
-      setCloudSession(data.session);
-      await loadRosterList();
-    } catch (error) {
-      setCloudAuthMessage(errorMessage(error));
-    } finally {
-      setCloudAuthBusy(false);
-    }
-  }
-
-  async function registerCloudAccount(playerName: string, email: string, password: string) {
-    if (!supabase) return;
-    setCloudAuthBusy(true);
-    setCloudAuthMessage("");
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: { data: { player_name: playerName.trim() } }
-      });
-      if (error) throw error;
-      if (!data.session) {
-        setCloudAuthMessage("Account created. Confirm the email from Supabase, then log in.");
-        return;
-      }
-      await ensureSupabaseProfile(data.session, playerName);
-      setCloudSession(data.session);
-      await loadRosterList();
-    } catch (error) {
-      setCloudAuthMessage(errorMessage(error));
-    } finally {
-      setCloudAuthBusy(false);
-    }
-  }
-
-  async function logoutCloudAccount() {
-    if (!supabase) return;
-    setCloudAuthBusy(true);
-    setCloudAuthMessage("");
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      setCloudSession(null);
-      await loadRosterList();
-    } catch (error) {
-      setCloudAuthMessage(errorMessage(error));
-    } finally {
-      setCloudAuthBusy(false);
     }
   }
 
@@ -609,12 +524,12 @@ export default function App() {
           <h1>Warband Manager</h1>
         </div>
         <CloudAccountControl
-          session={cloudSession}
-          busy={cloudAuthBusy}
-          message={cloudAuthMessage}
-          onLogin={loginCloudAccount}
-          onRegister={registerCloudAccount}
-          onLogout={logoutCloudAccount}
+          session={account.session}
+          busy={account.busy}
+          message={account.message}
+          onLogin={account.login}
+          onRegister={account.register}
+          onLogout={account.logout}
         />
         <nav aria-label="Main">
           <button className={mode === "list" ? "active" : ""} onClick={() => setMode("list")}>
@@ -666,7 +581,7 @@ export default function App() {
           onDelete={removeRoster}
           onExport={exportRoster}
           onImportClick={() => importInputRef.current?.click()}
-          cloudAuthenticated={Boolean(cloudSession)}
+          cloudAuthenticated={account.authenticated}
           cloudStateVersion={cloudStateVersion}
           onCloudSyncChange={setRosterCloudSync}
         />
@@ -676,12 +591,10 @@ export default function App() {
         <main className="workspace">
           <GameSchedulerPage
             rosters={rosters}
+            profile={account.profile}
+            authenticated={account.authenticated}
             onWarbands={() => setMode("list")}
             onCampaign={() => setMode(activeRosterId ? "campaign" : "list")}
-            onCreateWarband={() => {
-              setDraftRoster(createRosterDraft("witch-hunters"));
-              setMode("create");
-            }}
           />
         </main>
       )}

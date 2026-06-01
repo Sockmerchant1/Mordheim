@@ -70,6 +70,7 @@ export type CreateGameInput = {
   locationName: string;
   maxPlayers: number;
   notes: string;
+  hostWarbandName?: string;
   invitedPlayers: Array<{
     playerId?: string;
     playerName: string;

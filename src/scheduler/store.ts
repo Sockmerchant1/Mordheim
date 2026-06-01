@@ -1,6 +1,13 @@
-import type { Session } from "@supabase/supabase-js";
+import {
+  clearAccountProfile,
+  ensureAccountCampaignMembership,
+  loadAccountProfile,
+  readAccountProfile,
+  saveAccountProfile
+} from "../lib/account";
 import { errorMessage } from "../lib/errors";
-import { getSupabaseSession, subscribeToSupabaseAuth, supabase, supabaseEnabled } from "../lib/supabase";
+import { getSupabaseSession, supabase } from "../lib/supabase";
+import { schedulerConfig } from "./config";
 import type {
   CreateGameInput,
   GameInvitation,
@@ -13,7 +20,6 @@ import type {
   SchedulerSnapshot
 } from "./types";
 
-const profileKey = "mordheim.scheduler.playerProfile";
 const localScheduleKey = "mordheim.scheduler.localSnapshot";
 
 type SchedulerBackend = SchedulerSnapshot["backend"];
@@ -56,57 +62,22 @@ type SupabaseInvitationRow = {
   responded_at: string | null;
 };
 
-export const schedulerConfig = {
-  campaignId: import.meta.env.VITE_SCHEDULER_CAMPAIGN_ID ?? "autumn-in-the-city",
-  campaignName: import.meta.env.VITE_SCHEDULER_CAMPAIGN_NAME ?? "Autumn in the City",
-  appsScriptUrl: (import.meta.env.VITE_SCHEDULER_APPS_SCRIPT_URL ?? "").trim(),
-  googleSheetId: import.meta.env.VITE_SCHEDULER_GOOGLE_SHEET_ID ?? "1n2hA3dIFmkJ_gha16WkRD0hqNC5Zt9tmiUHwuJsVCkE",
-  googleCalendarId: import.meta.env.VITE_SCHEDULER_GOOGLE_CALENDAR_ID ?? "",
-  supabaseUrl: (import.meta.env.VITE_SUPABASE_URL ?? "").trim(),
-  supabaseEnabled
-};
-
 export function readPlayerProfile(): PlayerProfile | undefined {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(profileKey) ?? "null") as PlayerProfile | null;
-    return parsed?.playerId && parsed.playerName ? parsed : undefined;
-  } catch {
-    return undefined;
-  }
+  return readAccountProfile();
 }
 
 export async function loadAuthenticatedPlayerProfile(): Promise<PlayerProfile | undefined> {
-  if (!schedulerConfig.supabaseEnabled || !supabase) return readPlayerProfile();
-  const session = await getSupabaseSession();
-  if (!session?.user) {
-    localStorage.removeItem(profileKey);
-    return undefined;
-  }
-  const profile = await ensureSupabaseProfile(session);
-  await ensureSupabaseCampaignMembership(profile);
-  return savePlayerProfile({
-    ...profile,
-    sessionExpiresAt: session.expires_at ? new Date(session.expires_at * 1000).toISOString() : undefined
-  });
+  if (!schedulerConfig.supabaseEnabled || !supabase) return readAccountProfile();
+  return loadAccountProfile();
 }
 
 export function subscribeToSchedulerAuth(callback: (profile: PlayerProfile | undefined) => void) {
-  if (!schedulerConfig.supabaseEnabled) return () => {};
-  return subscribeToSupabaseAuth(async () => {
-    callback(await loadAuthenticatedPlayerProfile());
-  });
+  void loadAuthenticatedPlayerProfile().then(callback);
+  return () => {};
 }
 
 export function savePlayerProfile(profile: PlayerProfile): PlayerProfile {
-  const next = {
-    ...profile,
-    playerId: profile.playerId || `player-${crypto.randomUUID()}`,
-    playerName: profile.playerName.trim(),
-    email: profile.email?.trim() || undefined,
-    lastSeenAt: new Date().toISOString()
-  };
-  localStorage.setItem(profileKey, JSON.stringify(next));
-  return next;
+  return saveAccountProfile(profile);
 }
 
 export function isSchedulerAuthenticated(profile: PlayerProfile | undefined) {
@@ -118,10 +89,8 @@ export function isSchedulerAuthenticated(profile: PlayerProfile | undefined) {
 }
 
 export function logoutPlayer() {
-  localStorage.removeItem(profileKey);
-  if (schedulerConfig.supabaseEnabled && supabase) {
-    void supabase.auth.signOut();
-  }
+  clearAccountProfile();
+  if (schedulerConfig.supabaseEnabled && supabase) void supabase.auth.signOut();
 }
 
 export async function registerPlayer(input: SchedulerAuthInput): Promise<PlayerProfile> {
@@ -141,12 +110,9 @@ export async function registerPlayer(input: SchedulerAuthInput): Promise<PlayerP
     if (!data.session) {
       throw new Error("Account created. Confirm the email from Supabase, then log in.");
     }
-    const profile = await ensureSupabaseProfile(data.session, input.playerName.trim());
-    await ensureSupabaseCampaignMembership(profile);
-    return savePlayerProfile({
-      ...profile,
-      sessionExpiresAt: data.session.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : undefined
-    });
+    const profile = await loadAccountProfile(data.session, input.playerName.trim());
+    if (!profile) throw new Error("Account created but no profile was returned.");
+    return profile;
   }
   if (schedulerConfig.appsScriptUrl) {
     const profile = await callSchedulerApi<PlayerProfile>("registerPlayer", {
@@ -179,12 +145,9 @@ export async function loginPlayer(input: SchedulerLoginInput): Promise<PlayerPro
     });
     if (error) throw error;
     if (!data.session) throw new Error("Login did not return a session.");
-    const profile = await ensureSupabaseProfile(data.session);
-    await ensureSupabaseCampaignMembership(profile);
-    return savePlayerProfile({
-      ...profile,
-      sessionExpiresAt: data.session.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : undefined
-    });
+    const profile = await loadAccountProfile(data.session);
+    if (!profile) throw new Error("Login did not return a profile.");
+    return profile;
   }
   if (schedulerConfig.appsScriptUrl) {
     const profile = await callSchedulerApi<PlayerProfile>("loginPlayer", {
@@ -217,7 +180,7 @@ export async function listSchedule(profile?: PlayerProfile): Promise<SchedulerSn
       };
     }
     try {
-      await ensureSupabaseCampaignMembership(profile!);
+      await ensureAccountCampaignMembership(profile!);
       const [gamesResult, playersResult] = await Promise.all([
         supabase
           .from("scheduled_games")
@@ -293,7 +256,7 @@ export async function upsertPlayer(profile: PlayerProfile): Promise<PlayerProfil
         })
         .select("id")
         .single();
-      await ensureSupabaseCampaignMembership(saved);
+      await ensureAccountCampaignMembership(saved);
     }
     return saved;
   }
@@ -336,6 +299,7 @@ export async function createGame(input: CreateGameInput, host: PlayerProfile): P
       playerId: host.playerId,
       playerName: host.playerName,
       email: host.email,
+      warbandName: input.hostWarbandName?.trim() || undefined,
       inviteStatus: "host",
       respondedAt: now
     },
@@ -351,7 +315,7 @@ export async function createGame(input: CreateGameInput, host: PlayerProfile): P
   const gameWithStatus = { ...game, status: calculateGameStatus(game, invitations) };
 
   if (schedulerConfig.supabaseEnabled && supabase) {
-    await ensureSupabaseCampaignMembership(host);
+    await ensureAccountCampaignMembership(host);
     const { error: gameError } = await supabase.from("scheduled_games").insert({
       id: gameWithStatus.gameId,
       campaign_id: gameWithStatus.campaignId,
@@ -403,14 +367,20 @@ export async function createGame(input: CreateGameInput, host: PlayerProfile): P
   return createLocalGame(gameWithStatus, invitations, host);
 }
 
-export async function respondToInvite(gameId: string, player: PlayerProfile, inviteStatus: Exclude<SchedulerInviteStatus, "host">): Promise<SchedulerSnapshot> {
+export async function respondToInvite(
+  gameId: string,
+  player: PlayerProfile,
+  inviteStatus: Exclude<SchedulerInviteStatus, "host">,
+  warbandName?: string
+): Promise<SchedulerSnapshot> {
   if (schedulerConfig.supabaseEnabled && supabase) {
     const { error } = await supabase
       .from("game_invitations")
       .update({
         invite_status: inviteStatus,
         responded_at: new Date().toISOString(),
-        email: player.email ?? null
+        email: player.email ?? null,
+        warband_name: warbandName?.trim() || null
       })
       .eq("game_id", gameId)
       .eq("player_id", player.playerId);
@@ -425,13 +395,14 @@ export async function respondToInvite(gameId: string, player: PlayerProfile, inv
         gameId,
         playerId: player.playerId,
         inviteStatus,
+        warbandName: warbandName?.trim() || undefined,
         auth: authFor(player)
       }));
     } catch {
-      return respondLocal(gameId, player, inviteStatus);
+      return respondLocal(gameId, player, inviteStatus, warbandName);
     }
   }
-  return respondLocal(gameId, player, inviteStatus);
+  return respondLocal(gameId, player, inviteStatus, warbandName);
 }
 
 export async function updateGameStatus(gameId: string, status: SchedulerGameStatus): Promise<SchedulerSnapshot> {
@@ -504,39 +475,6 @@ async function callSchedulerApi<T>(action: string, payload: Record<string, unkno
   const body = await response.json();
   if (body?.ok === false) throw new Error(body.error ?? "Scheduler API request failed.");
   return (body?.data ?? body) as T;
-}
-
-async function ensureSupabaseProfile(session: Session, preferredName?: string): Promise<PlayerProfile> {
-  if (!supabase) throw new Error("Supabase is not configured.");
-  const fallbackName = preferredName
-    ?? stringValue(session.user.user_metadata.player_name)
-    ?? stringValue(session.user.user_metadata.full_name)
-    ?? session.user.email?.split("@")[0]
-    ?? "Player";
-  const { data, error } = await supabase
-    .from("profiles")
-    .upsert({
-      id: session.user.id,
-      player_name: fallbackName,
-      email: session.user.email ?? null
-    })
-    .select("id, player_name, email, updated_at")
-    .single();
-  if (error) throw error;
-  return mapSupabaseProfile(data);
-}
-
-async function ensureSupabaseCampaignMembership(profile: PlayerProfile) {
-  if (!supabase) return;
-  const { error } = await supabase.from("campaign_members").upsert(
-    {
-      campaign_id: schedulerConfig.campaignId,
-      user_id: profile.playerId,
-      role: "member"
-    },
-    { onConflict: "campaign_id,user_id" }
-  );
-  if (error) throw error;
 }
 
 async function listSupabaseInvitations(gameIds: string[]): Promise<GameInvitation[]> {
@@ -660,7 +598,12 @@ function createLocalGame(game: ScheduledGame, invitations: GameInvitation[], hos
   return snapshot;
 }
 
-function respondLocal(gameId: string, player: PlayerProfile, inviteStatus: Exclude<SchedulerInviteStatus, "host">): SchedulerSnapshot {
+function respondLocal(
+  gameId: string,
+  player: PlayerProfile,
+  inviteStatus: Exclude<SchedulerInviteStatus, "host">,
+  warbandName?: string
+): SchedulerSnapshot {
   const current = readLocalSnapshot();
   const game = current.games.find((item) => item.gameId === gameId);
   if (!game) return current;
@@ -671,7 +614,13 @@ function respondLocal(gameId: string, player: PlayerProfile, inviteStatus: Exclu
   }
   const invitations = current.invitations.map((invite) => (
     invite.gameId === gameId && invite.playerId === player.playerId
-      ? { ...invite, inviteStatus, respondedAt: new Date().toISOString(), email: player.email || invite.email }
+      ? {
+          ...invite,
+          inviteStatus,
+          respondedAt: new Date().toISOString(),
+          email: player.email || invite.email,
+          warbandName: warbandName?.trim() || invite.warbandName
+        }
       : invite
   ));
   const games = current.games.map((item) => (
@@ -771,8 +720,4 @@ function invitationToPlayer(invitation: GameInvitation): PlayerProfile {
 
 function slug(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "player";
-}
-
-function stringValue(value: unknown) {
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }

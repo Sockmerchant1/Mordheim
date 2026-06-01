@@ -2210,6 +2210,12 @@ button.blocked,
   font-weight: 800;
 }
 
+.inline-warband-select {
+  display: grid;
+  gap: 0.25rem;
+  max-width: 360px;
+}
+
 .status-pill {
   border: 1px solid rgba(50, 35, 23, 0.18);
   border-radius: 6px;
