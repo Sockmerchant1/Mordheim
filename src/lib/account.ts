@@ -198,15 +198,12 @@ export async function ensureAccountProfile(session: Session, preferredName?: str
 
 export async function ensureAccountCampaignMembership(profile: PlayerProfile) {
   if (!supabase) return;
-  const { error } = await supabase.from("campaign_members").upsert(
-    {
-      campaign_id: schedulerConfig.campaignId,
-      user_id: profile.playerId,
-      role: "member"
-    },
-    { onConflict: "campaign_id,user_id", ignoreDuplicates: true }
-  );
-  if (error) throw error;
+  const { error } = await supabase.from("campaign_members").insert({
+    campaign_id: schedulerConfig.campaignId,
+    user_id: profile.playerId,
+    role: "member"
+  });
+  if (error && error.code !== "23505") throw error;
 }
 
 function stringValue(value: unknown) {
