@@ -382,6 +382,23 @@ export const starterRosterTemplates: StarterRosterTemplate[] = [
       { fighterTypeId: "red-toof-boy", displayName: "Red Toofs", groupSize: 1, equipment: ["dagger", "sword"] },
       { fighterTypeId: "slugga", displayName: "Rock Chuckas", groupSize: 1, equipment: ["dagger", "forest-goblin-throwing-weapons"] }
     ]
+  },
+  {
+    id: "dark-elves-balanced",
+    warbandTypeId: "dark-elves",
+    name: "The Black Ark Raiders",
+    summary: "A Dark Elf raiding party with High Born, Beastmaster, two Fellblades, Sorceress, Corsairs, Shades and a Cold One Beasthound.",
+    playStyle: "Elite elven stat-line with excellent sight, no black powder, and a Sorceress for magical support.",
+    members: [
+      { fighterTypeId: "high-born", displayName: "Lord Vaelith", equipment: ["dagger", "sword"] },
+      { fighterTypeId: "beastmaster", displayName: "Kaelthos", equipment: ["dagger"] },
+      { fighterTypeId: "fellblade", displayName: "Malek", equipment: ["dagger"] },
+      { fighterTypeId: "fellblade", displayName: "Zareth", equipment: ["dagger"] },
+      { fighterTypeId: "dark-elf-sorceress", displayName: "Morathi", equipment: ["dagger"] },
+      { fighterTypeId: "corsair", displayName: "Corsair Reavers", groupSize: 1, equipment: ["dagger"] },
+      { fighterTypeId: "shade", displayName: "Shadow Scouts", groupSize: 2, equipment: ["dagger"] },
+      { fighterTypeId: "cold-one-beasthound", displayName: "Beasthounds", groupSize: 1, equipment: [] }
+    ]
   }
 ];
 

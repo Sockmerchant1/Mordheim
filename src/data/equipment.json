@@ -2193,5 +2193,69 @@
     "pageRef": "Pirates p. 3",
     "restrictions": "Pirate Gunners with a Swivel Gun only.",
     "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "requiredEquipmentItemIds": ["swivel-gun"], "allowedFighterTypeIds": ["pirate-gunner"], "exclusiveEquipmentGroupId": "swivel-gun-ammunition" }
+  },
+  {
+    "id": "repeater-crossbow",
+    "name": "Repeater Crossbow",
+    "category": "missile",
+    "cost": 35,
+    "rulesSummary": "Dark Elf repeater crossbow. Range 24 inches, Strength 3, save modifier -1. May fire multiple shots as described in the weapon rules.",
+    "specialRuleIds": [],
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 4",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [] }
+  },
+  {
+    "id": "dark-elf-blade",
+    "name": "Dark Elf Blade",
+    "category": "miscellaneous",
+    "cost": 15,
+    "rulesSummary": "Weapon upgrade for a sword or dagger. Adds +1 to critical hit rolls and changes injury roll results of 2-4 to Stunned.",
+    "specialRuleIds": ["dark-elf-blade-critical", "dark-elf-blade-wicked-edge"],
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 6",
+    "restrictions": "Heroes only. Upgrades an existing sword or dagger at time of purchase.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [] }
+  },
+  {
+    "id": "sea-dragon-cloak",
+    "name": "Sea Dragon Cloak",
+    "category": "armour",
+    "cost": 50,
+    "rulesSummary": "Special cloak made from sea dragon hide. Provides a 5+ armour save in close combat and a 4+ armour save against missile attacks.",
+    "specialRuleIds": ["sea-dragon-cloak-rule"],
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 6",
+    "restrictions": "Heroes and Corsairs only. May be worn with other armour (provides improved save).",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [] }
+  },
+  {
+    "id": "beastlash",
+    "name": "Beastlash",
+    "category": "close_combat",
+    "cost": 10,
+    "rulesSummary": "Beastmaster whip. Causes Fear in animals, cannot be parried, grants +1 Attack on a charge. Beastmaster only.",
+    "specialRuleIds": ["beastlash-beastbane", "beastlash-cannot-be-parried", "beastlash-whipcrack"],
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 6",
+    "restrictions": "Beastmaster only.",
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+  },
+  {
+    "id": "dark-venom",
+    "name": "Dark Venom",
+    "category": "miscellaneous",
+    "cost": 15,
+    "rulesSummary": "A dose of potent Dark Elf poison. Applied to a hand-to-hand weapon before battle. A model wounded by the poisoned weapon must roll 4+ to recover from Stunned or Knocked Down results.",
+    "specialRuleIds": ["dark-venom-rule"],
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 5",
+    "restrictions": "Heroes only.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
   }
 ]

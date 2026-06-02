@@ -3834,5 +3834,274 @@
     "pageRef": "Pirates p. 3",
     "restrictions": "Use when firing Grape Shot.",
     "relatedRuleIds": []
+  },
+  {
+    "id": "kindred-hatred",
+    "name": "Kindred Hatred",
+    "effectSummary": "Dark Elves Hate any High Elf warriors, including High Elf Hired Swords.",
+    "appliesTo": "All Dark Elf warband members.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 1",
+    "restrictions": "Dark Elf warband members only.",
+    "relatedRuleIds": ["hate-dark-elves"]
+  },
+  {
+    "id": "black-powder-weapons",
+    "name": "Black Powder Weapons",
+    "effectSummary": "Dark Elves may never use black powder weapons as they find them too crude, noisy and unreliable.",
+    "appliesTo": "All Dark Elf warband members.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 1",
+    "restrictions": "Applied to all Dark Elf warband types, affecting equipment selection.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "melee-specialists",
+    "name": "Melee Specialists",
+    "effectSummary": "Fellblades may not use missile weapons of any sort.",
+    "appliesTo": "Fellblades.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 2",
+    "restrictions": "Fellblades only.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "natural-stealth",
+    "name": "Natural Stealth",
+    "effectSummary": "If a Dark Elf is Hiding, enemy models suffer -1 to their Initiative value for determining if they can detect him.",
+    "appliesTo": "Shades.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 4",
+    "restrictions": "Shades only.",
+    "relatedRuleIds": ["battle-hidden"]
+  },
+  {
+    "id": "beastmaster-hounds",
+    "name": "Beastmaster (Hounds)",
+    "effectSummary": "The Beastmaster may be accompanied by up to two Cold One Beasthounds bought as henchmen. If the Beastmaster dies the beasts immediately escape and are removed from the roster. If the Beastmaster is unable to participate in a battle, neither will the beasts.",
+    "appliesTo": "Beastmaster and Cold One Beasthounds.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 2, 5",
+    "restrictions": "Cold One Beasthounds require a Beastmaster in the warband.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "cold-one-beasthound-stupidity",
+    "name": "Stupidity (Cold One Beasthound)",
+    "effectSummary": "Cold One Beasthounds may use the basic Leadership of the Beastmaster if within 6 inches. They may never use the Leadership of the warband leader, nor benefit from the Beastmaster's increased Leadership if he is within 6 inches of the leader.",
+    "appliesTo": "Cold One Beasthounds.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 5",
+    "restrictions": "Cold One Beasthounds only.",
+    "relatedRuleIds": ["stupidity"]
+  },
+  {
+    "id": "cold-one-beasthound-scaly-skin",
+    "name": "Scaly Skin (Cold One Beasthound)",
+    "effectSummary": "Cold One Beasthounds have tough scaly skin and are considered to have a 6+ armour save that cannot be modified beyond 6 due to strength modifiers. Any 'no save' result on the Critical Hit chart negates the unmodified 6+ save.",
+    "appliesTo": "Cold One Beasthounds.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 5",
+    "restrictions": "Cold One Beasthounds only.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "dark-elf-magic",
+    "name": "Dark Elf Magic",
+    "effectSummary": "The Dark Elf Sorceress uses the Dark Elf Magic spell list.",
+    "appliesTo": "Dark Elf Sorceress.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 3",
+    "restrictions": "Dark Elf Sorceress only.",
+    "relatedRuleIds": [
+      "spellcaster",
+      "dark-elf-doombolt",
+      "dark-elf-word-of-pain",
+      "dark-elf-soul-stealer",
+      "dark-elf-flamesword",
+      "dark-elf-deathspasm",
+      "dark-elf-witch-flight"
+    ]
+  },
+  {
+    "id": "dark-elf-doombolt",
+    "name": "Doombolt",
+    "effectSummary": "Difficulty 9. Range 18 inches. Causes a Strength 5 hit. If wounded, the next closest model within 6 inches is also hit on a 4+ at -1 Strength. Continues until no targets remain or Strength drops to 1. Each model can only be hit once per turn.",
+    "appliesTo": "Dark Elf Magic.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 3",
+    "restrictions": "Dark Elf Sorceress with Dark Elf Magic.",
+    "relatedRuleIds": ["dark-elf-magic"],
+    "validation": {
+      "selectableAs": "spell",
+      "allowedFighterTypeIds": ["dark-elf-sorceress"],
+      "requiredSpecialRuleIds": ["dark-elf-magic"]
+    }
+  },
+  {
+    "id": "dark-elf-word-of-pain",
+    "name": "Word of Pain",
+    "effectSummary": "Difficulty 8. Range 12 inches. The victim must re-roll all successful hand-to-hand or missile attacks and all to wound rolls. Must pass a Leadership test to charge. Lasts until the beginning of the next Dark Elf turn.",
+    "appliesTo": "Dark Elf Magic.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 3",
+    "restrictions": "Dark Elf Sorceress with Dark Elf Magic.",
+    "relatedRuleIds": ["dark-elf-magic"],
+    "validation": {
+      "selectableAs": "spell",
+      "allowedFighterTypeIds": ["dark-elf-sorceress"],
+      "requiredSpecialRuleIds": ["dark-elf-magic"]
+    }
+  },
+  {
+    "id": "dark-elf-soul-stealer",
+    "name": "Soul Stealer",
+    "effectSummary": "Difficulty 9. The Sorceress must hit a model in base contact. The target suffers a wound with no armour save. The Sorceress gains +1 Wound (maximum 1 extra wound, lost at end of battle).",
+    "appliesTo": "Dark Elf Magic.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 3",
+    "restrictions": "Dark Elf Sorceress with Dark Elf Magic. Base contact required.",
+    "relatedRuleIds": ["dark-elf-magic"],
+    "validation": {
+      "selectableAs": "spell",
+      "allowedFighterTypeIds": ["dark-elf-sorceress"],
+      "requiredSpecialRuleIds": ["dark-elf-magic"]
+    }
+  },
+  {
+    "id": "dark-elf-flamesword",
+    "name": "Flamesword",
+    "effectSummary": "Difficulty 8. Range 6 inches. A hand-to-hand weapon of a warband member is engulfed in black flames: +2 Strength and ignores armour saves. Lasts until the Sorceress' next shooting phase.",
+    "appliesTo": "Dark Elf Magic.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 3",
+    "restrictions": "Dark Elf Sorceress with Dark Elf Magic.",
+    "relatedRuleIds": ["dark-elf-magic"],
+    "validation": {
+      "selectableAs": "spell",
+      "allowedFighterTypeIds": ["dark-elf-sorceress"],
+      "requiredSpecialRuleIds": ["dark-elf-magic"]
+    }
+  },
+  {
+    "id": "dark-elf-deathspasm",
+    "name": "Deathspasm",
+    "effectSummary": "Difficulty 10. Range 6 inches. Must target the closest enemy model. The victim rolls on the injury chart. If successfully cast, the Sorceress is immediately knocked down.",
+    "appliesTo": "Dark Elf Magic.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 3",
+    "restrictions": "Dark Elf Sorceress with Dark Elf Magic. Must target the closest enemy.",
+    "relatedRuleIds": ["dark-elf-magic"],
+    "validation": {
+      "selectableAs": "spell",
+      "allowedFighterTypeIds": ["dark-elf-sorceress"],
+      "requiredSpecialRuleIds": ["dark-elf-magic"]
+    }
+  },
+  {
+    "id": "dark-elf-witch-flight",
+    "name": "Witch Flight",
+    "effectSummary": "Difficulty 7. The Sorceress may move anywhere within 12 inches and count as charging. If she engages a fleeing enemy she scores 1 automatic hit and the opponent flees again.",
+    "appliesTo": "Dark Elf Magic.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 3",
+    "restrictions": "Dark Elf Sorceress with Dark Elf Magic.",
+    "relatedRuleIds": ["dark-elf-magic"],
+    "validation": {
+      "selectableAs": "spell",
+      "allowedFighterTypeIds": ["dark-elf-sorceress"],
+      "requiredSpecialRuleIds": ["dark-elf-magic"]
+    }
+  },
+  {
+    "id": "dark-elf-blade-critical",
+    "name": "Critical Damage (Dark Elf Blade)",
+    "effectSummary": "Dark Elf Blades add +1 to the result when rolling on the critical hit chart.",
+    "appliesTo": "Dark Elf Blade.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 6",
+    "restrictions": "Use when resolving critical hits with a Dark Elf Blade.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "dark-elf-blade-wicked-edge",
+    "name": "Wicked Edge (Dark Elf Blade)",
+    "effectSummary": "When rolling on the injury table, a result of 2-4 is a Stunned result instead of the normal outcome.",
+    "appliesTo": "Dark Elf Blade.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 6",
+    "restrictions": "Use when resolving injury rolls with a Dark Elf Blade.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "sea-dragon-cloak-rule",
+    "name": "Sea Dragon Cloak",
+    "effectSummary": "Provides a 5+ armour save in close combat and a 4+ armour save against missile attacks. May be combined with other armour to improve save.",
+    "appliesTo": "Sea Dragon Cloak.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 6",
+    "restrictions": "Dark Elf Heroes and Corsairs only.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "beastlash-beastbane",
+    "name": "Beastbane (Beastlash)",
+    "effectSummary": "The Beastlash causes Fear in animals. Any animal charged by or wishing to charge a Beastmaster with a Beastlash must first take a Fear test.",
+    "appliesTo": "Beastlash.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 6",
+    "restrictions": "Beastmaster only.",
+    "relatedRuleIds": ["fear"]
+  },
+  {
+    "id": "beastlash-cannot-be-parried",
+    "name": "Cannot Be Parried (Beastlash)",
+    "effectSummary": "A model attacked by a Beastlash may not make parries with swords or bucklers.",
+    "appliesTo": "Beastlash.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 6",
+    "restrictions": "Applied when resolving close combat against a Beastlash wielder.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "beastlash-whipcrack",
+    "name": "Whipcrack (Beastlash)",
+    "effectSummary": "When the wielder charges they gain +1 Attack for that turn after any other modifications. When charged they gain +1 Attack that strikes first against the charger only.",
+    "appliesTo": "Beastlash.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 6",
+    "restrictions": "Beastmaster only. Multiple whips give only one whipcrack bonus attack.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "dark-venom-rule",
+    "name": "Dark Venom",
+    "effectSummary": "A model wounded by a weapon coated in Dark Venom must roll 4+ to recover from Stunned or Knocked Down results.",
+    "appliesTo": "Dark Venom.",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "pageRef": "Dark Elves p. 5",
+    "restrictions": "Applied to weapons coated with Dark Venom for the battle.",
+    "relatedRuleIds": []
   }
 ]

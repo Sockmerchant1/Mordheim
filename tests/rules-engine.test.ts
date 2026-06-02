@@ -368,6 +368,16 @@ import {
   tooManyUnderclassmen,
   validGunnerySchoolOfNuln
 } from "./fixtures/gunnerySchoolRosters";
+import {
+  darkElvesFellbladeWithCrossbow,
+  darkElvesNoLeader,
+  darkElvesOverBudget,
+  darkElvesTooManyFellblades,
+  darkElvesTooManyHounds,
+  darkElvesTooManyShades,
+  darkElvesTwoLeaders,
+  validDarkElves
+} from "./fixtures/darkElfRosters";
 
 describe("rules engine - Witch Hunters", () => {
   it("calculates pending advance thresholds from XP crossings", () => {
@@ -1330,6 +1340,48 @@ describe("rules engine - Gunnery School of Nuln", () => {
     expect(instructorSkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(false);
     expect(underclassmanSkills.find((option) => option.item.id === "pistolier")?.allowed).toBe(true);
     expect(marksmanSkills.find((option) => option.item.id === "hunter")?.allowed).toBe(false);
+  });
+});
+
+describe("rules engine - Dark Elves", () => {
+  it("loads the Grade 1b Dark Elves warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+    expect(ids).toContain("dark-elves");
+  });
+
+  it("validates a basic starting Dark Elves roster", () => {
+    expect(errorCodes(validDarkElves())).toEqual([]);
+  });
+
+  it("enforces Dark Elf leader, fighter caps and warrior limit", () => {
+    expect(codes(darkElvesNoLeader())).toContain("REQUIRED_LEADER");
+    expect(codes(darkElvesTwoLeaders())).toContain("REQUIRED_LEADER");
+    expect(codes(darkElvesTooManyFellblades())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(darkElvesTooManyShades())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(darkElvesTooManyHounds())).toContain("FIGHTER_MAX_COUNT");
+  });
+
+  it("enforces Dark Elf equipment lists and restrictions", () => {
+    expect(codes(darkElvesFellbladeWithCrossbow())).toContain("INVALID_EQUIPMENT");
+
+    const roster = validDarkElves();
+    const highBornOptions = getAllowedEquipment(roster.members[0], roster, rulesDb);
+    const fellbladeOptions = getAllowedEquipment(roster.members[2], roster, rulesDb);
+    const shadeOptions = getAllowedEquipment(roster.members[6], roster, rulesDb);
+    const corsairOptions = getAllowedEquipment(roster.members[5], roster, rulesDb);
+
+    expect(highBornOptions.find((option) => option.item.id === "repeater-crossbow")?.allowed).toBe(true);
+    expect(highBornOptions.find((option) => option.item.id === "dark-elf-blade")?.allowed).toBe(true);
+    expect(highBornOptions.find((option) => option.item.id === "sea-dragon-cloak")?.allowed).toBe(false);
+    expect(fellbladeOptions.find((option) => option.item.id === "repeater-crossbow")?.allowed).toBe(false);
+    expect(fellbladeOptions.find((option) => option.item.id === "sword")?.allowed).toBe(true);
+    expect(shadeOptions.find((option) => option.item.id === "repeater-crossbow")?.allowed).toBe(true);
+    expect(shadeOptions.find((option) => option.item.id === "shield")?.allowed).toBe(false);
+    expect(corsairOptions.find((option) => option.item.id === "sea-dragon-cloak")?.allowed).toBe(true);
+  });
+
+  it("detects Dark Elf starting treasury overspend", () => {
+    expect(codes(darkElvesOverBudget())).toContain("STARTING_TREASURY_OVERSPENT");
   });
 });
 

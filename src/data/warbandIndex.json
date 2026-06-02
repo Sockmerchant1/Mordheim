@@ -231,7 +231,7 @@
       "isOfficial": true,
       "sourceCode": "TC12",
       "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "dwarf-rangers",

@@ -6,6 +6,7 @@ import sourceDocuments from "./sources.json";
 import specialRules from "./specialRules.json";
 import amazonsLustria from "./warbands/amazons-lustria.json";
 import amazonsMordheim from "./warbands/amazons-mordheim.json";
+import darkElves from "./warbands/dark-elves.json";
 import averlanders from "./warbands/averlanders.json";
 import beastmenRaiders from "./warbands/beastmen-raiders.json";
 import blackOrcs from "./warbands/black-orcs.json";
@@ -32,6 +33,7 @@ import type { EquipmentList, FighterType, RulesDb } from "../rules/types";
 import { maximumProfileForFighterType } from "../rules/advancement";
 
 const warbandSeeds = [
+  warbandSeedSchema.parse(darkElves),
   warbandSeedSchema.parse(amazonsLustria),
   warbandSeedSchema.parse(amazonsMordheim),
   warbandSeedSchema.parse(averlanders),

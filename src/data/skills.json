@@ -94,6 +94,11 @@
       "id": "ostlander-special",
       "name": "Ostlander Special",
       "skillIds": ["bull-rush", "foul-odour", "taunt", "animal-friendship", "blood-oath"]
+    },
+    {
+      "id": "dark-elf-special",
+      "name": "Dark Elf Special",
+      "skillIds": ["fury-of-khaine", "fey-quickness", "infiltration", "master-of-poisons", "powerful-build"]
     }
   ],
   "skills": [
@@ -1156,6 +1161,47 @@
       "relatedRuleIds": ["infiltration"],
       "validation": {
         "allowedFighterTypeIds": ["pirate-captain", "pirate-mate", "cabin-boy"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "fury-of-khaine",
+      "name": "Fury of Khaine",
+      "categoryId": "dark-elf-special",
+      "effectSummary": "If the Dark Elf takes all opponents Out Of Action, they may make a 4 inch follow-up move. If this contacts another enemy, a new combat starts in the following turn and the model counts as charging.",
+      "restrictions": "Dark Elf heroes with Dark Elf Special skill access.",
+      "sourceDocumentId": "tc12-dark-elves",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+      "pageRef": "Dark Elves p. 4",
+      "relatedRuleIds": []
+    },
+    {
+      "id": "fey-quickness",
+      "name": "Fey Quickness",
+      "categoryId": "dark-elf-special",
+      "effectSummary": "The Elf can avoid melee or missile attacks on a roll of 6. If the Elf also has Step Aside, melee avoidance becomes 4+. If they also have Dodge (Step Aside for missiles), missile avoidance becomes 4+.",
+      "restrictions": "Dark Elf heroes with Dark Elf Special skill access.",
+      "sourceDocumentId": "tc12-dark-elves",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+      "pageRef": "Dark Elves p. 4",
+      "relatedRuleIds": ["step-aside"],
+      "validation": {
+        "allowedFighterTypeIds": ["high-born", "beastmaster", "fellblade", "dark-elf-sorceress"],
+        "requiredSpecialRuleIds": []
+      }
+    },
+    {
+      "id": "master-of-poisons",
+      "name": "Master of Poisons",
+      "categoryId": "dark-elf-special",
+      "effectSummary": "If the Hero doesn't search for rare items, they may make D3-1 doses of Dark Venom instead. The poison must be used in the next battle and cannot be sold or traded.",
+      "restrictions": "Dark Elf heroes with Dark Elf Special skill access.",
+      "sourceDocumentId": "tc12-dark-elves",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+      "pageRef": "Dark Elves p. 5",
+      "relatedRuleIds": ["dark-venom-rule"],
+      "validation": {
+        "allowedFighterTypeIds": ["high-born", "beastmaster", "fellblade"],
         "requiredSpecialRuleIds": []
       }
     }
