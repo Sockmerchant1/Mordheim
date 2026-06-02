@@ -380,6 +380,20 @@ import {
   darkElvesTwoLeaders,
   validDarkElves
 } from "./fixtures/darkElfRosters";
+import {
+  norseExplorersBerserkerWithArmour,
+  norseExplorersNoLeader,
+  norseExplorersOverBudget,
+  norseExplorersTooFewWarriors,
+  norseExplorersTooManyBerserkers,
+  norseExplorersTooManyBondsmen,
+  norseExplorersTooManyHunters,
+  norseExplorersTooManyUlfwerenar,
+  norseExplorersTooManyWolves,
+  norseExplorersTwoLeaders,
+  norseExplorersWolvesWithoutUlfwerenar,
+  validNorseExplorers
+} from "./fixtures/norseExplorerRosters";
 
 describe("rules data integrity", () => {
   it("all source references point at known source documents", () => {
@@ -1502,6 +1516,107 @@ describe("rules engine - Dark Elves", () => {
 
   it("detects Dark Elf starting treasury overspend", () => {
     expect(codes(darkElvesOverBudget())).toContain("STARTING_TREASURY_OVERSPENT");
+  });
+});
+
+describe("rules engine - Norse Explorers", () => {
+  it("loads the Grade 1b Norse Explorers warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+    expect(ids).toContain("norse-explorers");
+  });
+
+  it("validates a basic starting Norse Explorers roster", () => {
+    expect(errorCodes(validNorseExplorers())).toEqual([]);
+  });
+
+  it("enforces Norse leader, fighter caps and warrior limits", () => {
+    expect(codes(norseExplorersNoLeader())).toContain("REQUIRED_LEADER");
+    expect(codes(norseExplorersTwoLeaders())).toContain("REQUIRED_LEADER");
+    expect(codes(norseExplorersTooManyBerserkers())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(norseExplorersTooManyBondsmen())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(norseExplorersTooManyUlfwerenar())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(norseExplorersTooManyHunters())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(norseExplorersTooManyWolves())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(norseExplorersTooFewWarriors())).toContain("MIN_WARRIORS");
+    expect(codes(norseExplorersWolvesWithoutUlfwerenar()).filter((code) => code === "FIGHTER_RATIO_LIMIT")).not.toHaveLength(0);
+  });
+
+  it("enforces Norse equipment restrictions", () => {
+    expect(codes(norseExplorersBerserkerWithArmour())).toContain("INVALID_EQUIPMENT");
+
+    const roster = validNorseExplorers();
+    const jarlOptions = getAllowedEquipment(roster.members[0], roster, rulesDb);
+    const berserkerOptions = getAllowedEquipment(roster.members[1], roster, rulesDb);
+    const ulfwerenarOptions = getAllowedEquipment(roster.members[3], roster, rulesDb);
+    const marauderOptions = getAllowedEquipment(roster.members[6], roster, rulesDb);
+    const hunterOptions = getAllowedEquipment(roster.members[7], roster, rulesDb);
+    const wolfOptions = getAllowedEquipment(roster.members[8], roster, rulesDb);
+
+    expect(jarlOptions.find((option) => option.item.id === "axe")?.allowed).toBe(true);
+    expect(jarlOptions.find((option) => option.item.id === "flail")?.allowed).toBe(true);
+    expect(jarlOptions.find((option) => option.item.id === "shield")?.allowed).toBe(true);
+    expect(jarlOptions.find((option) => option.item.id === "light-armour")?.allowed).toBe(true);
+    expect(jarlOptions.find((option) => option.item.id === "helmet")?.allowed).toBe(true);
+    expect(jarlOptions.find((option) => option.item.id === "throwing-knives")?.allowed).toBe(true);
+    expect(jarlOptions.find((option) => option.item.id === "spear")?.allowed).toBe(false);
+    expect(jarlOptions.find((option) => option.item.id === "bow")?.allowed).toBe(false);
+    expect(jarlOptions.find((option) => option.item.id === "double-handed-weapon")?.allowed).toBe(true);
+
+    expect(berserkerOptions.find((option) => option.item.id === "light-armour")?.allowed).toBe(false);
+    expect(berserkerOptions.find((option) => option.item.id === "shield")?.allowed).toBe(false);
+    expect(berserkerOptions.find((option) => option.item.id === "helmet")?.allowed).toBe(false);
+    expect(berserkerOptions.find((option) => option.item.id === "axe")?.allowed).toBe(true);
+    expect(berserkerOptions.find((option) => option.item.id === "flail")?.allowed).toBe(true);
+
+    expect(ulfwerenarOptions.every((option) => option.allowed === false)).toBe(true);
+
+    expect(marauderOptions.find((option) => option.item.id === "light-armour")?.allowed).toBe(true);
+    expect(marauderOptions.find((option) => option.item.id === "spear")?.allowed).toBe(true);
+    expect(marauderOptions.find((option) => option.item.id === "axe")?.allowed).toBe(true);
+
+    expect(hunterOptions.find((option) => option.item.id === "norse-javelins")?.allowed).toBe(true);
+    expect(hunterOptions.find((option) => option.item.id === "bow")?.allowed).toBe(true);
+    expect(hunterOptions.find((option) => option.item.id === "shield")?.allowed).toBe(true);
+    expect(hunterOptions.find((option) => option.item.id === "light-armour")?.allowed).toBe(false);
+
+    expect(wolfOptions.every((option) => option.allowed === false)).toBe(true);
+  });
+
+  it("detects Norse starting treasury overspend", () => {
+    expect(codes(norseExplorersOverBudget())).toContain("STARTING_TREASURY_OVERSPENT");
+  });
+
+  it("returns source-backed Norse equipment data", () => {
+    const javelins = rulesDb.equipmentItems.find((item) => item.id === "norse-javelins");
+    expect(javelins?.sourceDocumentId).toBe("tc13-norse-explorers");
+    expect(javelins?.specialRuleIds).toContain("javelin-thrown-weapon");
+  });
+
+  it("grants Norse heroes access to Norse special skills", () => {
+    const roster = validNorseExplorers();
+    const jarlSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const berserkerSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+    const ulfwerenarSkills = getAllowedSkills(roster.members[3], roster, rulesDb);
+    const bondsmanSkills = getAllowedSkills(roster.members[4], roster, rulesDb);
+
+    expect(jarlSkills.find((option) => option.item.id === "norse-barbarian-courage")?.allowed).toBe(true);
+    expect(jarlSkills.find((option) => option.item.id === "norse-berserk-charge")?.allowed).toBe(true);
+    expect(jarlSkills.find((option) => option.item.id === "norse-shield-master")?.allowed).toBe(true);
+    expect(jarlSkills.find((option) => option.item.id === "norse-crushing-blow")?.allowed).toBe(true);
+    expect(jarlSkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(true);
+    expect(jarlSkills.find((option) => option.item.id === "step-aside")?.allowed).toBe(true);
+
+    expect(berserkerSkills.find((option) => option.item.id === "norse-barbarian-courage")?.allowed).toBe(true);
+    expect(berserkerSkills.find((option) => option.item.id === "norse-berserk-charge")?.allowed).toBe(true);
+    expect(berserkerSkills.find((option) => option.item.id === "step-aside")?.allowed).toBe(false);
+    expect(berserkerSkills.find((option) => option.item.id === "sprint")?.allowed).toBe(false);
+
+    expect(ulfwerenarSkills.find((option) => option.item.id === "norse-barbarian-courage")?.allowed).toBe(true);
+    expect(ulfwerenarSkills.find((option) => option.item.id === "step-aside")?.allowed).toBe(true);
+    expect(ulfwerenarSkills.find((option) => option.item.id === "quick-shot")?.allowed).toBe(false);
+
+    expect(bondsmanSkills.find((option) => option.item.id === "norse-barbarian-courage")?.allowed).toBe(true);
+    expect(bondsmanSkills.find((option) => option.item.id === "step-aside")?.allowed).toBe(true);
   });
 });
 

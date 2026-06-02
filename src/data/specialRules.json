@@ -4103,5 +4103,27 @@
     "pageRef": "Dark Elves p. 5",
     "restrictions": "Applied to weapons coated with Dark Venom for the battle.",
     "relatedRuleIds": []
+  },
+  {
+    "id": "norse-bestial",
+    "name": "Bestial",
+    "effectSummary": "The Ulfwerenar is immune to psychology (Fear, Terror, All Alone, etc.) and may never become the warband leader.",
+    "appliesTo": "Norse Ulfwerenar.",
+    "sourceDocumentId": "tc13-norse-explorers",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Norse%20Explorers%2C%20TC13%20Errata%27d.pdf",
+    "pageRef": "Norse Explorers p. 3",
+    "restrictions": "Ulfwerenar only.",
+    "relatedRuleIds": ["fear", "leader"]
+  },
+  {
+    "id": "norse-pack-leader",
+    "name": "Pack Leader",
+    "effectSummary": "Wolves are feral animals that only respond to the strongest in their pack — the Ulfwerenar. If no Ulfwerenar is in the warband due to death or injury, the wolves cannot be deployed until the Ulfwerenar is replaced.",
+    "appliesTo": "Norse Wolves.",
+    "sourceDocumentId": "tc13-norse-explorers",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Norse%20Explorers%2C%20TC13%20Errata%27d.pdf",
+    "pageRef": "Norse Explorers p. 4",
+    "restrictions": "Only applies when no Ulfwerenar is in the warband.",
+    "relatedRuleIds": ["animals"]
   }
 ]

@@ -99,6 +99,11 @@
       "id": "dark-elf-special",
       "name": "Dark Elf Special",
       "skillIds": ["fury-of-khaine", "fey-quickness", "infiltration", "master-of-poisons", "powerful-build"]
+    },
+    {
+      "id": "norse-special",
+      "name": "Norse Special",
+      "skillIds": ["norse-barbarian-courage", "norse-berserk-charge", "norse-shield-master", "norse-crushing-blow"]
     }
   ],
   "skills": [
@@ -1204,6 +1209,50 @@
         "allowedFighterTypeIds": ["high-born", "beastmaster", "fellblade"],
         "requiredSpecialRuleIds": []
       }
+    },
+    {
+      "id": "norse-barbarian-courage",
+      "name": "Barbarian Courage",
+      "categoryId": "norse-special",
+      "effectSummary": "This hero never needs to take All Alone tests and may re-roll failed Fear tests.",
+      "restrictions": "Norse heroes with access to the Norse Special skill list.",
+      "sourceDocumentId": "tc13-norse-explorers",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Norse%20Explorers%2C%20TC13%20Errata%27d.pdf",
+      "pageRef": "Norse Explorers p. 4",
+      "relatedRuleIds": ["fear"]
+    },
+    {
+      "id": "norse-berserk-charge",
+      "name": "Berserk Charge",
+      "categoryId": "norse-special",
+      "effectSummary": "When this hero is armed with an axe or double-handed weapon, he may re-roll all failed to-hit rolls when he charges.",
+      "restrictions": "Norse heroes with access to the Norse Special skill list.",
+      "sourceDocumentId": "tc13-norse-explorers",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Norse%20Explorers%2C%20TC13%20Errata%27d.pdf",
+      "pageRef": "Norse Explorers p. 4",
+      "relatedRuleIds": ["axe", "double-handed-weapon"]
+    },
+    {
+      "id": "norse-shield-master",
+      "name": "Shield Master",
+      "categoryId": "norse-special",
+      "effectSummary": "When this hero is armed with a shield, he may parry with it in addition to getting a 6+ armour save from the shield.",
+      "restrictions": "Norse heroes with access to the Norse Special skill list.",
+      "sourceDocumentId": "tc13-norse-explorers",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Norse%20Explorers%2C%20TC13%20Errata%27d.pdf",
+      "pageRef": "Norse Explorers p. 4",
+      "relatedRuleIds": ["shield"]
+    },
+    {
+      "id": "norse-crushing-blow",
+      "name": "Crushing Blow",
+      "categoryId": "norse-special",
+      "effectSummary": "No enemy may parry an attack made by this hero because it strikes with such great power that it pushes right through a buckler or sword.",
+      "restrictions": "Norse heroes with access to the Norse Special skill list.",
+      "sourceDocumentId": "tc13-norse-explorers",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Norse%20Explorers%2C%20TC13%20Errata%27d.pdf",
+      "pageRef": "Norse Explorers p. 4",
+      "relatedRuleIds": []
     }
   ]
 }

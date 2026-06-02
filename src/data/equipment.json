@@ -1761,6 +1761,19 @@
     "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
   },
   {
+    "id": "norse-javelins",
+    "name": "Javelins",
+    "category": "missile",
+    "cost": 5,
+    "rulesSummary": "Norse javelins — primitive hand crafted throwing spears. Range 8 inch thrown weapon using the thrower's Strength; no range or moving penalties.",
+    "specialRuleIds": ["javelin-thrown-weapon"],
+    "sourceDocumentId": "tc13-norse-explorers",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Norse%20Explorers%2C%20TC13%20Errata%27d.pdf",
+    "pageRef": "Norse Explorers p. 3",
+    "restrictions": "Norse Hunter equipment list only.",
+    "validation": { "closeCombatSlots": 0, "missileSlots": 1, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+  },
+  {
     "id": "amazon-lustria-sunstaff",
     "name": "Sunstaff (Lustria)",
     "category": "missile",

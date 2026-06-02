@@ -341,7 +341,7 @@
       "isOfficial": true,
       "sourceCode": "TC13",
       "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Norse%20Explorers%2C%20TC13%20Errata%27d.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "implemented"
     },
     {
       "id": "ostermarkers",
