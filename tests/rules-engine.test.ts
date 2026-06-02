@@ -369,7 +369,9 @@ import {
   validGunnerySchoolOfNuln
 } from "./fixtures/gunnerySchoolRosters";
 import {
+  darkElvesCorsairWithHeroOnlyGear,
   darkElvesFellbladeWithCrossbow,
+  darkElvesHoundsWithoutBeastmaster,
   darkElvesNoLeader,
   darkElvesOverBudget,
   darkElvesTooManyFellblades,
@@ -378,6 +380,115 @@ import {
   darkElvesTwoLeaders,
   validDarkElves
 } from "./fixtures/darkElfRosters";
+
+describe("rules data integrity", () => {
+  it("all source references point at known source documents", () => {
+    const sourceIds = new Set(rulesDb.sourceDocuments.map((source) => source.id));
+    const missing: string[] = [];
+
+    for (const warband of rulesDb.warbandTypes) {
+      if (!sourceIds.has(warband.sourceDocumentId)) missing.push(`warband:${warband.id}:${warband.sourceDocumentId}`);
+    }
+    for (const fighterType of rulesDb.fighterTypes) {
+      if (!sourceIds.has(fighterType.source.sourceDocumentId)) missing.push(`fighter:${fighterType.id}:${fighterType.source.sourceDocumentId}`);
+    }
+    for (const equipment of rulesDb.equipmentItems) {
+      if (!sourceIds.has(equipment.sourceDocumentId)) missing.push(`equipment:${equipment.id}:${equipment.sourceDocumentId}`);
+    }
+    for (const skill of rulesDb.skills) {
+      if (!sourceIds.has(skill.sourceDocumentId)) missing.push(`skill:${skill.id}:${skill.sourceDocumentId}`);
+    }
+    for (const rule of rulesDb.specialRules) {
+      if (!sourceIds.has(rule.sourceDocumentId)) missing.push(`specialRule:${rule.id}:${rule.sourceDocumentId}`);
+    }
+    for (const hiredSword of rulesDb.hiredSwords) {
+      if (!sourceIds.has(hiredSword.sourceDocumentId)) missing.push(`hiredSword:${hiredSword.id}:${hiredSword.sourceDocumentId}`);
+    }
+
+    expect(missing).toEqual([]);
+  });
+
+  it("warband and option references resolve to loaded rules data", () => {
+    const fighterTypeIds = new Set(rulesDb.fighterTypes.map((fighterType) => fighterType.id));
+    const equipmentListIds = new Set(rulesDb.equipmentLists.map((list) => list.id));
+    const equipmentIds = new Set(rulesDb.equipmentItems.map((equipment) => equipment.id));
+    const skillCategoryIds = new Set(rulesDb.skillCategories.map((category) => category.id));
+    const skillIds = new Set(rulesDb.skills.map((skill) => skill.id));
+    const specialRuleIds = new Set(rulesDb.specialRules.map((rule) => rule.id));
+    const missing: string[] = [];
+
+    for (const fighterType of rulesDb.fighterTypes) {
+      for (const listId of fighterType.equipmentListIds) {
+        if (!equipmentListIds.has(listId)) missing.push(`fighter:${fighterType.id}:equipmentList:${listId}`);
+      }
+      for (const categoryId of fighterType.skillCategoryIds) {
+        if (!skillCategoryIds.has(categoryId)) missing.push(`fighter:${fighterType.id}:skillCategory:${categoryId}`);
+      }
+      for (const ruleId of fighterType.specialRuleIds) {
+        if (!specialRuleIds.has(ruleId)) missing.push(`fighter:${fighterType.id}:specialRule:${ruleId}`);
+      }
+      for (const itemId of fighterType.validation.requiredOneOfEquipmentItemIds) {
+        if (!equipmentIds.has(itemId)) missing.push(`fighter:${fighterType.id}:requiredEquipment:${itemId}`);
+      }
+      for (const ratio of fighterType.validation.maxCountPerFighterTypeIds) {
+        for (const ratioFighterTypeId of ratio.fighterTypeIds) {
+          if (!fighterTypeIds.has(ratioFighterTypeId)) missing.push(`fighter:${fighterType.id}:ratioFighter:${ratioFighterTypeId}`);
+        }
+      }
+    }
+
+    for (const equipmentList of rulesDb.equipmentLists) {
+      for (const itemId of equipmentList.allowedEquipmentItemIds) {
+        if (!equipmentIds.has(itemId)) missing.push(`equipmentList:${equipmentList.id}:equipment:${itemId}`);
+      }
+      for (const fighterTypeId of equipmentList.appliesToFighterTypeIds) {
+        if (!fighterTypeIds.has(fighterTypeId)) missing.push(`equipmentList:${equipmentList.id}:fighter:${fighterTypeId}`);
+      }
+    }
+
+    for (const equipment of rulesDb.equipmentItems) {
+      for (const ruleId of equipment.specialRuleIds) {
+        if (!specialRuleIds.has(ruleId)) missing.push(`equipment:${equipment.id}:specialRule:${ruleId}`);
+      }
+      for (const itemId of [...equipment.validation.requiredEquipmentItemIds, ...equipment.validation.requiredAnyEquipmentItemIds]) {
+        if (!equipmentIds.has(itemId)) missing.push(`equipment:${equipment.id}:requiredEquipment:${itemId}`);
+      }
+      for (const fighterTypeId of equipment.validation.allowedFighterTypeIds) {
+        if (!fighterTypeIds.has(fighterTypeId)) missing.push(`equipment:${equipment.id}:fighter:${fighterTypeId}`);
+      }
+    }
+
+    for (const skill of rulesDb.skills) {
+      if (!skillCategoryIds.has(skill.categoryId)) missing.push(`skill:${skill.id}:category:${skill.categoryId}`);
+      for (const skillId of skill.validation.requiredSkillIds) {
+        if (!skillIds.has(skillId)) missing.push(`skill:${skill.id}:requiredSkill:${skillId}`);
+      }
+      for (const itemId of skill.validation.requiredEquipmentItemIds) {
+        if (!equipmentIds.has(itemId)) missing.push(`skill:${skill.id}:requiredEquipment:${itemId}`);
+      }
+      for (const fighterTypeId of skill.validation.allowedFighterTypeIds) {
+        if (!fighterTypeIds.has(fighterTypeId)) missing.push(`skill:${skill.id}:fighter:${fighterTypeId}`);
+      }
+      for (const categoryId of skill.validation.grantsSkillCategoryIds) {
+        if (!skillCategoryIds.has(categoryId)) missing.push(`skill:${skill.id}:grantsSkillCategory:${categoryId}`);
+      }
+      for (const listId of skill.validation.grantsEquipmentListIds) {
+        if (!equipmentListIds.has(listId)) missing.push(`skill:${skill.id}:grantsEquipmentList:${listId}`);
+      }
+    }
+
+    for (const rule of rulesDb.specialRules) {
+      for (const fighterTypeId of rule.validation.allowedFighterTypeIds) {
+        if (!fighterTypeIds.has(fighterTypeId)) missing.push(`specialRule:${rule.id}:fighter:${fighterTypeId}`);
+      }
+      for (const ruleId of rule.validation.requiredSpecialRuleIds) {
+        if (!specialRuleIds.has(ruleId)) missing.push(`specialRule:${rule.id}:requiredSpecialRule:${ruleId}`);
+      }
+    }
+
+    expect(missing).toEqual([]);
+  });
+});
 
 describe("rules engine - Witch Hunters", () => {
   it("calculates pending advance thresholds from XP crossings", () => {
@@ -1359,25 +1470,34 @@ describe("rules engine - Dark Elves", () => {
     expect(codes(darkElvesTooManyFellblades())).toContain("FIGHTER_MAX_COUNT");
     expect(codes(darkElvesTooManyShades())).toContain("FIGHTER_MAX_COUNT");
     expect(codes(darkElvesTooManyHounds())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(darkElvesHoundsWithoutBeastmaster())).toContain("FIGHTER_RATIO_LIMIT");
   });
 
   it("enforces Dark Elf equipment lists and restrictions", () => {
     expect(codes(darkElvesFellbladeWithCrossbow())).toContain("INVALID_EQUIPMENT");
+    expect(codes(darkElvesCorsairWithHeroOnlyGear()).filter((code) => code === "INVALID_EQUIPMENT")).toHaveLength(3);
 
     const roster = validDarkElves();
     const highBornOptions = getAllowedEquipment(roster.members[0], roster, rulesDb);
+    const beastmasterOptions = getAllowedEquipment(roster.members[1], roster, rulesDb);
     const fellbladeOptions = getAllowedEquipment(roster.members[2], roster, rulesDb);
     const shadeOptions = getAllowedEquipment(roster.members[6], roster, rulesDb);
     const corsairOptions = getAllowedEquipment(roster.members[5], roster, rulesDb);
 
     expect(highBornOptions.find((option) => option.item.id === "repeater-crossbow")?.allowed).toBe(true);
     expect(highBornOptions.find((option) => option.item.id === "dark-elf-blade")?.allowed).toBe(true);
-    expect(highBornOptions.find((option) => option.item.id === "sea-dragon-cloak")?.allowed).toBe(false);
+    expect(highBornOptions.find((option) => option.item.id === "sea-dragon-cloak")?.allowed).toBe(true);
+    expect(highBornOptions.find((option) => option.item.id === "dark-venom")?.allowed).toBe(true);
+    expect(highBornOptions.find((option) => option.item.id === "beastlash")?.allowed).toBe(false);
+    expect(beastmasterOptions.find((option) => option.item.id === "beastlash")?.allowed).toBe(true);
     expect(fellbladeOptions.find((option) => option.item.id === "repeater-crossbow")?.allowed).toBe(false);
     expect(fellbladeOptions.find((option) => option.item.id === "sword")?.allowed).toBe(true);
     expect(shadeOptions.find((option) => option.item.id === "repeater-crossbow")?.allowed).toBe(true);
     expect(shadeOptions.find((option) => option.item.id === "shield")?.allowed).toBe(false);
     expect(corsairOptions.find((option) => option.item.id === "sea-dragon-cloak")?.allowed).toBe(true);
+    expect(corsairOptions.find((option) => option.item.id === "dark-elf-blade")?.allowed).toBe(false);
+    expect(corsairOptions.find((option) => option.item.id === "dark-venom")?.allowed).toBe(false);
+    expect(corsairOptions.find((option) => option.item.id === "beastlash")?.allowed).toBe(false);
   });
 
   it("detects Dark Elf starting treasury overspend", () => {

@@ -2217,7 +2217,7 @@
     "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
     "pageRef": "Dark Elves p. 6",
     "restrictions": "Heroes only. Upgrades an existing sword or dagger at time of purchase.",
-    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [] }
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "requiredAnyEquipmentItemIds": ["dagger", "sword"], "allowedFighterTypeIds": ["high-born", "beastmaster", "fellblade", "dark-elf-sorceress"] }
   },
   {
     "id": "sea-dragon-cloak",
@@ -2230,7 +2230,7 @@
     "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
     "pageRef": "Dark Elves p. 6",
     "restrictions": "Heroes and Corsairs only. May be worn with other armour (provides improved save).",
-    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [] }
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": true, "grantsWeaponUse": [], "allowedFighterTypeIds": ["high-born", "beastmaster", "fellblade", "dark-elf-sorceress", "corsair"] }
   },
   {
     "id": "beastlash",
@@ -2243,7 +2243,7 @@
     "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
     "pageRef": "Dark Elves p. 6",
     "restrictions": "Beastmaster only.",
-    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+    "validation": { "closeCombatSlots": 1, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [], "allowedFighterTypeIds": ["beastmaster"] }
   },
   {
     "id": "dark-venom",
@@ -2256,6 +2256,6 @@
     "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
     "pageRef": "Dark Elves p. 5",
     "restrictions": "Heroes only.",
-    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [] }
+    "validation": { "closeCombatSlots": 0, "missileSlots": 0, "isFreeFirstPerWarrior": false, "isBodyArmour": false, "isShield": false, "isHelmet": false, "isBuckler": false, "nonRepeatable": false, "grantsWeaponUse": [], "allowedFighterTypeIds": ["high-born", "beastmaster", "fellblade", "dark-elf-sorceress"] }
   }
 ]

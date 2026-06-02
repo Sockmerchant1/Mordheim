@@ -152,6 +152,14 @@
     "notes": "Broheim-hosted Town Cryer #29 Skaven of Clan Pestilens warband. The app stores concise rules summaries and page references."
   },
   {
+    "id": "tc12-dark-elves",
+    "title": "Dark Elves",
+    "url": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves%2C%20Errata%27d.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1b",
+    "notes": "Broheim-hosted Town Cryer #12 Dark Elves warband, errata'd. The app stores concise rules summaries and page references."
+  },
+  {
     "id": "tc15-amazons-lustria",
     "title": "Amazons (Lustria)",
     "url": "https://broheim.net/downloads/towncryer/TownCryer15.pdf",

@@ -1337,58 +1337,15 @@ function errorCodes(roster) {
 }
 
 async function loadRulesDb() {
-  const [sourceDocuments, equipmentItems, skillSeed, specialRules, hiredSwords, ruleReferences, amazonsLustria, amazonsMordheim, pirates, gunnerySchoolOfNuln, witchHunters, mercenaries, averlanders, kislevites, ostlanders, sisters, carnival, cultOfThePossessed, skaven, pestilens, undead, orcMob, beastmenRaiders, blackOrcs, dwarfTreasureHunters, shadowWarriors, lizardmen, forestGoblins] = await Promise.all([
+  const [sourceDocuments, equipmentItems, skillSeed, specialRules, hiredSwords, ruleReferences, warbandSeeds] = await Promise.all([
     readJson("../src/data/sources.json"),
     readJson("../src/data/equipment.json"),
     readJson("../src/data/skills.json"),
     readJson("../src/data/specialRules.json"),
     readJson("../src/data/hiredSwords.json"),
     readJson("../src/data/ruleReferences.json"),
-    readJson("../src/data/warbands/amazons-lustria.json"),
-    readJson("../src/data/warbands/amazons-mordheim.json"),
-    readJson("../src/data/warbands/pirates.json"),
-    readJson("../src/data/warbands/gunnery-school-of-nuln.json"),
-    readJson("../src/data/warbands/witch-hunters.json"),
-    readJson("../src/data/warbands/mercenaries.json"),
-    readJson("../src/data/warbands/averlanders.json"),
-    readJson("../src/data/warbands/kislevites.json"),
-    readJson("../src/data/warbands/ostlanders.json"),
-    readJson("../src/data/warbands/sisters-of-sigmar.json"),
-    readJson("../src/data/warbands/carnival-of-chaos.json"),
-    readJson("../src/data/warbands/cult-of-the-possessed.json"),
-    readJson("../src/data/warbands/skaven.json"),
-    readJson("../src/data/warbands/skaven-pestilens.json"),
-    readJson("../src/data/warbands/undead.json"),
-    readJson("../src/data/warbands/orc-mob.json"),
-    readJson("../src/data/warbands/beastmen-raiders.json"),
-    readJson("../src/data/warbands/black-orcs.json"),
-    readJson("../src/data/warbands/dwarf-treasure-hunters.json"),
-    readJson("../src/data/warbands/shadow-warriors.json"),
-    readJson("../src/data/warbands/lizardmen.json"),
-    readJson("../src/data/warbands/forest-goblins.json")
+    readWarbandSeeds()
   ]);
-  const amazonsLustriaSeed = warbandSeedSchema.parse(amazonsLustria);
-  const amazonsMordheimSeed = warbandSeedSchema.parse(amazonsMordheim);
-  const piratesSeed = warbandSeedSchema.parse(pirates);
-  const gunnerySchoolOfNulnSeed = warbandSeedSchema.parse(gunnerySchoolOfNuln);
-  const warbandSeed = warbandSeedSchema.parse(witchHunters);
-  const averlandersSeed = warbandSeedSchema.parse(averlanders);
-  const kislevitesSeed = warbandSeedSchema.parse(kislevites);
-  const ostlandersSeed = warbandSeedSchema.parse(ostlanders);
-  const sistersSeed = warbandSeedSchema.parse(sisters);
-  const carnivalSeed = warbandSeedSchema.parse(carnival);
-  const cultOfThePossessedSeed = warbandSeedSchema.parse(cultOfThePossessed);
-  const skavenSeed = warbandSeedSchema.parse(skaven);
-  const pestilensSeed = warbandSeedSchema.parse(pestilens);
-  const undeadSeed = warbandSeedSchema.parse(undead);
-  const orcMobSeed = warbandSeedSchema.parse(orcMob);
-  const beastmenRaidersSeed = warbandSeedSchema.parse(beastmenRaiders);
-  const blackOrcsSeed = warbandSeedSchema.parse(blackOrcs);
-  const dwarfTreasureHuntersSeed = warbandSeedSchema.parse(dwarfTreasureHunters);
-  const shadowWarriorsSeed = warbandSeedSchema.parse(shadowWarriors);
-  const lizardmenSeed = warbandSeedSchema.parse(lizardmen);
-  const forestGoblinsSeed = warbandSeedSchema.parse(forestGoblins);
-  const mercenarySeed = warbandSeedCollectionSchema.parse(mercenaries);
   const parsedHiredSwords = hiredSwordSchema.array().parse(hiredSwords);
   const hiredSwordFighterTypes = parsedHiredSwords
     .filter((hiredSword) => hiredSword.profile)
@@ -1435,10 +1392,10 @@ async function loadRulesDb() {
     }));
   return rulesDbSchema.parse({
     sourceDocuments,
-    warbandTypes: [amazonsLustriaSeed.warbandType, amazonsMordheimSeed.warbandType, piratesSeed.warbandType, gunnerySchoolOfNulnSeed.warbandType, warbandSeed.warbandType, averlandersSeed.warbandType, kislevitesSeed.warbandType, ostlandersSeed.warbandType, sistersSeed.warbandType, carnivalSeed.warbandType, cultOfThePossessedSeed.warbandType, skavenSeed.warbandType, pestilensSeed.warbandType, undeadSeed.warbandType, orcMobSeed.warbandType, beastmenRaidersSeed.warbandType, blackOrcsSeed.warbandType, dwarfTreasureHuntersSeed.warbandType, shadowWarriorsSeed.warbandType, lizardmenSeed.warbandType, forestGoblinsSeed.warbandType, ...mercenarySeed.warbandTypes],
-    fighterTypes: [...amazonsLustriaSeed.fighterTypes, ...amazonsMordheimSeed.fighterTypes, ...piratesSeed.fighterTypes, ...gunnerySchoolOfNulnSeed.fighterTypes, ...warbandSeed.fighterTypes, ...averlandersSeed.fighterTypes, ...kislevitesSeed.fighterTypes, ...ostlandersSeed.fighterTypes, ...sistersSeed.fighterTypes, ...carnivalSeed.fighterTypes, ...cultOfThePossessedSeed.fighterTypes, ...skavenSeed.fighterTypes, ...pestilensSeed.fighterTypes, ...undeadSeed.fighterTypes, ...orcMobSeed.fighterTypes, ...beastmenRaidersSeed.fighterTypes, ...blackOrcsSeed.fighterTypes, ...dwarfTreasureHuntersSeed.fighterTypes, ...shadowWarriorsSeed.fighterTypes, ...lizardmenSeed.fighterTypes, ...forestGoblinsSeed.fighterTypes, ...mercenarySeed.fighterTypes, ...hiredSwordFighterTypes],
+    warbandTypes: warbandSeeds.flatMap((seed) => seed.warbandTypes),
+    fighterTypes: [...warbandSeeds.flatMap((seed) => seed.fighterTypes), ...hiredSwordFighterTypes],
     equipmentItems,
-    equipmentLists: [...amazonsLustriaSeed.equipmentLists, ...amazonsMordheimSeed.equipmentLists, ...piratesSeed.equipmentLists, ...gunnerySchoolOfNulnSeed.equipmentLists, ...warbandSeed.equipmentLists, ...averlandersSeed.equipmentLists, ...kislevitesSeed.equipmentLists, ...ostlandersSeed.equipmentLists, ...sistersSeed.equipmentLists, ...carnivalSeed.equipmentLists, ...cultOfThePossessedSeed.equipmentLists, ...skavenSeed.equipmentLists, ...pestilensSeed.equipmentLists, ...undeadSeed.equipmentLists, ...orcMobSeed.equipmentLists, ...beastmenRaidersSeed.equipmentLists, ...blackOrcsSeed.equipmentLists, ...dwarfTreasureHuntersSeed.equipmentLists, ...shadowWarriorsSeed.equipmentLists, ...lizardmenSeed.equipmentLists, ...forestGoblinsSeed.equipmentLists, ...mercenarySeed.equipmentLists, ...hiredSwordEquipmentLists],
+    equipmentLists: [...warbandSeeds.flatMap((seed) => seed.equipmentLists), ...hiredSwordEquipmentLists],
     skillCategories: skillSeed.categories,
     skills: skillSeed.skills,
     specialRules,
@@ -1449,4 +1406,33 @@ async function loadRulesDb() {
 
 async function readJson(relativePath) {
   return JSON.parse(await fs.readFile(new URL(relativePath, import.meta.url), "utf8"));
+}
+
+async function readWarbandSeeds() {
+  const warbandsUrl = new URL("../src/data/warbands/", import.meta.url);
+  const fileNames = (await fs.readdir(warbandsUrl)).filter((fileName) => fileName.endsWith(".json")).sort();
+  const seeds = [];
+
+  for (const fileName of fileNames) {
+    const raw = await readJson(`../src/data/warbands/${fileName}`);
+    const collection = warbandSeedCollectionSchema.safeParse(raw);
+    if (collection.success) {
+      seeds.push(collection.data);
+      continue;
+    }
+
+    const single = warbandSeedSchema.safeParse(raw);
+    if (single.success) {
+      seeds.push({
+        warbandTypes: [single.data.warbandType],
+        fighterTypes: single.data.fighterTypes,
+        equipmentLists: single.data.equipmentLists
+      });
+      continue;
+    }
+
+    throw new Error(`${fileName} is not a valid warband seed or warband seed collection.`);
+  }
+
+  return seeds;
 }

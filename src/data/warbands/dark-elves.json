@@ -191,6 +191,15 @@
       "isLargeCreature": false,
       "ratingOverride": null,
       "notes": "Requires a Beastmaster in the warband. If the Beastmaster dies, the hounds leave the warband. Animals - never gain experience.",
+      "validation": {
+        "maxCountPerFighterTypeIds": [
+          {
+            "fighterTypeIds": ["beastmaster"],
+            "multiplier": 2,
+            "description": "Cold One Beasthounds require a Beastmaster and are limited to two per Beastmaster."
+          }
+        ]
+      },
       "source": {
         "sourceDocumentId": "tc12-dark-elves",
         "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
@@ -219,6 +228,7 @@
         "shield",
         "helmet",
         "light-armour",
+        "sea-dragon-cloak",
         "dark-venom"
       ],
       "appliesToFighterTypeIds": ["high-born", "beastmaster", "fellblade", "dark-elf-sorceress", "corsair"],

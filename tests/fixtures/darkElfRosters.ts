@@ -61,9 +61,21 @@ export function darkElvesTooManyHounds(): Roster {
   return roster;
 }
 
+export function darkElvesHoundsWithoutBeastmaster(): Roster {
+  const roster = validDarkElves();
+  roster.members = roster.members.filter((member) => member.fighterTypeId !== "beastmaster");
+  return roster;
+}
+
 export function darkElvesFellbladeWithCrossbow(): Roster {
   const roster = validDarkElves();
   roster.members[2] = { ...roster.members[2], equipment: ["dagger", "repeater-crossbow"] };
+  return roster;
+}
+
+export function darkElvesCorsairWithHeroOnlyGear(): Roster {
+  const roster = validDarkElves();
+  roster.members[5] = { ...roster.members[5], equipment: ["dagger", "beastlash", "dark-elf-blade", "dark-venom"] };
   return roster;
 }
 
