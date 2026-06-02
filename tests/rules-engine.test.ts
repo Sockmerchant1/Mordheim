@@ -394,6 +394,7 @@ import {
   norseExplorersWolvesWithoutUlfwerenar,
   validNorseExplorers
 } from "./fixtures/norseExplorerRosters";
+import { starterRosterTemplates } from "../src/data/starterRosters";
 
 describe("rules data integrity", () => {
   it("all source references point at known source documents", () => {
@@ -1589,7 +1590,10 @@ describe("rules engine - Norse Explorers", () => {
   it("returns source-backed Norse equipment data", () => {
     const javelins = rulesDb.equipmentItems.find((item) => item.id === "norse-javelins");
     expect(javelins?.sourceDocumentId).toBe("tc13-norse-explorers");
-    expect(javelins?.specialRuleIds).toContain("javelin-thrown-weapon");
+    expect(javelins?.specialRuleIds).toContain("norse-javelin-thrown-weapon");
+
+    const thrownRule = rulesDb.specialRules.find((rule) => rule.id === "norse-javelin-thrown-weapon");
+    expect(thrownRule?.sourceDocumentId).toBe("tc13-norse-explorers");
   });
 
   it("grants Norse heroes access to Norse special skills", () => {
@@ -1617,6 +1621,28 @@ describe("rules engine - Norse Explorers", () => {
 
     expect(bondsmanSkills.find((option) => option.item.id === "norse-barbarian-courage")?.allowed).toBe(true);
     expect(bondsmanSkills.find((option) => option.item.id === "step-aside")?.allowed).toBe(true);
+  });
+
+  it("grants Jarl access to Battle Tongue through the Norse Special tree", () => {
+    const roster = validNorseExplorers();
+    const jarlSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const berserkerSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+
+    expect(jarlSkills.find((option) => option.item.id === "norse-battle-tongue")?.allowed).toBe(true);
+    expect(berserkerSkills.find((option) => option.item.id === "norse-battle-tongue")?.allowed).toBe(false);
+  });
+
+  it("includes Seafaring on all Norse fighter types", () => {
+    for (const fighterType of rulesDb.fighterTypes) {
+      if (fighterType.warbandTypeId !== "norse-explorers") continue;
+      expect(fighterType.specialRuleIds).toContain("norse-seafaring");
+    }
+  });
+
+  it("has a starter roster template", () => {
+    const template = starterRosterTemplates.find((t) => t.warbandTypeId === "norse-explorers");
+    expect(template).toBeDefined();
+    expect(template!.members.length).toBeGreaterThanOrEqual(3);
   });
 });
 

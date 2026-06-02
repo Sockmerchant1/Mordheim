@@ -1766,7 +1766,7 @@
     "category": "missile",
     "cost": 5,
     "rulesSummary": "Norse javelins — primitive hand crafted throwing spears. Range 8 inch thrown weapon using the thrower's Strength; no range or moving penalties.",
-    "specialRuleIds": ["javelin-thrown-weapon"],
+    "specialRuleIds": ["norse-javelin-thrown-weapon"],
     "sourceDocumentId": "tc13-norse-explorers",
     "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Norse%20Explorers%2C%20TC13%20Errata%27d.pdf",
     "pageRef": "Norse Explorers p. 3",

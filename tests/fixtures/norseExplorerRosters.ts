@@ -152,13 +152,13 @@ function member(
 }
 
 function specialRulesFor(fighterTypeId: string): string[] {
-  if (fighterTypeId === "norse-jarl") return ["leader"];
-  if (fighterTypeId === "norse-berserker") return ["frenzy"];
-  if (fighterTypeId === "norse-ulfwerenar") return ["fear", "norse-bestial"];
-  if (fighterTypeId === "norse-bondsman") return [];
-  if (fighterTypeId === "norse-marauder") return [];
-  if (fighterTypeId === "norse-hunter") return [];
-  if (fighterTypeId === "norse-wolf") return ["animals", "norse-pack-leader"];
+  if (fighterTypeId === "norse-jarl") return ["leader", "norse-seafaring"];
+  if (fighterTypeId === "norse-berserker") return ["frenzy", "norse-seafaring"];
+  if (fighterTypeId === "norse-ulfwerenar") return ["fear", "norse-bestial", "norse-seafaring"];
+  if (fighterTypeId === "norse-bondsman") return ["norse-seafaring"];
+  if (fighterTypeId === "norse-marauder") return ["norse-seafaring"];
+  if (fighterTypeId === "norse-hunter") return ["norse-seafaring"];
+  if (fighterTypeId === "norse-wolf") return ["animals", "norse-pack-leader", "norse-seafaring"];
   return [];
 }
 

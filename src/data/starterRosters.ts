@@ -399,6 +399,23 @@ export const starterRosterTemplates: StarterRosterTemplate[] = [
       { fighterTypeId: "shade", displayName: "Shadow Scouts", groupSize: 2, equipment: ["dagger"] },
       { fighterTypeId: "cold-one-beasthound", displayName: "Beasthounds", groupSize: 1, equipment: [] }
     ]
+  },
+  {
+    id: "norse-explorers-balanced",
+    warbandTypeId: "norse-explorers",
+    name: "The Serpent's Fang",
+    summary: "A Norse raiding party with Jarl, two Berserkers, Ulfwerenar, Bondsman, Marauders, Hunters and a Wolf.",
+    playStyle: "Hard-hitting melee core with frenzy, a werecreature terror, mobile hunters and a wolf pack leader — leaves gold for campaign gear.",
+    members: [
+      { fighterTypeId: "norse-jarl", displayName: "Jarl Haakon", equipment: ["dagger", "sword", "shield", "helmet"] },
+      { fighterTypeId: "norse-berserker", displayName: "Ulf the Mad", equipment: ["dagger", "double-handed-weapon"] },
+      { fighterTypeId: "norse-berserker", displayName: "Bjorn Ironarm", equipment: ["dagger", "axe"] },
+      { fighterTypeId: "norse-ulfwerenar", displayName: "Greyfang", equipment: [] },
+      { fighterTypeId: "norse-bondsman", displayName: "Erik", equipment: ["dagger", "axe"] },
+      { fighterTypeId: "norse-marauder", displayName: "Raiders", groupSize: 2, equipment: ["dagger", "axe", "shield"] },
+      { fighterTypeId: "norse-hunter", displayName: "Trackers", groupSize: 2, equipment: ["dagger", "bow"] },
+      { fighterTypeId: "norse-wolf", displayName: "Wolf", groupSize: 1, equipment: [] }
+    ]
   }
 ];
 

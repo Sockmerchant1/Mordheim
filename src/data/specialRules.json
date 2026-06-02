@@ -4125,5 +4125,27 @@
     "pageRef": "Norse Explorers p. 4",
     "restrictions": "Only applies when no Ulfwerenar is in the warband.",
     "relatedRuleIds": ["animals"]
+  },
+  {
+    "id": "norse-seafaring",
+    "name": "Seafaring",
+    "effectSummary": "All Norse warriors are seafaring people. To represent this, all Norse warriors get +2 to Strength when they row a boat.",
+    "appliesTo": "All Norse Explorers warband members.",
+    "sourceDocumentId": "tc13-norse-explorers",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Norse%20Explorers%2C%20TC13%20Errata%27d.pdf",
+    "pageRef": "Norse Explorers p. 1",
+    "restrictions": "Scenario-specific — applies when rowing boats.",
+    "relatedRuleIds": []
+  },
+  {
+    "id": "norse-javelin-thrown-weapon",
+    "name": "Thrown Weapon",
+    "effectSummary": "Norse javelins are thrown weapons; the warrior suffers no penalty for range or moving.",
+    "appliesTo": "Norse javelins.",
+    "sourceDocumentId": "tc13-norse-explorers",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Norse%20Explorers%2C%20TC13%20Errata%27d.pdf",
+    "pageRef": "Norse Explorers p. 3",
+    "restrictions": "Use when throwing norse-javelins.",
+    "relatedRuleIds": []
   }
 ]

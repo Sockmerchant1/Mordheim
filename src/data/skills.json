@@ -103,7 +103,7 @@
     {
       "id": "norse-special",
       "name": "Norse Special",
-      "skillIds": ["norse-barbarian-courage", "norse-berserk-charge", "norse-shield-master", "norse-crushing-blow"]
+      "skillIds": ["norse-barbarian-courage", "norse-berserk-charge", "norse-shield-master", "norse-crushing-blow", "norse-battle-tongue"]
     }
   ],
   "skills": [
@@ -1253,6 +1253,20 @@
       "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Norse%20Explorers%2C%20TC13%20Errata%27d.pdf",
       "pageRef": "Norse Explorers p. 4",
       "relatedRuleIds": []
+    },
+    {
+      "id": "norse-battle-tongue",
+      "name": "Battle Tongue",
+      "categoryId": "norse-special",
+      "effectSummary": "Extends the reach of a leader's command ability. Models within 12 inches of this hero may use his Leadership instead of the normal 6 inches.",
+      "restrictions": "Leader only. Only heroes with the Leader special rule may select this skill.",
+      "sourceDocumentId": "tc13-norse-explorers",
+      "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Norse%20Explorers%2C%20TC13%20Errata%27d.pdf",
+      "pageRef": "Norse Explorers p. 4",
+      "relatedRuleIds": ["leader"],
+      "validation": {
+        "requiredSpecialRuleIds": ["leader"]
+      }
     }
   ]
 }
