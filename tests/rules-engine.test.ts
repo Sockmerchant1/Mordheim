@@ -296,6 +296,214 @@ import {
   validBeastmenRaiders,
   warhoundWithWeapon
 } from "./fixtures/beastmenRosters";
+import {
+  amazonsLustriaNoPriest,
+  amazonsLustriaNoWarriors,
+  amazonsLustriaTwoPriestesses,
+  amazonsLustriaWithWarlock,
+  amazonsMordheimNoPriestess,
+  amazonsMordheimNoWarriors,
+  amazonsMordheimTwoPriestesses,
+  amazonsMordheimWithWarlock,
+  invalidLustriaAmazonSkill,
+  invalidMordheimAmazonSkill,
+  lustriaEagleWithAmazonSkill,
+  lustriaEagleWithConch,
+  lustriaEagleWithRitual,
+  lustriaJaguarWithBuckler,
+  lustriaPiranhaWithConch,
+  lustriaSerpentWithRitual,
+  lustriaWarriorWithStarsword,
+  mordheimChampionWithRitual,
+  mordheimChampionWithSunGauntlet,
+  mordheimPriestessWithRitual,
+  mordheimScoutWithSunGauntlet,
+  mordheimTotemWithQuickShot,
+  mordheimWarriorWithAmulet,
+  tooManyAmazonChampions,
+  tooManyAmazonEagleWarriors,
+  tooManyAmazonJaguarWarriors,
+  tooManyAmazonPiranhaWarriors,
+  tooManyAmazonScouts,
+  tooManyAmazonTotemWarriors,
+  tooManyAmazonsLustriaWarriors,
+  tooManyAmazonsMordheimWarriors,
+  validAmazonsLustria,
+  validAmazonsMordheim
+} from "./fixtures/amazonRosters";
+import {
+  crewWithSwivelGun,
+  gunnerWithAmmoNoSwivelGun,
+  gunnerWithSwivelGunBallShot,
+  invalidPirateSkill,
+  pirateCaptainWithSeaShanty,
+  piratesNoCaptain,
+  piratesTwoCaptains,
+  swabbieWithExperience,
+  swabbieWithPistol,
+  tooManyBoatswains,
+  tooManyCabinBoys,
+  tooManyPirateGunners,
+  tooManyPirateMates,
+  tooManyPiratesWarriors,
+  tooManySwabbiesForFreeCrew,
+  validPirates
+} from "./fixtures/pirateRosters";
+import {
+  gunnerySchoolNoOfficer,
+  gunnerySchoolTwoOfficers,
+  invalidNulnSkill,
+  nulnInstructorWithMortar,
+  nulnMarksmanWithDuellingPistol,
+  nulnMarksmanWithRepeaterHandgun,
+  nulnOfficerWithBow,
+  nulnOfficerWithHunterSkill,
+  nulnOfficerWithWeaponsExpertAndBow,
+  nulnPistolierWithRepeaterPistol,
+  tooManyNulnInstructors,
+  tooManyNulnMarksmen,
+  tooManyNulnPistoliers,
+  tooManyNulnWarriors,
+  tooManySeniorStudents,
+  tooManyUnderclassmen,
+  validGunnerySchoolOfNuln
+} from "./fixtures/gunnerySchoolRosters";
+import {
+  darkElvesCorsairWithHeroOnlyGear,
+  darkElvesFellbladeWithCrossbow,
+  darkElvesHoundsWithoutBeastmaster,
+  darkElvesNoLeader,
+  darkElvesOverBudget,
+  darkElvesTooManyFellblades,
+  darkElvesTooManyHounds,
+  darkElvesTooManyShades,
+  darkElvesTwoLeaders,
+  validDarkElves
+} from "./fixtures/darkElfRosters";
+import {
+  norseExplorersBerserkerWithArmour,
+  norseExplorersNoLeader,
+  norseExplorersOverBudget,
+  norseExplorersTooFewWarriors,
+  norseExplorersTooManyBerserkers,
+  norseExplorersTooManyBondsmen,
+  norseExplorersTooManyHunters,
+  norseExplorersTooManyUlfwerenar,
+  norseExplorersTooManyWolves,
+  norseExplorersTwoLeaders,
+  norseExplorersWolvesWithoutUlfwerenar,
+  validNorseExplorers
+} from "./fixtures/norseExplorerRosters";
+import { starterRosterTemplates } from "../src/data/starterRosters";
+
+describe("rules data integrity", () => {
+  it("all source references point at known source documents", () => {
+    const sourceIds = new Set(rulesDb.sourceDocuments.map((source) => source.id));
+    const missing: string[] = [];
+
+    for (const warband of rulesDb.warbandTypes) {
+      if (!sourceIds.has(warband.sourceDocumentId)) missing.push(`warband:${warband.id}:${warband.sourceDocumentId}`);
+    }
+    for (const fighterType of rulesDb.fighterTypes) {
+      if (!sourceIds.has(fighterType.source.sourceDocumentId)) missing.push(`fighter:${fighterType.id}:${fighterType.source.sourceDocumentId}`);
+    }
+    for (const equipment of rulesDb.equipmentItems) {
+      if (!sourceIds.has(equipment.sourceDocumentId)) missing.push(`equipment:${equipment.id}:${equipment.sourceDocumentId}`);
+    }
+    for (const skill of rulesDb.skills) {
+      if (!sourceIds.has(skill.sourceDocumentId)) missing.push(`skill:${skill.id}:${skill.sourceDocumentId}`);
+    }
+    for (const rule of rulesDb.specialRules) {
+      if (!sourceIds.has(rule.sourceDocumentId)) missing.push(`specialRule:${rule.id}:${rule.sourceDocumentId}`);
+    }
+    for (const hiredSword of rulesDb.hiredSwords) {
+      if (!sourceIds.has(hiredSword.sourceDocumentId)) missing.push(`hiredSword:${hiredSword.id}:${hiredSword.sourceDocumentId}`);
+    }
+
+    expect(missing).toEqual([]);
+  });
+
+  it("warband and option references resolve to loaded rules data", () => {
+    const fighterTypeIds = new Set(rulesDb.fighterTypes.map((fighterType) => fighterType.id));
+    const equipmentListIds = new Set(rulesDb.equipmentLists.map((list) => list.id));
+    const equipmentIds = new Set(rulesDb.equipmentItems.map((equipment) => equipment.id));
+    const skillCategoryIds = new Set(rulesDb.skillCategories.map((category) => category.id));
+    const skillIds = new Set(rulesDb.skills.map((skill) => skill.id));
+    const specialRuleIds = new Set(rulesDb.specialRules.map((rule) => rule.id));
+    const missing: string[] = [];
+
+    for (const fighterType of rulesDb.fighterTypes) {
+      for (const listId of fighterType.equipmentListIds) {
+        if (!equipmentListIds.has(listId)) missing.push(`fighter:${fighterType.id}:equipmentList:${listId}`);
+      }
+      for (const categoryId of fighterType.skillCategoryIds) {
+        if (!skillCategoryIds.has(categoryId)) missing.push(`fighter:${fighterType.id}:skillCategory:${categoryId}`);
+      }
+      for (const ruleId of fighterType.specialRuleIds) {
+        if (!specialRuleIds.has(ruleId)) missing.push(`fighter:${fighterType.id}:specialRule:${ruleId}`);
+      }
+      for (const itemId of fighterType.validation.requiredOneOfEquipmentItemIds) {
+        if (!equipmentIds.has(itemId)) missing.push(`fighter:${fighterType.id}:requiredEquipment:${itemId}`);
+      }
+      for (const ratio of fighterType.validation.maxCountPerFighterTypeIds) {
+        for (const ratioFighterTypeId of ratio.fighterTypeIds) {
+          if (!fighterTypeIds.has(ratioFighterTypeId)) missing.push(`fighter:${fighterType.id}:ratioFighter:${ratioFighterTypeId}`);
+        }
+      }
+    }
+
+    for (const equipmentList of rulesDb.equipmentLists) {
+      for (const itemId of equipmentList.allowedEquipmentItemIds) {
+        if (!equipmentIds.has(itemId)) missing.push(`equipmentList:${equipmentList.id}:equipment:${itemId}`);
+      }
+      for (const fighterTypeId of equipmentList.appliesToFighterTypeIds) {
+        if (!fighterTypeIds.has(fighterTypeId)) missing.push(`equipmentList:${equipmentList.id}:fighter:${fighterTypeId}`);
+      }
+    }
+
+    for (const equipment of rulesDb.equipmentItems) {
+      for (const ruleId of equipment.specialRuleIds) {
+        if (!specialRuleIds.has(ruleId)) missing.push(`equipment:${equipment.id}:specialRule:${ruleId}`);
+      }
+      for (const itemId of [...equipment.validation.requiredEquipmentItemIds, ...equipment.validation.requiredAnyEquipmentItemIds]) {
+        if (!equipmentIds.has(itemId)) missing.push(`equipment:${equipment.id}:requiredEquipment:${itemId}`);
+      }
+      for (const fighterTypeId of equipment.validation.allowedFighterTypeIds) {
+        if (!fighterTypeIds.has(fighterTypeId)) missing.push(`equipment:${equipment.id}:fighter:${fighterTypeId}`);
+      }
+    }
+
+    for (const skill of rulesDb.skills) {
+      if (!skillCategoryIds.has(skill.categoryId)) missing.push(`skill:${skill.id}:category:${skill.categoryId}`);
+      for (const skillId of skill.validation.requiredSkillIds) {
+        if (!skillIds.has(skillId)) missing.push(`skill:${skill.id}:requiredSkill:${skillId}`);
+      }
+      for (const itemId of skill.validation.requiredEquipmentItemIds) {
+        if (!equipmentIds.has(itemId)) missing.push(`skill:${skill.id}:requiredEquipment:${itemId}`);
+      }
+      for (const fighterTypeId of skill.validation.allowedFighterTypeIds) {
+        if (!fighterTypeIds.has(fighterTypeId)) missing.push(`skill:${skill.id}:fighter:${fighterTypeId}`);
+      }
+      for (const categoryId of skill.validation.grantsSkillCategoryIds) {
+        if (!skillCategoryIds.has(categoryId)) missing.push(`skill:${skill.id}:grantsSkillCategory:${categoryId}`);
+      }
+      for (const listId of skill.validation.grantsEquipmentListIds) {
+        if (!equipmentListIds.has(listId)) missing.push(`skill:${skill.id}:grantsEquipmentList:${listId}`);
+      }
+    }
+
+    for (const rule of rulesDb.specialRules) {
+      for (const fighterTypeId of rule.validation.allowedFighterTypeIds) {
+        if (!fighterTypeIds.has(fighterTypeId)) missing.push(`specialRule:${rule.id}:fighter:${fighterTypeId}`);
+      }
+      for (const ruleId of rule.validation.requiredSpecialRuleIds) {
+        if (!specialRuleIds.has(ruleId)) missing.push(`specialRule:${rule.id}:requiredSpecialRule:${ruleId}`);
+      }
+    }
+
+    expect(missing).toEqual([]);
+  });
+});
 
 describe("rules engine - Witch Hunters", () => {
   it("calculates pending advance thresholds from XP crossings", () => {
@@ -1045,6 +1253,396 @@ describe("rules engine - Lizardmen", () => {
     expect(crestSkills.find((option) => option.item.id === "great-hunter")?.allowed).toBe(true);
     expect(priestSpells.find((option) => option.item.id === "lizardmen-chotecs-wrath")?.allowed).toBe(true);
     expect(totemSpells.find((option) => option.item.id === "lizardmen-chotecs-wrath")?.allowed).toBe(false);
+  });
+});
+
+describe("rules engine - Amazons", () => {
+  it("loads both Grade 1b Amazon warbands", () => {
+    const ids = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+    expect(ids).toContain("amazons-lustria");
+    expect(ids).toContain("amazons-mordheim");
+  });
+
+  it("validates basic starting Amazon rosters", () => {
+    expect(errorCodes(validAmazonsLustria())).toEqual([]);
+    expect(errorCodes(validAmazonsMordheim())).toEqual([]);
+    expect(calculateRosterCost(validAmazonsLustria(), rulesDb)).toBe(321);
+    expect(calculateWarbandRating(validAmazonsLustria(), rulesDb)).toBe(71);
+    expect(calculateRosterCost(validAmazonsMordheim(), rulesDb)).toBe(351);
+    expect(calculateWarbandRating(validAmazonsMordheim(), rulesDb)).toBe(71);
+  });
+
+  it("enforces Lustria Amazon leader, fighter caps and warrior limit", () => {
+    expect(codes(amazonsLustriaNoPriest())).toContain("REQUIRED_LEADER");
+    expect(codes(amazonsLustriaTwoPriestesses())).toContain("REQUIRED_LEADER");
+    expect(codes(amazonsLustriaNoWarriors())).toContain("FIGHTER_MIN_COUNT");
+    expect(codes(tooManyAmazonEagleWarriors())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyAmazonPiranhaWarriors())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyAmazonJaguarWarriors())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyAmazonsLustriaWarriors())).toContain("MAX_WARRIORS");
+  });
+
+  it("enforces Mordheim Amazon leader, fighter caps and warrior limit", () => {
+    expect(codes(amazonsMordheimNoPriestess())).toContain("REQUIRED_LEADER");
+    expect(codes(amazonsMordheimTwoPriestesses())).toContain("REQUIRED_LEADER");
+    expect(codes(amazonsMordheimNoWarriors())).toContain("FIGHTER_MIN_COUNT");
+    expect(codes(tooManyAmazonChampions())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyAmazonTotemWarriors())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyAmazonScouts())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyAmazonsMordheimWarriors())).toContain("MAX_WARRIORS");
+  });
+
+  it("enforces Amazon equipment lists and item restrictions", () => {
+    expect(codes(lustriaJaguarWithBuckler())).toContain("INVALID_EQUIPMENT");
+    expect(codes(lustriaEagleWithConch())).toContain("INVALID_EQUIPMENT");
+    expect(errorCodes(lustriaPiranhaWithConch())).toEqual([]);
+    expect(codes(lustriaWarriorWithStarsword())).toContain("INVALID_EQUIPMENT");
+    expect(codes(mordheimScoutWithSunGauntlet())).toContain("INVALID_EQUIPMENT");
+    expect(codes(mordheimWarriorWithAmulet())).toContain("INVALID_EQUIPMENT");
+    expect(errorCodes(mordheimChampionWithSunGauntlet())).toEqual([]);
+
+    const lustria = validAmazonsLustria();
+    const serpentOptions = getAllowedEquipment({ ...lustria.members[0], equipment: ["dagger"] }, lustria, rulesDb);
+    const jaguarOptions = getAllowedEquipment(lustria.members[4], lustria, rulesDb);
+    const piranhaOptions = getAllowedEquipment(lustria.members[2], lustria, rulesDb);
+    expect(serpentOptions.find((option) => option.item.id === "amazon-lustria-sunstaff")?.allowed).toBe(true);
+    expect(jaguarOptions.find((option) => option.item.id === "amazon-bolas")?.allowed).toBe(true);
+    expect(jaguarOptions.find((option) => option.item.id === "buckler")?.allowed).toBe(false);
+    expect(piranhaOptions.find((option) => option.item.id === "amazon-conch-shell-horn")?.allowed).toBe(true);
+
+    const mordheim = validAmazonsMordheim();
+    const priestessOptions = getAllowedEquipment({ ...mordheim.members[0], equipment: ["dagger"] }, mordheim, rulesDb);
+    const scoutOptions = getAllowedEquipment(mordheim.members[4], mordheim, rulesDb);
+    expect(priestessOptions.find((option) => option.item.id === "amazon-sunstaff")?.allowed).toBe(true);
+    expect(priestessOptions.find((option) => option.item.id === "amazon-sun-gauntlet")?.allowed).toBe(true);
+    expect(scoutOptions.find((option) => option.item.id === "amazon-javelins")?.allowed).toBe(true);
+    expect(scoutOptions.find((option) => option.item.id === "amazon-sun-gauntlet")?.allowed).toBe(false);
+  });
+
+  it("enforces Amazon skills, rituals and hired sword restrictions", () => {
+    expect(codes(invalidLustriaAmazonSkill())).toContain("INVALID_SKILL");
+    expect(errorCodes(lustriaEagleWithAmazonSkill())).toEqual([]);
+    expect(errorCodes(lustriaSerpentWithRitual())).toEqual([]);
+    expect(codes(lustriaEagleWithRitual())).toContain("INVALID_SPECIAL_RULE");
+    expect(codes(invalidMordheimAmazonSkill())).toContain("INVALID_SKILL");
+    expect(codes(mordheimTotemWithQuickShot())).toContain("INVALID_SKILL");
+    expect(errorCodes(mordheimPriestessWithRitual())).toEqual([]);
+    expect(codes(mordheimChampionWithRitual())).toContain("INVALID_SPECIAL_RULE");
+    expect(codes(amazonsLustriaWithWarlock())).toContain("HIRED_SWORD_NOT_AVAILABLE");
+    expect(codes(amazonsMordheimWithWarlock())).toContain("HIRED_SWORD_NOT_AVAILABLE");
+
+    const lustria = validAmazonsLustria();
+    const serpentSkills = getAllowedSkills(lustria.members[0], lustria, rulesDb);
+    const eagleSkills = getAllowedSkills(lustria.members[1], lustria, rulesDb);
+    const serpentRituals = getAllowedSpecialRules(lustria.members[0], lustria, rulesDb);
+    expect(serpentSkills.find((option) => option.item.id === "amazon-concealment")?.allowed).toBe(true);
+    expect(serpentSkills.find((option) => option.item.id === "quick-shot")?.allowed).toBe(false);
+    expect(eagleSkills.find((option) => option.item.id === "amazon-savage-fury")?.allowed).toBe(true);
+    expect(serpentRituals.find((option) => option.item.id === "amazon-singing-wind")?.allowed).toBe(true);
+
+    const mordheim = validAmazonsMordheim();
+    const priestessSkills = getAllowedSkills(mordheim.members[0], mordheim, rulesDb);
+    const totemSkills = getAllowedSkills(mordheim.members[2], mordheim, rulesDb);
+    const priestessRituals = getAllowedSpecialRules(mordheim.members[0], mordheim, rulesDb);
+    expect(priestessSkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(true);
+    expect(priestessSkills.find((option) => option.item.id === "amazon-skink-hunter")?.allowed).toBe(false);
+    expect(totemSkills.find((option) => option.item.id === "quick-shot")?.allowed).toBe(false);
+    expect(priestessRituals.find((option) => option.item.id === "amazon-sirens-dreams")?.allowed).toBe(true);
+  });
+});
+
+describe("rules engine - Pirates", () => {
+  it("loads the Grade 1b Pirates warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+    expect(ids).toContain("pirates");
+  });
+
+  it("validates a basic starting Pirates roster", () => {
+    expect(errorCodes(validPirates())).toEqual([]);
+    expect(calculateRosterCost(validPirates(), rulesDb)).toBe(351);
+    expect(calculateWarbandRating(validPirates(), rulesDb)).toBe(78);
+  });
+
+  it("enforces Pirates leader, fighter caps, warrior limit and Swabbie rules", () => {
+    expect(codes(piratesNoCaptain())).toContain("REQUIRED_LEADER");
+    expect(codes(piratesTwoCaptains())).toContain("REQUIRED_LEADER");
+    expect(codes(tooManyPirateMates())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyCabinBoys())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyPirateGunners())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyBoatswains())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyPiratesWarriors())).toContain("MAX_WARRIORS");
+    expect(codes(tooManySwabbiesForFreeCrew())).toContain("FIGHTER_RATIO_LIMIT");
+    expect(codes(swabbieWithExperience())).toContain("EXPERIENCE_NOT_ALLOWED");
+  });
+
+  it("enforces Pirates equipment lists and Swivel Gun companion ammo", () => {
+    expect(codes(crewWithSwivelGun())).toContain("INVALID_EQUIPMENT");
+    expect(codes(gunnerWithAmmoNoSwivelGun())).toContain("MISSING_REQUIRED_EQUIPMENT");
+    expect(errorCodes(gunnerWithSwivelGunBallShot())).toEqual([]);
+    expect(codes(swabbieWithPistol())).toContain("INVALID_EQUIPMENT");
+
+    const roster = validPirates();
+    const captainOptions = getAllowedEquipment({ ...roster.members[0], equipment: ["dagger"] }, roster, rulesDb);
+    const gunnerOptions = getAllowedEquipment({ ...roster.members[4], equipment: ["dagger", "swivel-gun"] }, roster, rulesDb);
+    const crewOptions = getAllowedEquipment(roster.members[3], roster, rulesDb);
+    const boatswainOptions = getAllowedEquipment({ ...roster.members[5], equipment: ["dagger"] }, roster, rulesDb);
+    const swabbieOptions = getAllowedEquipment(roster.members[6], roster, rulesDb);
+    expect(captainOptions.find((option) => option.item.id === "cat-o-nine-tails")?.allowed).toBe(true);
+    expect(captainOptions.find((option) => option.item.id === "swivel-gun")?.allowed).toBe(false);
+    expect(gunnerOptions.find((option) => option.item.id === "swivel-gun-ball-shot")?.allowed).toBe(true);
+    expect(crewOptions.find((option) => option.item.id === "swivel-gun")?.allowed).toBe(false);
+    expect(boatswainOptions.find((option) => option.item.id === "boat-hook")?.allowed).toBe(true);
+    expect(swabbieOptions.find((option) => option.item.id === "pistol")?.allowed).toBe(false);
+  });
+
+  it("enforces Pirate special skills", () => {
+    expect(codes(invalidPirateSkill())).toContain("INVALID_SKILL");
+    expect(errorCodes(pirateCaptainWithSeaShanty())).toEqual([]);
+
+    const roster = validPirates();
+    const captainSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const cabinBoySkills = getAllowedSkills(roster.members[2], roster, rulesDb);
+    const crewSkills = getAllowedSkills(roster.members[3], roster, rulesDb);
+    expect(captainSkills.find((option) => option.item.id === "sea-shanty")?.allowed).toBe(true);
+    expect(cabinBoySkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(false);
+    expect(crewSkills.find((option) => option.item.id === "sea-shanty")?.allowed).toBe(false);
+  });
+});
+
+describe("rules engine - Gunnery School of Nuln", () => {
+  it("loads the Grade 1b Gunnery School of Nuln warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+    expect(ids).toContain("gunnery-school-of-nuln");
+  });
+
+  it("validates a basic starting Gunnery School roster", () => {
+    expect(errorCodes(validGunnerySchoolOfNuln())).toEqual([]);
+    expect(calculateRosterCost(validGunnerySchoolOfNuln(), rulesDb)).toBe(464);
+    expect(calculateWarbandRating(validGunnerySchoolOfNuln(), rulesDb)).toBe(85);
+  });
+
+  it("enforces Gunnery School leader, fighter caps and warrior limit", () => {
+    expect(codes(gunnerySchoolNoOfficer())).toContain("REQUIRED_LEADER");
+    expect(codes(gunnerySchoolTwoOfficers())).toContain("REQUIRED_LEADER");
+    expect(codes(tooManyNulnInstructors())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManySeniorStudents())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyUnderclassmen())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyNulnMarksmen())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyNulnPistoliers())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(tooManyNulnWarriors())).toContain("MAX_WARRIORS");
+  });
+
+  it("enforces Gunnery School equipment lists and blackpowder-only ranged weapons", () => {
+    expect(codes(nulnOfficerWithBow())).toContain("INVALID_EQUIPMENT");
+    expect(codes(nulnOfficerWithWeaponsExpertAndBow())).toContain("INVALID_EQUIPMENT");
+    expect(codes(nulnMarksmanWithDuellingPistol())).toContain("INVALID_EQUIPMENT");
+    expect(errorCodes(nulnMarksmanWithRepeaterHandgun())).toEqual([]);
+    expect(errorCodes(nulnInstructorWithMortar())).toEqual([]);
+    expect(codes(nulnPistolierWithRepeaterPistol())).toContain("INVALID_EQUIPMENT");
+
+    const roster = validGunnerySchoolOfNuln();
+    const officerOptions = getAllowedEquipment({ ...roster.members[0], equipment: ["dagger"] }, roster, rulesDb);
+    const instructorOptions = getAllowedEquipment({ ...roster.members[1], equipment: ["dagger"] }, roster, rulesDb);
+    const marksmanOptions = getAllowedEquipment({ ...roster.members[5], equipment: ["dagger"] }, roster, rulesDb);
+    const pistolierOptions = getAllowedEquipment({ ...roster.members[6], equipment: ["dagger"] }, roster, rulesDb);
+    expect(officerOptions.find((option) => option.item.id === "nuln-double-barrelled-duelling-pistol")?.allowed).toBe(true);
+    expect(officerOptions.find((option) => option.item.id === "bow")?.allowed).toBe(false);
+    expect(instructorOptions.find((option) => option.item.id === "hand-held-mortar")?.allowed).toBe(true);
+    expect(marksmanOptions.find((option) => option.item.id === "nuln-repeater-handgun")?.allowed).toBe(true);
+    expect(marksmanOptions.find((option) => option.item.id === "nuln-duelling-pistol")?.allowed).toBe(false);
+    expect(pistolierOptions.find((option) => option.item.id === "nuln-repeater-pistol")?.allowed).toBe(false);
+  });
+
+  it("enforces Gunnery School skill and special-rule access", () => {
+    expect(codes(invalidNulnSkill())).toContain("INVALID_SKILL");
+    expect(errorCodes(nulnOfficerWithHunterSkill())).toEqual([]);
+
+    const roster = validGunnerySchoolOfNuln();
+    const officerSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const instructorSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+    const underclassmanSkills = getAllowedSkills(roster.members[3], roster, rulesDb);
+    const marksmanSkills = getAllowedSkills(roster.members[5], roster, rulesDb);
+    expect(officerSkills.find((option) => option.item.id === "hunter")?.allowed).toBe(true);
+    expect(instructorSkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(false);
+    expect(underclassmanSkills.find((option) => option.item.id === "pistolier")?.allowed).toBe(true);
+    expect(marksmanSkills.find((option) => option.item.id === "hunter")?.allowed).toBe(false);
+  });
+});
+
+describe("rules engine - Dark Elves", () => {
+  it("loads the Grade 1b Dark Elves warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+    expect(ids).toContain("dark-elves");
+  });
+
+  it("validates a basic starting Dark Elves roster", () => {
+    expect(errorCodes(validDarkElves())).toEqual([]);
+  });
+
+  it("enforces Dark Elf leader, fighter caps and warrior limit", () => {
+    expect(codes(darkElvesNoLeader())).toContain("REQUIRED_LEADER");
+    expect(codes(darkElvesTwoLeaders())).toContain("REQUIRED_LEADER");
+    expect(codes(darkElvesTooManyFellblades())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(darkElvesTooManyShades())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(darkElvesTooManyHounds())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(darkElvesHoundsWithoutBeastmaster())).toContain("FIGHTER_RATIO_LIMIT");
+  });
+
+  it("enforces Dark Elf equipment lists and restrictions", () => {
+    expect(codes(darkElvesFellbladeWithCrossbow())).toContain("INVALID_EQUIPMENT");
+    expect(codes(darkElvesCorsairWithHeroOnlyGear()).filter((code) => code === "INVALID_EQUIPMENT")).toHaveLength(3);
+
+    const roster = validDarkElves();
+    const highBornOptions = getAllowedEquipment(roster.members[0], roster, rulesDb);
+    const beastmasterOptions = getAllowedEquipment(roster.members[1], roster, rulesDb);
+    const fellbladeOptions = getAllowedEquipment(roster.members[2], roster, rulesDb);
+    const shadeOptions = getAllowedEquipment(roster.members[6], roster, rulesDb);
+    const corsairOptions = getAllowedEquipment(roster.members[5], roster, rulesDb);
+
+    expect(highBornOptions.find((option) => option.item.id === "repeater-crossbow")?.allowed).toBe(true);
+    expect(highBornOptions.find((option) => option.item.id === "dark-elf-blade")?.allowed).toBe(true);
+    expect(highBornOptions.find((option) => option.item.id === "sea-dragon-cloak")?.allowed).toBe(true);
+    expect(highBornOptions.find((option) => option.item.id === "dark-venom")?.allowed).toBe(true);
+    expect(highBornOptions.find((option) => option.item.id === "beastlash")?.allowed).toBe(false);
+    expect(beastmasterOptions.find((option) => option.item.id === "beastlash")?.allowed).toBe(true);
+    expect(fellbladeOptions.find((option) => option.item.id === "repeater-crossbow")?.allowed).toBe(false);
+    expect(fellbladeOptions.find((option) => option.item.id === "sword")?.allowed).toBe(true);
+    expect(shadeOptions.find((option) => option.item.id === "repeater-crossbow")?.allowed).toBe(true);
+    expect(shadeOptions.find((option) => option.item.id === "shield")?.allowed).toBe(false);
+    expect(corsairOptions.find((option) => option.item.id === "sea-dragon-cloak")?.allowed).toBe(true);
+    expect(corsairOptions.find((option) => option.item.id === "dark-elf-blade")?.allowed).toBe(false);
+    expect(corsairOptions.find((option) => option.item.id === "dark-venom")?.allowed).toBe(false);
+    expect(corsairOptions.find((option) => option.item.id === "beastlash")?.allowed).toBe(false);
+  });
+
+  it("detects Dark Elf starting treasury overspend", () => {
+    expect(codes(darkElvesOverBudget())).toContain("STARTING_TREASURY_OVERSPENT");
+  });
+});
+
+describe("rules engine - Norse Explorers", () => {
+  it("loads the Grade 1b Norse Explorers warband", () => {
+    const ids = getAllowedWarbands(rulesDb, { broheimGrade: "1b" }).map((warband) => warband.id);
+    expect(ids).toContain("norse-explorers");
+  });
+
+  it("validates a basic starting Norse Explorers roster", () => {
+    expect(errorCodes(validNorseExplorers())).toEqual([]);
+  });
+
+  it("enforces Norse leader, fighter caps and warrior limits", () => {
+    expect(codes(norseExplorersNoLeader())).toContain("REQUIRED_LEADER");
+    expect(codes(norseExplorersTwoLeaders())).toContain("REQUIRED_LEADER");
+    expect(codes(norseExplorersTooManyBerserkers())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(norseExplorersTooManyBondsmen())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(norseExplorersTooManyUlfwerenar())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(norseExplorersTooManyHunters())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(norseExplorersTooManyWolves())).toContain("FIGHTER_MAX_COUNT");
+    expect(codes(norseExplorersTooFewWarriors())).toContain("MIN_WARRIORS");
+    expect(codes(norseExplorersWolvesWithoutUlfwerenar()).filter((code) => code === "FIGHTER_RATIO_LIMIT")).not.toHaveLength(0);
+  });
+
+  it("enforces Norse equipment restrictions", () => {
+    expect(codes(norseExplorersBerserkerWithArmour())).toContain("INVALID_EQUIPMENT");
+
+    const roster = validNorseExplorers();
+    const jarlOptions = getAllowedEquipment(roster.members[0], roster, rulesDb);
+    const berserkerOptions = getAllowedEquipment(roster.members[1], roster, rulesDb);
+    const ulfwerenarOptions = getAllowedEquipment(roster.members[3], roster, rulesDb);
+    const marauderOptions = getAllowedEquipment(roster.members[6], roster, rulesDb);
+    const hunterOptions = getAllowedEquipment(roster.members[7], roster, rulesDb);
+    const wolfOptions = getAllowedEquipment(roster.members[8], roster, rulesDb);
+
+    expect(jarlOptions.find((option) => option.item.id === "axe")?.allowed).toBe(true);
+    expect(jarlOptions.find((option) => option.item.id === "flail")?.allowed).toBe(true);
+    expect(jarlOptions.find((option) => option.item.id === "shield")?.allowed).toBe(true);
+    expect(jarlOptions.find((option) => option.item.id === "light-armour")?.allowed).toBe(true);
+    expect(jarlOptions.find((option) => option.item.id === "helmet")?.allowed).toBe(true);
+    expect(jarlOptions.find((option) => option.item.id === "throwing-knives")?.allowed).toBe(true);
+    expect(jarlOptions.find((option) => option.item.id === "spear")?.allowed).toBe(false);
+    expect(jarlOptions.find((option) => option.item.id === "bow")?.allowed).toBe(false);
+    expect(jarlOptions.find((option) => option.item.id === "double-handed-weapon")?.allowed).toBe(true);
+
+    expect(berserkerOptions.find((option) => option.item.id === "light-armour")?.allowed).toBe(false);
+    expect(berserkerOptions.find((option) => option.item.id === "shield")?.allowed).toBe(false);
+    expect(berserkerOptions.find((option) => option.item.id === "helmet")?.allowed).toBe(false);
+    expect(berserkerOptions.find((option) => option.item.id === "axe")?.allowed).toBe(true);
+    expect(berserkerOptions.find((option) => option.item.id === "flail")?.allowed).toBe(true);
+
+    expect(ulfwerenarOptions.every((option) => option.allowed === false)).toBe(true);
+
+    expect(marauderOptions.find((option) => option.item.id === "light-armour")?.allowed).toBe(true);
+    expect(marauderOptions.find((option) => option.item.id === "spear")?.allowed).toBe(true);
+    expect(marauderOptions.find((option) => option.item.id === "axe")?.allowed).toBe(true);
+
+    expect(hunterOptions.find((option) => option.item.id === "norse-javelins")?.allowed).toBe(true);
+    expect(hunterOptions.find((option) => option.item.id === "bow")?.allowed).toBe(true);
+    expect(hunterOptions.find((option) => option.item.id === "shield")?.allowed).toBe(true);
+    expect(hunterOptions.find((option) => option.item.id === "light-armour")?.allowed).toBe(false);
+
+    expect(wolfOptions.every((option) => option.allowed === false)).toBe(true);
+  });
+
+  it("detects Norse starting treasury overspend", () => {
+    expect(codes(norseExplorersOverBudget())).toContain("STARTING_TREASURY_OVERSPENT");
+  });
+
+  it("returns source-backed Norse equipment data", () => {
+    const javelins = rulesDb.equipmentItems.find((item) => item.id === "norse-javelins");
+    expect(javelins?.sourceDocumentId).toBe("tc13-norse-explorers");
+    expect(javelins?.specialRuleIds).toContain("norse-javelin-thrown-weapon");
+
+    const thrownRule = rulesDb.specialRules.find((rule) => rule.id === "norse-javelin-thrown-weapon");
+    expect(thrownRule?.sourceDocumentId).toBe("tc13-norse-explorers");
+  });
+
+  it("grants Norse heroes access to Norse special skills", () => {
+    const roster = validNorseExplorers();
+    const jarlSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const berserkerSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+    const ulfwerenarSkills = getAllowedSkills(roster.members[3], roster, rulesDb);
+    const bondsmanSkills = getAllowedSkills(roster.members[4], roster, rulesDb);
+
+    expect(jarlSkills.find((option) => option.item.id === "norse-barbarian-courage")?.allowed).toBe(true);
+    expect(jarlSkills.find((option) => option.item.id === "norse-berserk-charge")?.allowed).toBe(true);
+    expect(jarlSkills.find((option) => option.item.id === "norse-shield-master")?.allowed).toBe(true);
+    expect(jarlSkills.find((option) => option.item.id === "norse-crushing-blow")?.allowed).toBe(true);
+    expect(jarlSkills.find((option) => option.item.id === "mighty-blow")?.allowed).toBe(true);
+    expect(jarlSkills.find((option) => option.item.id === "step-aside")?.allowed).toBe(true);
+
+    expect(berserkerSkills.find((option) => option.item.id === "norse-barbarian-courage")?.allowed).toBe(true);
+    expect(berserkerSkills.find((option) => option.item.id === "norse-berserk-charge")?.allowed).toBe(true);
+    expect(berserkerSkills.find((option) => option.item.id === "step-aside")?.allowed).toBe(false);
+    expect(berserkerSkills.find((option) => option.item.id === "sprint")?.allowed).toBe(false);
+
+    expect(ulfwerenarSkills.find((option) => option.item.id === "norse-barbarian-courage")?.allowed).toBe(true);
+    expect(ulfwerenarSkills.find((option) => option.item.id === "step-aside")?.allowed).toBe(true);
+    expect(ulfwerenarSkills.find((option) => option.item.id === "quick-shot")?.allowed).toBe(false);
+
+    expect(bondsmanSkills.find((option) => option.item.id === "norse-barbarian-courage")?.allowed).toBe(true);
+    expect(bondsmanSkills.find((option) => option.item.id === "step-aside")?.allowed).toBe(true);
+  });
+
+  it("grants Jarl access to Battle Tongue through the Norse Special tree", () => {
+    const roster = validNorseExplorers();
+    const jarlSkills = getAllowedSkills(roster.members[0], roster, rulesDb);
+    const berserkerSkills = getAllowedSkills(roster.members[1], roster, rulesDb);
+
+    expect(jarlSkills.find((option) => option.item.id === "norse-battle-tongue")?.allowed).toBe(true);
+    expect(berserkerSkills.find((option) => option.item.id === "norse-battle-tongue")?.allowed).toBe(false);
+  });
+
+  it("includes Seafaring on all Norse fighter types", () => {
+    for (const fighterType of rulesDb.fighterTypes) {
+      if (fighterType.warbandTypeId !== "norse-explorers") continue;
+      expect(fighterType.specialRuleIds).toContain("norse-seafaring");
+    }
+  });
+
+  it("has a starter roster template", () => {
+    const template = starterRosterTemplates.find((t) => t.warbandTypeId === "norse-explorers");
+    expect(template).toBeDefined();
+    expect(template!.members.length).toBeGreaterThanOrEqual(3);
   });
 });
 

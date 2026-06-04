@@ -176,7 +176,7 @@
       "isOfficial": true,
       "sourceCode": "TC15",
       "sourceUrl": "https://broheim.net/downloads/towncryer/TownCryer15.pdf#page=20",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "amazons-mordheim",
@@ -187,7 +187,7 @@
       "isOfficial": true,
       "sourceCode": "TC23",
       "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Amazons.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "arabian-tomb-raiders",
@@ -231,7 +231,7 @@
       "isOfficial": true,
       "sourceCode": "TC12",
       "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "dwarf-rangers",
@@ -264,7 +264,7 @@
       "isOfficial": true,
       "sourceCode": "NC",
       "sourceUrl": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Gunnery%20School%20Of%20Nuln.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "hochland-bandits",
@@ -341,7 +341,7 @@
       "isOfficial": true,
       "sourceCode": "TC13",
       "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Norse%20Explorers%2C%20TC13%20Errata%27d.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "implemented"
     },
     {
       "id": "ostermarkers",
@@ -374,7 +374,7 @@
       "isOfficial": true,
       "sourceCode": "TC9",
       "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
-      "implementationStatus": "not_started"
+      "implementationStatus": "tested"
     },
     {
       "id": "pit-fighters",

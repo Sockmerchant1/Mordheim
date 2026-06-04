@@ -1,0 +1,176 @@
+{
+  "warbandType": {
+    "id": "amazons-mordheim",
+    "name": "Amazons (Mordheim)",
+    "race": "Human",
+    "broheimGrade": "1b",
+    "sourceCode": "TC23",
+    "sourceDocumentId": "tc23-amazons-mordheim",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Amazons.pdf",
+    "implementationStatus": "tested",
+    "startingGold": 500,
+    "minWarriors": 3,
+    "maxWarriors": 15,
+    "maxHeroes": 5,
+    "leaderFighterTypeId": "amazon-priestess",
+    "notes": "Town Cryer #23 Mordheim Amazons warband. Includes Priestess Amazon Rituals, Champions, frenzied Totem Warriors, Scouts, newer Amazon artefacts and no non-Amazon hired swords."
+  },
+  "fighterTypes": [
+    {
+      "id": "amazon-priestess",
+      "warbandTypeId": "amazons-mordheim",
+      "name": "Priestess",
+      "category": "hero",
+      "minCount": 1,
+      "maxCount": 1,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 70,
+      "startingExperience": 20,
+      "profile": { "M": 4, "WS": 4, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 4, "A": 1, "Ld": 8 },
+      "equipmentListIds": ["amazon-mordheim-heroine-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "academic", "strength", "speed"],
+      "specialRuleIds": ["leader", "spellcaster", "amazon-rituals"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Required leader and ritual caster using Amazon Rituals.",
+      "source": {
+        "sourceDocumentId": "tc23-amazons-mordheim",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Amazons.pdf",
+        "pageRef": "Amazons p. 4",
+        "label": "Heroines"
+      }
+    },
+    {
+      "id": "amazon-champion",
+      "warbandTypeId": "amazons-mordheim",
+      "name": "Champion",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 35,
+      "startingExperience": 8,
+      "profile": { "M": 4, "WS": 4, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["amazon-mordheim-heroine-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "speed"],
+      "specialRuleIds": [],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to two may be hired.",
+      "source": {
+        "sourceDocumentId": "tc23-amazons-mordheim",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Amazons.pdf",
+        "pageRef": "Amazons p. 4",
+        "label": "Heroines"
+      }
+    },
+    {
+      "id": "amazon-totem-warrior",
+      "warbandTypeId": "amazons-mordheim",
+      "name": "Totem Warrior",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 30,
+      "startingExperience": 8,
+      "profile": { "M": 4, "WS": 4, "BS": 2, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["amazon-mordheim-heroine-equipment"],
+      "skillCategoryIds": ["combat", "strength", "speed"],
+      "specialRuleIds": ["frenzy"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to two may be hired. Totem Warriors are subject to Frenzy.",
+      "source": {
+        "sourceDocumentId": "tc23-amazons-mordheim",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Amazons.pdf",
+        "pageRef": "Amazons p. 4",
+        "label": "Heroines"
+      }
+    },
+    {
+      "id": "amazon-mordheim-warrior",
+      "warbandTypeId": "amazons-mordheim",
+      "name": "Amazon Warrior",
+      "category": "henchman",
+      "minCount": 1,
+      "maxCount": null,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 25,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["amazon-mordheim-henchwoman-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": [],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "At least one Amazon Warrior must be included. Bought in groups of 1-5.",
+      "source": {
+        "sourceDocumentId": "tc23-amazons-mordheim",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Amazons.pdf",
+        "pageRef": "Amazons p. 5",
+        "label": "Henchwomen"
+      }
+    },
+    {
+      "id": "amazon-scout",
+      "warbandTypeId": "amazons-mordheim",
+      "name": "Scout",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": 3,
+      "groupMinSize": 1,
+      "groupMaxSize": 3,
+      "hireCost": 30,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["amazon-mordheim-scout-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["amazon-scout-stealthy"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to three may be hired. Bought in groups of 1-3 in this app to enforce the warband cap.",
+      "source": {
+        "sourceDocumentId": "tc23-amazons-mordheim",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Amazons.pdf",
+        "pageRef": "Amazons p. 5",
+        "label": "Henchwomen"
+      }
+    }
+  ],
+  "equipmentLists": [
+    {
+      "id": "amazon-mordheim-heroine-equipment",
+      "name": "Amazon Heroine Equipment List",
+      "warbandTypeId": "amazons-mordheim",
+      "allowedEquipmentItemIds": ["dagger", "club", "sword", "spear", "amazon-claw-of-the-old-ones", "amazon-sunstaff", "amazon-sun-gauntlet", "buckler", "helmet", "amazon-amulet-of-the-moon", "healing-herbs"],
+      "appliesToFighterTypeIds": ["amazon-priestess", "amazon-champion", "amazon-totem-warrior"],
+      "notes": "Mordheim Amazon heroine equipment list."
+    },
+    {
+      "id": "amazon-mordheim-henchwoman-equipment",
+      "name": "Amazon Henchwoman Equipment List",
+      "warbandTypeId": "amazons-mordheim",
+      "allowedEquipmentItemIds": ["dagger", "club", "sword", "spear", "amazon-sling", "bow", "buckler", "helmet"],
+      "appliesToFighterTypeIds": ["amazon-mordheim-warrior"],
+      "notes": "Mordheim Amazon Warrior equipment list."
+    },
+    {
+      "id": "amazon-mordheim-scout-equipment",
+      "name": "Amazon Scout Equipment List",
+      "warbandTypeId": "amazons-mordheim",
+      "allowedEquipmentItemIds": ["dagger", "club", "sword", "spear", "amazon-sling", "amazon-javelins", "bow", "buckler", "helmet"],
+      "appliesToFighterTypeIds": ["amazon-scout"],
+      "notes": "Mordheim Amazon Scout equipment list."
+    }
+  ]
+}

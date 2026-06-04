@@ -1,3 +1,12 @@
+import {
+  clearAccountProfile,
+  loadAccountProfile,
+  readAccountProfile,
+  saveAccountProfile
+} from "../lib/account";
+import { cloudEnabled, cloudJson } from "../lib/cloud";
+import { errorMessage } from "../lib/errors";
+import { schedulerConfig } from "./config";
 import type {
   CreateGameInput,
   GameInvitation,
@@ -10,51 +19,53 @@ import type {
   SchedulerSnapshot
 } from "./types";
 
-const profileKey = "mordheim.scheduler.playerProfile";
 const localScheduleKey = "mordheim.scheduler.localSnapshot";
 
-export const schedulerConfig = {
-  campaignId: import.meta.env.VITE_SCHEDULER_CAMPAIGN_ID ?? "autumn-in-the-city",
-  campaignName: import.meta.env.VITE_SCHEDULER_CAMPAIGN_NAME ?? "Autumn in the City",
-  appsScriptUrl: (import.meta.env.VITE_SCHEDULER_APPS_SCRIPT_URL ?? "").trim(),
-  googleSheetId: import.meta.env.VITE_SCHEDULER_GOOGLE_SHEET_ID ?? "1n2hA3dIFmkJ_gha16WkRD0hqNC5Zt9tmiUHwuJsVCkE",
-  googleCalendarId: import.meta.env.VITE_SCHEDULER_GOOGLE_CALENDAR_ID ?? ""
-};
+type SchedulerBackend = SchedulerSnapshot["backend"];
 
 export function readPlayerProfile(): PlayerProfile | undefined {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(profileKey) ?? "null") as PlayerProfile | null;
-    return parsed?.playerId && parsed.playerName ? parsed : undefined;
-  } catch {
-    return undefined;
-  }
+  return readAccountProfile();
+}
+
+export async function loadAuthenticatedPlayerProfile(): Promise<PlayerProfile | undefined> {
+  return loadAccountProfile();
+}
+
+export function subscribeToSchedulerAuth(callback: (profile: PlayerProfile | undefined) => void) {
+  void loadAuthenticatedPlayerProfile().then(callback);
+  return () => {};
 }
 
 export function savePlayerProfile(profile: PlayerProfile): PlayerProfile {
-  const next = {
-    ...profile,
-    playerId: profile.playerId || `player-${crypto.randomUUID()}`,
-    playerName: profile.playerName.trim(),
-    email: profile.email?.trim() || undefined,
-    lastSeenAt: new Date().toISOString()
-  };
-  localStorage.setItem(profileKey, JSON.stringify(next));
-  return next;
+  return saveAccountProfile(profile);
 }
 
 export function isSchedulerAuthenticated(profile: PlayerProfile | undefined) {
   if (!profile?.playerId || !profile.playerName) return false;
+  if (cloudEnabled) return Boolean(profile.sessionToken) && sessionIsCurrent(profile);
   if (!schedulerConfig.appsScriptUrl) return true;
   if (!profile.sessionToken || !profile.sessionExpiresAt) return false;
-  return new Date(profile.sessionExpiresAt).getTime() > Date.now();
+  return sessionIsCurrent(profile);
 }
 
 export function logoutPlayer() {
-  localStorage.removeItem(profileKey);
+  clearAccountProfile();
 }
 
 export async function registerPlayer(input: SchedulerAuthInput): Promise<PlayerProfile> {
   validateAuthInput(input);
+  if (cloudEnabled) {
+    if (!input.email?.trim()) throw new Error("Email is required for cloud accounts.");
+    const response = await cloudJson<{ profile: PlayerProfile }>("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        playerName: input.playerName.trim(),
+        email: input.email.trim(),
+        password: input.password
+      })
+    });
+    return savePlayerProfile(response.profile);
+  }
   if (schedulerConfig.appsScriptUrl) {
     const profile = await callSchedulerApi<PlayerProfile>("registerPlayer", {
       campaignId: schedulerConfig.campaignId,
@@ -77,6 +88,16 @@ export async function registerPlayer(input: SchedulerAuthInput): Promise<PlayerP
 
 export async function loginPlayer(input: SchedulerLoginInput): Promise<PlayerProfile> {
   if (!input.playerNameOrEmail.trim() || !input.password) throw new Error("Player name/email and password are required.");
+  if (cloudEnabled) {
+    const response = await cloudJson<{ profile: PlayerProfile }>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        playerNameOrEmail: input.playerNameOrEmail.trim(),
+        password: input.password
+      })
+    });
+    return savePlayerProfile(response.profile);
+  }
   if (schedulerConfig.appsScriptUrl) {
     const profile = await callSchedulerApi<PlayerProfile>("loginPlayer", {
       campaignId: schedulerConfig.campaignId,
@@ -97,6 +118,30 @@ export async function loginPlayer(input: SchedulerLoginInput): Promise<PlayerPro
 }
 
 export async function listSchedule(profile?: PlayerProfile): Promise<SchedulerSnapshot> {
+  if (cloudEnabled) {
+    if (!isSchedulerAuthenticated(profile)) {
+      return {
+        games: [],
+        invitations: [],
+        players: [],
+        backend: "turso",
+        warning: "Log in to load the shared cloud campaign schedule."
+      };
+    }
+    try {
+      const snapshot = await callCloudSchedulerApi<SchedulerSnapshot>("listGames", {
+        campaignId: schedulerConfig.campaignId,
+        auth: authFor(profile)
+      });
+      return normalizeSnapshot({ ...snapshot, backend: "turso" });
+    } catch (error) {
+      return {
+        ...readLocalSnapshot(),
+        backend: "local",
+        warning: `Could not load the shared cloud schedule. Showing local fallback data. ${errorMessage(error)}`
+      };
+    }
+  }
   if (schedulerConfig.appsScriptUrl) {
     if (!isSchedulerAuthenticated(profile)) {
       return {
@@ -124,12 +169,20 @@ export async function listSchedule(profile?: PlayerProfile): Promise<SchedulerSn
   return {
     ...readLocalSnapshot(),
     backend: "local",
-    warning: "Google Apps Script endpoint is not configured yet. Schedule changes are stored locally on this device."
+    warning: "Shared scheduler is not configured yet. Schedule changes are stored locally on this device."
   };
 }
 
 export async function upsertPlayer(profile: PlayerProfile): Promise<PlayerProfile> {
   const saved = savePlayerProfile(profile);
+  if (cloudEnabled) {
+    try {
+      await callCloudSchedulerApi("upsertPlayer", { campaignId: schedulerConfig.campaignId, player: saved, auth: authFor(saved) });
+    } catch {
+      upsertLocalPlayer(saved);
+    }
+    return saved;
+  }
   if (schedulerConfig.appsScriptUrl) {
     try {
       await callSchedulerApi("upsertPlayer", { campaignId: schedulerConfig.campaignId, player: saved, auth: authFor(saved) });
@@ -169,6 +222,7 @@ export async function createGame(input: CreateGameInput, host: PlayerProfile): P
       playerId: host.playerId,
       playerName: host.playerName,
       email: host.email,
+      warbandName: input.hostWarbandName?.trim() || undefined,
       inviteStatus: "host",
       respondedAt: now
     },
@@ -182,6 +236,20 @@ export async function createGame(input: CreateGameInput, host: PlayerProfile): P
     }))
   ];
   const gameWithStatus = { ...game, status: calculateGameStatus(game, invitations) };
+
+  if (cloudEnabled) {
+    try {
+      return normalizeSnapshot(await callCloudSchedulerApi<SchedulerSnapshot>("createGame", {
+        campaignId: schedulerConfig.campaignId,
+        game: gameWithStatus,
+        invitations,
+        host,
+        auth: authFor(host)
+      }));
+    } catch {
+      return createLocalGame(gameWithStatus, invitations, host);
+    }
+  }
 
   if (schedulerConfig.appsScriptUrl) {
     try {
@@ -200,7 +268,26 @@ export async function createGame(input: CreateGameInput, host: PlayerProfile): P
   return createLocalGame(gameWithStatus, invitations, host);
 }
 
-export async function respondToInvite(gameId: string, player: PlayerProfile, inviteStatus: Exclude<SchedulerInviteStatus, "host">): Promise<SchedulerSnapshot> {
+export async function respondToInvite(
+  gameId: string,
+  player: PlayerProfile,
+  inviteStatus: Exclude<SchedulerInviteStatus, "host">,
+  warbandName?: string
+): Promise<SchedulerSnapshot> {
+  if (cloudEnabled) {
+    try {
+      return normalizeSnapshot(await callCloudSchedulerApi<SchedulerSnapshot>("respondToInvite", {
+        campaignId: schedulerConfig.campaignId,
+        gameId,
+        playerId: player.playerId,
+        inviteStatus,
+        warbandName: warbandName?.trim() || undefined,
+        auth: authFor(player)
+      }));
+    } catch {
+      return respondLocal(gameId, player, inviteStatus, warbandName);
+    }
+  }
   if (schedulerConfig.appsScriptUrl) {
     try {
       return normalizeSnapshot(await callSchedulerApi<SchedulerSnapshot>("respondToInvite", {
@@ -208,16 +295,29 @@ export async function respondToInvite(gameId: string, player: PlayerProfile, inv
         gameId,
         playerId: player.playerId,
         inviteStatus,
+        warbandName: warbandName?.trim() || undefined,
         auth: authFor(player)
       }));
     } catch {
-      return respondLocal(gameId, player, inviteStatus);
+      return respondLocal(gameId, player, inviteStatus, warbandName);
     }
   }
-  return respondLocal(gameId, player, inviteStatus);
+  return respondLocal(gameId, player, inviteStatus, warbandName);
 }
 
 export async function updateGameStatus(gameId: string, status: SchedulerGameStatus): Promise<SchedulerSnapshot> {
+  if (cloudEnabled) {
+    try {
+      return normalizeSnapshot(await callCloudSchedulerApi<SchedulerSnapshot>("updateGame", {
+        campaignId: schedulerConfig.campaignId,
+        gameId,
+        patch: { status },
+        auth: authFor(readPlayerProfile())
+      }));
+    } catch {
+      return updateLocalGame(gameId, { status });
+    }
+  }
   if (schedulerConfig.appsScriptUrl) {
     try {
       return normalizeSnapshot(await callSchedulerApi<SchedulerSnapshot>("updateGame", {
@@ -234,6 +334,9 @@ export async function updateGameStatus(gameId: string, status: SchedulerGameStat
 }
 
 export async function createGoogleCalendarInvite(gameId: string): Promise<SchedulerSnapshot> {
+  if (cloudEnabled) {
+    throw new Error("Calendar invites are planned for a later cloud update.");
+  }
   if (!schedulerConfig.appsScriptUrl) {
     throw new Error("Google Apps Script endpoint is not configured.");
   }
@@ -264,6 +367,14 @@ export function invitationsForGame(gameId: string, invitations: GameInvitation[]
 export function currentPlayerInvite(gameId: string, player: PlayerProfile | undefined, invitations: GameInvitation[]) {
   if (!player) return undefined;
   return invitations.find((invite) => invite.gameId === gameId && invite.playerId === player.playerId);
+}
+
+async function callCloudSchedulerApi<T>(action: string, payload: Record<string, unknown>): Promise<T> {
+  const body = await cloudJson<{ data?: T }>("/api/scheduler", {
+    method: "POST",
+    body: JSON.stringify({ action, ...payload })
+  });
+  return body.data as T;
 }
 
 async function callSchedulerApi<T>(action: string, payload: Record<string, unknown>): Promise<T> {
@@ -314,7 +425,12 @@ function createLocalGame(game: ScheduledGame, invitations: GameInvitation[], hos
   return snapshot;
 }
 
-function respondLocal(gameId: string, player: PlayerProfile, inviteStatus: Exclude<SchedulerInviteStatus, "host">): SchedulerSnapshot {
+function respondLocal(
+  gameId: string,
+  player: PlayerProfile,
+  inviteStatus: Exclude<SchedulerInviteStatus, "host">,
+  warbandName?: string
+): SchedulerSnapshot {
   const current = readLocalSnapshot();
   const game = current.games.find((item) => item.gameId === gameId);
   if (!game) return current;
@@ -325,7 +441,13 @@ function respondLocal(gameId: string, player: PlayerProfile, inviteStatus: Exclu
   }
   const invitations = current.invitations.map((invite) => (
     invite.gameId === gameId && invite.playerId === player.playerId
-      ? { ...invite, inviteStatus, respondedAt: new Date().toISOString(), email: player.email || invite.email }
+      ? {
+          ...invite,
+          inviteStatus,
+          respondedAt: new Date().toISOString(),
+          email: player.email || invite.email,
+          warbandName: warbandName?.trim() || invite.warbandName
+        }
       : invite
   ));
   const games = current.games.map((item) => (
@@ -384,9 +506,15 @@ function normalizeSnapshot(snapshot?: Partial<SchedulerSnapshot> | null): Schedu
     games: games.map((game) => ({ ...game, status: calculateGameStatus(game, invitations) })),
     invitations,
     players: current.players ?? [],
-    backend: current.backend ?? (schedulerConfig.appsScriptUrl ? "google-sheet" : "local"),
+    backend: current.backend ?? defaultBackend(),
     warning: current.warning
   };
+}
+
+function defaultBackend(): SchedulerBackend {
+  if (cloudEnabled) return "turso";
+  if (schedulerConfig.appsScriptUrl) return "google-sheet";
+  return "local";
 }
 
 function upsertPlayerList(existing: PlayerProfile[], players: PlayerProfile[]) {
@@ -417,10 +545,11 @@ function invitationToPlayer(invitation: GameInvitation): PlayerProfile {
   };
 }
 
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
-}
-
 function slug(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "player";
+}
+
+function sessionIsCurrent(profile: PlayerProfile) {
+  if (!profile.sessionExpiresAt) return true;
+  return new Date(profile.sessionExpiresAt).getTime() > Date.now();
 }

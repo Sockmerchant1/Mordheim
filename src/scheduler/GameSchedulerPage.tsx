@@ -1,7 +1,6 @@
 import {
   AlertTriangle,
   CalendarDays,
-  CheckCircle2,
   Clock,
   Home,
   Mail,
@@ -14,7 +13,9 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { errorMessage } from "../lib/errors";
 import type { Roster } from "../rules/types";
+import { schedulerConfig } from "./config";
 import {
   acceptedPlayerCount,
   createGame,
@@ -23,12 +24,7 @@ import {
   invitationsForGame,
   isSchedulerAuthenticated,
   listSchedule,
-  loginPlayer,
-  logoutPlayer,
-  readPlayerProfile,
-  registerPlayer,
   respondToInvite,
-  schedulerConfig,
   updateGameStatus
 } from "./store";
 import type {
@@ -39,9 +35,7 @@ import type {
   SchedulerGameStatus,
   SchedulerInviteStatus,
   SchedulerLocationType,
-  SchedulerLoginInput,
-  SchedulerSnapshot,
-  SchedulerAuthInput
+  SchedulerSnapshot
 } from "./types";
 
 type ScheduleFilter = {
@@ -53,16 +47,17 @@ const todayKey = dateKey(new Date());
 
 export function GameSchedulerPage({
   rosters,
+  profile,
+  authenticated,
   onWarbands,
-  onCampaign,
-  onCreateWarband
+  onCampaign
 }: {
   rosters: Roster[];
+  profile?: PlayerProfile;
+  authenticated: boolean;
   onWarbands: () => void;
   onCampaign: () => void;
-  onCreateWarband: () => void;
 }) {
-  const [profile, setProfile] = useState<PlayerProfile | undefined>(() => readPlayerProfile());
   const [snapshot, setSnapshot] = useState<SchedulerSnapshot>({ games: [], invitations: [], players: [], backend: "local" });
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [monthCursor, setMonthCursor] = useState(startOfMonth(new Date()));
@@ -71,15 +66,16 @@ export function GameSchedulerPage({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const authenticated = isSchedulerAuthenticated(profile);
+  const schedulerAuthenticated = authenticated && isSchedulerAuthenticated(profile);
 
   useEffect(() => {
-    if (authenticated) {
+    if (schedulerAuthenticated) {
       void refreshSchedule();
     } else {
       setLoading(false);
+      setSnapshot({ games: [], invitations: [], players: [], backend: schedulerConfig.cloudEnabled ? "turso" : schedulerConfig.appsScriptUrl ? "google-sheet" : "local" });
     }
-  }, [authenticated]);
+  }, [schedulerAuthenticated, profile?.playerId]);
 
   async function refreshSchedule() {
     setLoading(true);
@@ -95,39 +91,8 @@ export function GameSchedulerPage({
     }
   }
 
-  async function handleRegister(input: SchedulerAuthInput) {
-    setError("");
-    setMessage("Creating player login...");
-    try {
-      const updated = await registerPlayer(input);
-      setProfile(updated);
-      setMessage("Player login created.");
-    } catch (authError) {
-      setError(errorText(authError) || "Could not create player login.");
-    }
-  }
-
-  async function handleLogin(input: SchedulerLoginInput) {
-    setError("");
-    setMessage("Logging in...");
-    try {
-      const updated = await loginPlayer(input);
-      setProfile(updated);
-      setMessage("Logged in.");
-    } catch (authError) {
-      setError(errorText(authError) || "Could not log in.");
-    }
-  }
-
-  function handleLogout() {
-    logoutPlayer();
-    setProfile(undefined);
-    setSnapshot({ games: [], invitations: [], players: [], backend: schedulerConfig.appsScriptUrl ? "google-sheet" : "local" });
-    setMessage("Logged out.");
-  }
-
   async function handleCreateGame(input: CreateGameInput) {
-    if (!authenticated || !profile) {
+    if (!schedulerAuthenticated || !profile) {
       setError("Log in before scheduling games.");
       return;
     }
@@ -145,15 +110,15 @@ export function GameSchedulerPage({
     }
   }
 
-  async function handleInviteResponse(gameId: string, status: Exclude<SchedulerInviteStatus, "host">) {
-    if (!authenticated || !profile) {
+  async function handleInviteResponse(gameId: string, status: Exclude<SchedulerInviteStatus, "host">, warbandName?: string) {
+    if (!schedulerAuthenticated || !profile) {
       setError("Log in before responding to invitations.");
       return;
     }
     setError("");
     setMessage("Updating invitation...");
     try {
-      setSnapshot(await respondToInvite(gameId, profile, status));
+      setSnapshot(await respondToInvite(gameId, profile, status, warbandName));
       setMessage("Invitation updated.");
     } catch (responseError) {
       setError(errorText(responseError) || "Could not update invitation.");
@@ -190,6 +155,7 @@ export function GameSchedulerPage({
     .filter((game) => game.date >= todayKey && game.status !== "cancelled" && game.status !== "completed")
     .sort(compareGames)
     .slice(0, 8);
+  const nextGame = upcomingGames[0];
   const pastGames = filteredGames
     .filter((game) => game.date < todayKey || game.status === "completed")
     .sort((a, b) => compareGames(b, a))
@@ -223,7 +189,7 @@ export function GameSchedulerPage({
             <CalendarDays aria-hidden /> Schedule
           </button>
           <button className="primary" onClick={() => setShowCreate((current) => !current)}>
-            <Plus aria-hidden /> Create Game
+            <Plus aria-hidden /> Host Game
           </button>
         </div>
       </div>
@@ -232,12 +198,15 @@ export function GameSchedulerPage({
       {error && <div className="status-banner error"><AlertTriangle aria-hidden /> {error}</div>}
       {loading && <div className="empty-state">Loading schedule...</div>}
 
-      <PlayerAuthPanel
+      <SchedulerAccountPanel
         profile={profile}
-        authenticated={authenticated}
-        onRegister={handleRegister}
-        onLogin={handleLogin}
-        onLogout={handleLogout}
+        authenticated={schedulerAuthenticated}
+      />
+
+      <NextGamePanel
+        game={nextGame}
+        invitations={invitations}
+        profile={profile}
       />
 
       <div className="metric-grid scheduler-metrics">
@@ -249,7 +218,7 @@ export function GameSchedulerPage({
 
       {showCreate && (
         <GameCreateForm
-          disabled={!authenticated}
+          disabled={!schedulerAuthenticated}
           rosters={rosters}
           players={snapshot.players}
           profile={profile}
@@ -282,6 +251,7 @@ export function GameSchedulerPage({
           date={selectedDate}
           games={filteredGames.filter((game) => game.date === selectedDate).sort(compareGames)}
           invitations={invitations}
+          rosters={rosters}
           profile={profile}
           onRespond={handleInviteResponse}
           onCalendarInvite={handleCalendarInvite}
@@ -328,6 +298,7 @@ export function GameSchedulerPage({
           empty="No pending invitations"
           games={pendingInvitations}
           invitations={invitations}
+          rosters={rosters}
           profile={profile}
           onRespond={handleInviteResponse}
           onCalendarInvite={handleCalendarInvite}
@@ -338,6 +309,7 @@ export function GameSchedulerPage({
           empty="No upcoming games"
           games={upcomingGames}
           invitations={invitations}
+          rosters={rosters}
           profile={profile}
           onRespond={handleInviteResponse}
           onCalendarInvite={handleCalendarInvite}
@@ -348,6 +320,7 @@ export function GameSchedulerPage({
           empty="No past games"
           games={pastGames}
           invitations={invitations}
+          rosters={rosters}
           profile={profile}
           onRespond={handleInviteResponse}
           onCalendarInvite={handleCalendarInvite}
@@ -355,44 +328,25 @@ export function GameSchedulerPage({
         />
       </div>
 
-      {!authenticated && (
+      {!schedulerAuthenticated && (
         <div className="status-banner warning">
           <AlertTriangle aria-hidden /> Log in before accepting invitations or creating games.
         </div>
       )}
       <p className="muted scheduler-footnote">
-        Shared sheet: {schedulerConfig.googleSheetId}. Backend: {snapshot.backend === "google-sheet" ? "Google Sheet via Apps Script" : "local fallback"}.
+        {schedulerBackendFootnote(snapshot.backend)}
       </p>
     </section>
   );
 }
 
-function PlayerAuthPanel({
-  profile,
-  authenticated,
-  onRegister,
-  onLogin,
-  onLogout
-}: {
-  profile?: PlayerProfile;
-  authenticated: boolean;
-  onRegister: (input: SchedulerAuthInput) => void;
-  onLogin: (input: SchedulerLoginInput) => void;
-  onLogout: () => void;
-}) {
-  const [mode, setMode] = useState<"login" | "register">("login");
-  const [loginName, setLoginName] = useState(profile?.email || profile?.playerName || "");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [playerName, setPlayerName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
+function SchedulerAccountPanel({ profile, authenticated }: { profile?: PlayerProfile; authenticated: boolean }) {
   return (
     <section className="scheduler-card profile-card">
       <div className="section-heading">
         <div>
-          <h3>Player Login</h3>
-          <p>{authenticated ? "You are signed in for shared campaign scheduling." : "Sign in before creating games or responding to invitations."}</p>
+          <h3>Campaign Account</h3>
+          <p>{authenticated ? "Using the same cloud account as warband saves." : "Log in from Cloud Saves above to use the shared campaign schedule."}</p>
         </div>
         {authenticated && <span className="pill">Signed in</span>}
       </div>
@@ -402,51 +356,62 @@ function PlayerAuthPanel({
             <strong>{profile.playerName}</strong>
             <p className="muted">{profile.email || "No email saved"}</p>
           </div>
-          <button onClick={onLogout}>Log out</button>
+          <span className="pill success">Scheduler ready</span>
         </div>
       ) : (
-        <>
-          <div className="segmented-control" role="group" aria-label="Login mode">
-            <button className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>Log in</button>
-            <button className={mode === "register" ? "active" : ""} onClick={() => setMode("register")}>Register</button>
-          </div>
-          {mode === "login" ? (
-            <div className="form-grid compact-form">
-              <label>
-                <span>Player name or email</span>
-                <input value={loginName} onChange={(event) => setLoginName(event.target.value)} placeholder="Paul" />
-              </label>
-              <label>
-                <span>Password</span>
-                <input type="password" value={loginPassword} onChange={(event) => setLoginPassword(event.target.value)} />
-              </label>
-              <button className="primary" disabled={!loginName.trim() || !loginPassword} onClick={() => onLogin({ playerNameOrEmail: loginName, password: loginPassword })}>
-                <CheckCircle2 aria-hidden /> Log in
-              </button>
-            </div>
-          ) : (
-            <div className="form-grid compact-form">
-              <label>
-                <span>Player name</span>
-                <input value={playerName} onChange={(event) => setPlayerName(event.target.value)} placeholder="Paul" />
-              </label>
-              <label>
-                <span>Email, optional</span>
-                <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@example.com" />
-              </label>
-              <label>
-                <span>Password</span>
-                <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-              </label>
-              <button className="primary" disabled={!playerName.trim() || password.length < 6} onClick={() => onRegister({ playerName, email, password })}>
-                <CheckCircle2 aria-hidden /> Register
-              </button>
-            </div>
-          )}
-        </>
+        <div className="status-banner warning">
+          <AlertTriangle aria-hidden /> Use the Cloud Saves account panel in the header to log in once for rosters and scheduling.
+        </div>
       )}
     </section>
   );
+}
+
+function NextGamePanel({
+  game,
+  invitations,
+  profile
+}: {
+  game?: ScheduledGame;
+  invitations: GameInvitation[];
+  profile?: PlayerProfile;
+}) {
+  const myInvite = game ? currentPlayerInvite(game.gameId, profile, invitations) : undefined;
+  return (
+    <section className="scheduler-card profile-card">
+      <div className="section-heading">
+        <div>
+          <h3>Next Game</h3>
+          <p>{game ? `${formatDateLong(game.date)} at ${game.time}` : "No upcoming game is scheduled yet."}</p>
+        </div>
+        {game && <span className={`status-pill status-${game.status}`}>{game.status}</span>}
+      </div>
+      {game ? (
+        <div className="auth-summary">
+          <div>
+            <strong>{game.title}</strong>
+            <p className="muted">
+              {game.locationName} · {acceptedPlayerCount(game, invitations)} / {game.maxPlayers} players
+              {myInvite ? ` · My RSVP: ${myInvite.inviteStatus}${myInvite.warbandName ? ` with ${myInvite.warbandName}` : ""}` : ""}
+            </p>
+          </div>
+          <span className="pill">{game.hostName} hosting</span>
+        </div>
+      ) : (
+        <div className="empty-state">Use Host Game to put the next session on the campaign calendar.</div>
+      )}
+    </section>
+  );
+}
+
+function schedulerBackendFootnote(backend: SchedulerSnapshot["backend"]) {
+  if (backend === "turso") {
+    return `Shared cloud backend: Turso. Campaign: ${schedulerConfig.campaignName} (${schedulerConfig.campaignId}).`;
+  }
+  if (backend === "google-sheet") {
+    return `Shared sheet: ${schedulerConfig.googleSheetId}. Backend: Google Sheet via Apps Script.`;
+  }
+  return "Backend: local fallback on this device only.";
 }
 
 function GameCreateForm({
@@ -473,6 +438,7 @@ function GameCreateForm({
   const [manualName, setManualName] = useState("");
   const [manualEmail, setManualEmail] = useState("");
   const [manualWarband, setManualWarband] = useState("");
+  const [hostWarbandName, setHostWarbandName] = useState("");
   const [invitedPlayers, setInvitedPlayers] = useState<CreateGameInput["invitedPlayers"]>([]);
   const availablePlayers = players.filter((player) => player.playerId !== profile?.playerId && !invitedPlayers.some((invite) => invite.playerId === player.playerId));
 
@@ -557,6 +523,13 @@ function GameCreateForm({
             {availablePlayers.map((player) => <option value={player.playerId} key={player.playerId}>{player.playerName}</option>)}
           </select>
         </label>
+        <label>
+          <span>My warband, optional</span>
+          <select value={hostWarbandName} onChange={(event) => setHostWarbandName(event.target.value)}>
+            <option value="">No warband selected</option>
+            {rosters.map((roster) => <option value={roster.name} key={roster.id}>{roster.name}</option>)}
+          </select>
+        </label>
       </div>
       <div className="invite-chip-box">
         <strong>Invited players</strong>
@@ -595,9 +568,9 @@ function GameCreateForm({
       <button
         className="primary wide-action"
         disabled={disabled}
-        onClick={() => onCreate({ title, date, time, durationMinutes, locationType, locationName, maxPlayers, notes, invitedPlayers })}
+        onClick={() => onCreate({ title, date, time, durationMinutes, locationType, locationName, maxPlayers, notes, hostWarbandName, invitedPlayers })}
       >
-        <Swords aria-hidden /> Schedule Game
+        <Swords aria-hidden /> Host Game
       </button>
     </section>
   );
@@ -659,6 +632,7 @@ function SelectedDayGames({
   date,
   games,
   invitations,
+  rosters,
   profile,
   onRespond,
   onCalendarInvite,
@@ -680,6 +654,7 @@ function SelectedDayGames({
             <GameCard
               game={game}
               invitations={invitations}
+              rosters={rosters}
               profile={profile}
               onRespond={onRespond}
               onCalendarInvite={onCalendarInvite}
@@ -696,8 +671,9 @@ function SelectedDayGames({
 type GameListProps = {
   games: ScheduledGame[];
   invitations: GameInvitation[];
+  rosters: Roster[];
   profile?: PlayerProfile;
-  onRespond: (gameId: string, status: Exclude<SchedulerInviteStatus, "host">) => void;
+  onRespond: (gameId: string, status: Exclude<SchedulerInviteStatus, "host">, warbandName?: string) => void;
   onCalendarInvite: (game: ScheduledGame) => void;
   onStatusChange: (gameId: string, status: SchedulerGameStatus) => void;
 };
@@ -707,6 +683,7 @@ function GameListSection({
   empty,
   games,
   invitations,
+  rosters,
   profile,
   onRespond,
   onCalendarInvite,
@@ -728,6 +705,7 @@ function GameListSection({
             <GameCard
               game={game}
               invitations={invitations}
+              rosters={rosters}
               profile={profile}
               onRespond={onRespond}
               onCalendarInvite={onCalendarInvite}
@@ -744,6 +722,7 @@ function GameListSection({
 function GameCard({
   game,
   invitations,
+  rosters,
   profile,
   onRespond,
   onCalendarInvite,
@@ -751,8 +730,9 @@ function GameCard({
 }: {
   game: ScheduledGame;
   invitations: GameInvitation[];
+  rosters: Roster[];
   profile?: PlayerProfile;
-  onRespond: (gameId: string, status: Exclude<SchedulerInviteStatus, "host">) => void;
+  onRespond: (gameId: string, status: Exclude<SchedulerInviteStatus, "host">, warbandName?: string) => void;
   onCalendarInvite: (game: ScheduledGame) => void;
   onStatusChange: (gameId: string, status: SchedulerGameStatus) => void;
 }) {
@@ -762,6 +742,11 @@ function GameCard({
   const isHost = profile?.playerId === game.hostPlayerId;
   const calendarEligible = canCreateCalendarInvite(game, gameInvites);
   const missingEmails = gameInvites.filter((invite) => ["host", "accepted", "invited"].includes(invite.inviteStatus) && !invite.email).length;
+  const [selectedWarbandName, setSelectedWarbandName] = useState(currentInvite?.warbandName ?? rosters[0]?.name ?? "");
+
+  useEffect(() => {
+    setSelectedWarbandName(currentInvite?.warbandName ?? rosters[0]?.name ?? "");
+  }, [currentInvite?.warbandName, rosters]);
 
   return (
     <article className={`game-card status-${game.status}`}>
@@ -786,7 +771,7 @@ function GameCard({
         <div className="chip-list">
           {gameInvites.map((invite) => (
             <span className={`chip invite-${invite.inviteStatus}`} key={`${invite.gameId}-${invite.playerId}`}>
-              {invite.playerName} {invite.inviteStatus}
+              {invite.playerName}{invite.warbandName ? ` - ${invite.warbandName}` : ""} {invite.inviteStatus}
             </span>
           ))}
         </div>
@@ -797,13 +782,30 @@ function GameCard({
           </a>
         )}
         {missingEmails > 0 && isHost && <p className="muted">{missingEmails} player{missingEmails === 1 ? "" : "s"} do not have email addresses for calendar invites.</p>}
+        {currentInvite && currentInvite.inviteStatus !== "host" && (
+          <label className="inline-warband-select">
+            <span>Warband for RSVP</span>
+            <select value={selectedWarbandName} onChange={(event) => setSelectedWarbandName(event.target.value)}>
+              <option value="">No warband selected</option>
+              {rosters.map((roster) => <option value={roster.name} key={roster.id}>{roster.name}</option>)}
+              {currentInvite.warbandName && !rosters.some((roster) => roster.name === currentInvite.warbandName) && (
+                <option value={currentInvite.warbandName}>{currentInvite.warbandName}</option>
+              )}
+            </select>
+          </label>
+        )}
         <div className="button-row">
           {currentInvite?.inviteStatus === "invited" && (
             <>
-              <button className="primary" disabled={accepted >= game.maxPlayers} onClick={() => onRespond(game.gameId, "accepted")}>Accept</button>
-              <button onClick={() => onRespond(game.gameId, "maybe")}>Maybe</button>
+              <button className="primary" disabled={accepted >= game.maxPlayers} onClick={() => onRespond(game.gameId, "accepted", selectedWarbandName)}>Accept</button>
+              <button onClick={() => onRespond(game.gameId, "maybe", selectedWarbandName)}>Maybe</button>
               <button className="icon-danger" onClick={() => onRespond(game.gameId, "declined")}>Decline</button>
             </>
+          )}
+          {currentInvite && ["accepted", "maybe"].includes(currentInvite.inviteStatus) && (
+            <button onClick={() => onRespond(game.gameId, currentInvite.inviteStatus as Exclude<SchedulerInviteStatus, "host">, selectedWarbandName)}>
+              Save Warband
+            </button>
           )}
           {isHost && !game.googleCalendarEventId && (
             <button disabled={!calendarEligible} onClick={() => onCalendarInvite(game)}>
@@ -892,5 +894,5 @@ function formatDateLong(value: string) {
 }
 
 function errorText(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
+  return errorMessage(error);
 }

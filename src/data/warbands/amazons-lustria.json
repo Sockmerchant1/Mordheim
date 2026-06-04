@@ -1,0 +1,176 @@
+{
+  "warbandType": {
+    "id": "amazons-lustria",
+    "name": "Amazons (Lustria)",
+    "race": "Human",
+    "broheimGrade": "1b",
+    "sourceCode": "TC15",
+    "sourceDocumentId": "tc15-amazons-lustria",
+    "sourceUrl": "https://broheim.net/downloads/towncryer/TownCryer15.pdf#page=20",
+    "implementationStatus": "tested",
+    "startingGold": 500,
+    "minWarriors": 3,
+    "maxWarriors": 15,
+    "maxHeroes": 5,
+    "leaderFighterTypeId": "amazon-serpent-priestess",
+    "notes": "Town Cryer #15 Lustria Amazons warband. Includes Serpent Priestess Amazon Rituals, Eagle and Piranha Warriors, Jaguar Warriors, Amazon special skills, special equipment, Norse/Lizardmen rules and no non-Amazon hired swords."
+  },
+  "fighterTypes": [
+    {
+      "id": "amazon-serpent-priestess",
+      "warbandTypeId": "amazons-lustria",
+      "name": "Serpent Priestess",
+      "category": "hero",
+      "minCount": 1,
+      "maxCount": 1,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 70,
+      "startingExperience": 20,
+      "profile": { "M": 4, "WS": 4, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 4, "A": 1, "Ld": 8 },
+      "equipmentListIds": ["amazon-lustria-heroine-equipment"],
+      "skillCategoryIds": ["combat", "academic", "speed", "amazon-special"],
+      "specialRuleIds": ["leader", "spellcaster", "amazon-rituals"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Required leader and ritual caster using Amazon Rituals.",
+      "source": {
+        "sourceDocumentId": "tc15-amazons-lustria",
+        "sourceUrl": "https://broheim.net/downloads/towncryer/TownCryer15.pdf#page=20",
+        "pageRef": "Town Cryer #15 pp. 20-23",
+        "label": "Heroines"
+      }
+    },
+    {
+      "id": "amazon-eagle-warrior",
+      "warbandTypeId": "amazons-lustria",
+      "name": "Eagle Warrior",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 35,
+      "startingExperience": 8,
+      "profile": { "M": 4, "WS": 4, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["amazon-lustria-heroine-equipment"],
+      "skillCategoryIds": ["combat", "strength", "speed", "amazon-special"],
+      "specialRuleIds": [],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to two may be hired.",
+      "source": {
+        "sourceDocumentId": "tc15-amazons-lustria",
+        "sourceUrl": "https://broheim.net/downloads/towncryer/TownCryer15.pdf#page=20",
+        "pageRef": "Town Cryer #15 p. 23",
+        "label": "Heroines"
+      }
+    },
+    {
+      "id": "amazon-piranha-warrior",
+      "warbandTypeId": "amazons-lustria",
+      "name": "Piranha Warrior",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 30,
+      "startingExperience": 8,
+      "profile": { "M": 4, "WS": 3, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 4, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["amazon-lustria-heroine-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "speed", "amazon-special"],
+      "specialRuleIds": [],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to two may be hired. Piranha Warriors are the only fighters that may carry a Conch Shell Horn.",
+      "source": {
+        "sourceDocumentId": "tc15-amazons-lustria",
+        "sourceUrl": "https://broheim.net/downloads/towncryer/TownCryer15.pdf#page=20",
+        "pageRef": "Town Cryer #15 p. 23",
+        "label": "Heroines"
+      }
+    },
+    {
+      "id": "amazon-lustria-warrior",
+      "warbandTypeId": "amazons-lustria",
+      "name": "Amazon Warrior",
+      "category": "henchman",
+      "minCount": 1,
+      "maxCount": null,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 25,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["amazon-lustria-henchwoman-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": [],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "At least one Amazon Warrior must be included. Bought in groups of 1-5.",
+      "source": {
+        "sourceDocumentId": "tc15-amazons-lustria",
+        "sourceUrl": "https://broheim.net/downloads/towncryer/TownCryer15.pdf#page=20",
+        "pageRef": "Town Cryer #15 p. 24",
+        "label": "Henchwomen"
+      }
+    },
+    {
+      "id": "amazon-jaguar-warrior",
+      "warbandTypeId": "amazons-lustria",
+      "name": "Jaguar Warrior",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": 3,
+      "groupMinSize": 1,
+      "groupMaxSize": 3,
+      "hireCost": 30,
+      "startingExperience": 0,
+      "profile": { "M": 4, "WS": 3, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 3, "A": 1, "Ld": 7 },
+      "equipmentListIds": ["amazon-lustria-jaguar-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["amazon-one-with-the-jungle"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to three may be hired. Bought in groups of 1-3 in this app to enforce the warband cap.",
+      "source": {
+        "sourceDocumentId": "tc15-amazons-lustria",
+        "sourceUrl": "https://broheim.net/downloads/towncryer/TownCryer15.pdf#page=20",
+        "pageRef": "Town Cryer #15 p. 24",
+        "label": "Henchwomen"
+      }
+    }
+  ],
+  "equipmentLists": [
+    {
+      "id": "amazon-lustria-heroine-equipment",
+      "name": "Amazon Heroine Equipment List",
+      "warbandTypeId": "amazons-lustria",
+      "allowedEquipmentItemIds": ["dagger", "club", "sword", "spear", "double-handed-weapon", "amazon-starblade", "amazon-starsword", "bow", "amazon-lustria-sunstaff", "buckler", "helmet", "amazon-enchanted-skins", "amazon-lustria-amulet-of-the-moon", "healing-herbs", "amazon-conch-shell-horn"],
+      "appliesToFighterTypeIds": ["amazon-serpent-priestess", "amazon-eagle-warrior", "amazon-piranha-warrior"],
+      "notes": "Lustria Amazon heroine equipment. Conch Shell Horn is metadata-restricted to Piranha Warriors."
+    },
+    {
+      "id": "amazon-lustria-henchwoman-equipment",
+      "name": "Amazon Henchwoman Equipment List",
+      "warbandTypeId": "amazons-lustria",
+      "allowedEquipmentItemIds": ["dagger", "club", "sword", "spear", "amazon-sling", "bow", "amazon-lustria-sunstaff", "buckler", "helmet", "amazon-enchanted-skins"],
+      "appliesToFighterTypeIds": ["amazon-lustria-warrior"],
+      "notes": "Lustria Amazon Warrior equipment list."
+    },
+    {
+      "id": "amazon-lustria-jaguar-equipment",
+      "name": "Jaguar Warrior Equipment List",
+      "warbandTypeId": "amazons-lustria",
+      "allowedEquipmentItemIds": ["dagger", "club", "sword", "spear", "amazon-sling", "amazon-bolas", "amazon-javelins", "bow", "amazon-lustria-sunstaff", "helmet", "amazon-enchanted-skins"],
+      "appliesToFighterTypeIds": ["amazon-jaguar-warrior"],
+      "notes": "Jaguar Warrior equipment list. It intentionally omits bucklers."
+    }
+  ]
+}

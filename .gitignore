@@ -1,8 +1,11 @@
 node_modules/
 dist/
 .local/
+.DS_Store
 .tools/
 .npm-cache/
 .netlify/
+.env.local
+supabase/.temp/
 playwright-report/
 test-results/

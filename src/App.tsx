@@ -4,11 +4,14 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardList,
+  Cloud,
   Coins,
   Copy,
+  Crosshair,
   Dices,
   Download,
   Edit3,
+  MoreHorizontal,
   Plus,
   Printer,
   RotateCcw,
@@ -21,7 +24,18 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { deleteRoster, listRosters, saveRoster } from "./api/rosters";
+import {
+  deleteRoster,
+  disableRosterCloudSync,
+  enableRosterCloudSync,
+  getRosterCloudState,
+  listRosters,
+  saveRoster,
+  type RosterCloudState
+} from "./api/rosters";
+import { useAppAccount } from "./lib/account";
+import { cloudEnabled } from "./lib/cloud";
+import { errorMessage } from "./lib/errors";
 import rulesLookupSeed from "./data/rulesLookup.json";
 import { rulesDb, warbandIndex, type WarbandIndexRecord } from "./data/rulesDb";
 import {
@@ -41,8 +55,37 @@ import {
   getPendingAdvances,
   validateRoster
 } from "./rules/engine";
+import {
+  buildRollAssistAttacker,
+  calculateCloseCombatRoll,
+  calculateShootingRoll,
+  type RollAssistArmourSave,
+  type RollAssistAttackProfile,
+  type RollAssistAttacker,
+  type RollAssistCloseCombatTarget,
+  type RollAssistEnemyToughness,
+  type RollAssistEnemyWs,
+  type RollAssistMode,
+  type RollAssistRangeBand,
+  type RollAssistResult,
+  type RollAssistShootingTarget,
+  type RollAssistTargetState
+} from "./rules/rollAssist";
 import { rosterSchema } from "./rules/schemas";
 import { GameSchedulerPage } from "./scheduler/GameSchedulerPage";
+import type { PlayerProfile } from "./scheduler/types";
+import {
+  ADVANCE_STATS,
+  advanceResultLabel,
+  advanceTableForMember,
+  applyStatAdvance,
+  legalAdvanceStats,
+  rollAdvance,
+  type AdvanceKind,
+  type AdvanceRoll,
+  type AdvanceStat,
+  type AdvanceTableType
+} from "./rules/advancement";
 import {
   createMultipleSeriousInjuryRoll,
   createSeriousInjuryFollowUpRolls,
@@ -118,6 +161,27 @@ type BattleState = {
   updatedAt: string;
   members: Record<string, BattleMemberState>;
 };
+type RollAssistShootingContextState = {
+  toughness: RollAssistEnemyToughness;
+  armourSave: RollAssistArmourSave;
+  cover: boolean;
+  range: RollAssistRangeBand;
+  shooterMoved: boolean;
+  largeTarget: boolean;
+};
+type RollAssistRecentTarget =
+  | {
+      key: string;
+      mode: "closeCombat";
+      label: string;
+      profile: RollAssistCloseCombatTarget;
+    }
+  | {
+      key: string;
+      mode: "shooting";
+      label: string;
+      profile: RollAssistShootingContextState;
+    };
 type BattleResult = "win" | "loss" | "draw" | "routed" | "wiped-out" | "other";
 type AfterBattleDraft = {
   id: string;
@@ -224,6 +288,19 @@ type AfterBattleAdvanceEntry = {
   xpThreshold: number;
   result: string;
   notes?: string;
+  tableType?: AdvanceTableType;
+  rollDice?: [number, number];
+  rollTotal?: number;
+  advanceKind?: AdvanceKind;
+  advanceLabel?: string;
+  statOptions?: AdvanceStat[];
+  forcedStat?: AdvanceStat;
+  followUpRolls?: number[];
+  selectedStat?: AdvanceStat;
+  selectedSkillId?: string;
+  selectedCastableRuleId?: string;
+  duplicateCastableDecision?: "reroll" | "difficulty";
+  ladGotTalentState?: "pending" | "blocked" | "queued";
 };
 type AfterBattleRosterUpdate = {
   id: string;
@@ -280,15 +357,21 @@ export default function App() {
   const [allowDraftSave, setAllowDraftSave] = useState(false);
   const [includeCampaignInPdf, setIncludeCampaignInPdf] = useState(false);
   const [lookupItem, setLookupItem] = useState<LookupItem>();
+  const account = useAppAccount();
+  const [cloudStateVersion, setCloudStateVersion] = useState(0);
   const importInputRef = useRef<HTMLInputElement>(null);
 
+  async function loadRosterList() {
+    const items = await listRosters();
+    const normalized = uniqueRostersById(items).map(syncRosterHenchmanModels);
+    setRosters(normalized);
+    setActiveRosterId((current) => current && normalized.some((roster) => roster.id === current) ? current : normalized[0]?.id);
+    setCloudStateVersion((current) => current + 1);
+  }
+
   useEffect(() => {
-    void listRosters().then((items) => {
-      const normalized = uniqueRostersById(items).map(syncRosterHenchmanModels);
-      setRosters(normalized);
-      setActiveRosterId(normalized[0]?.id);
-    });
-  }, []);
+    void loadRosterList();
+  }, [account.profile?.playerId]);
 
   const activeRoster = useMemo(
     () => (mode === "create" ? draftRoster : rosters.find((roster) => roster.id === activeRosterId)),
@@ -322,9 +405,49 @@ export default function App() {
   }
 
   async function removeRoster(id: string) {
-    await deleteRoster(id);
-    setRosters((current) => current.filter((roster) => roster.id !== id));
-    if (activeRosterId === id) setActiveRosterId(undefined);
+    const roster = rosters.find((item) => item.id === id);
+    const cloudState = getRosterCloudState(id);
+    if ((cloudState.enabled || cloudState.remote) && roster) {
+      const confirmed = window.confirm(`Delete "${roster.name}" from this device and your cloud saves?`);
+      if (!confirmed) return;
+    }
+    try {
+      await deleteRoster(id);
+      setCloudStateVersion((current) => current + 1);
+      setRosters((current) => current.filter((roster) => roster.id !== id));
+      if (activeRosterId === id) setActiveRosterId(undefined);
+    } catch (error) {
+      account.clearMessage();
+      window.alert(errorMessage(error));
+    }
+  }
+
+  async function setRosterCloudSync(id: string, enabled: boolean) {
+    const roster = rosters.find((item) => item.id === id);
+    if (!roster) return;
+    account.clearMessage();
+    try {
+      if (enabled) {
+        if (!cloudEnabled) {
+          window.alert("Cloud saves are not configured for this build.");
+          return;
+        }
+        if (!account.authenticated) {
+          window.alert("Log in before saving a warband to cloud.");
+          return;
+        }
+        const saved = await enableRosterCloudSync(roster);
+        setRosters((current) => mergeSavedRoster(current, syncRosterHenchmanModels(saved), id, false));
+      } else {
+        const confirmed = window.confirm(`Stop cloud saving "${roster.name}"? The local roster stays here and the cloud copy is removed.`);
+        if (!confirmed) return;
+        await disableRosterCloudSync(id);
+      }
+    } catch (error) {
+      window.alert(errorMessage(error));
+    } finally {
+      setCloudStateVersion((current) => current + 1);
+    }
   }
 
   function updateActiveRoster(updater: (roster: Roster) => Roster) {
@@ -400,6 +523,15 @@ export default function App() {
           <p className="eyebrow">Mordheim campaign helper</p>
           <h1>Warband Manager</h1>
         </div>
+        <CloudAccountControl
+          session={account.session}
+          busy={account.busy}
+          message={account.message}
+          onLogin={account.login}
+          onRegister={account.register}
+          onClaim={account.claim}
+          onLogout={account.logout}
+        />
         <nav aria-label="Main">
           <button className={mode === "list" ? "active" : ""} onClick={() => setMode("list")}>
             <ClipboardList aria-hidden /> Warbands
@@ -450,6 +582,9 @@ export default function App() {
           onDelete={removeRoster}
           onExport={exportRoster}
           onImportClick={() => importInputRef.current?.click()}
+          cloudAuthenticated={account.authenticated}
+          cloudStateVersion={cloudStateVersion}
+          onCloudSyncChange={setRosterCloudSync}
         />
       )}
 
@@ -457,12 +592,10 @@ export default function App() {
         <main className="workspace">
           <GameSchedulerPage
             rosters={rosters}
+            profile={account.profile}
+            authenticated={account.authenticated}
             onWarbands={() => setMode("list")}
             onCampaign={() => setMode(activeRosterId ? "campaign" : "list")}
-            onCreateWarband={() => {
-              setDraftRoster(createRosterDraft("witch-hunters"));
-              setMode("create");
-            }}
           />
         </main>
       )}
@@ -619,6 +752,94 @@ function InstallAppPrompt() {
   );
 }
 
+function CloudAccountControl({
+  session,
+  busy,
+  message,
+  onLogin,
+  onRegister,
+  onClaim,
+  onLogout
+}: {
+  session: PlayerProfile | null;
+  busy: boolean;
+  message: string;
+  onLogin: (email: string, password: string) => void;
+  onRegister: (playerName: string, email: string, password: string) => void;
+  onClaim: (email: string, claimToken: string, password: string, playerName?: string) => void;
+  onLogout: () => void;
+}) {
+  const [mode, setMode] = useState<"login" | "register" | "claim">("login");
+  const [playerName, setPlayerName] = useState("");
+  const [email, setEmail] = useState("");
+  const [claimToken, setClaimToken] = useState("");
+  const [password, setPassword] = useState("");
+
+  if (!cloudEnabled) {
+    return (
+      <div className="cloud-account-control unavailable">
+        <div className="cloud-account-title">
+          <Cloud aria-hidden />
+          <span>Cloud saves</span>
+        </div>
+        <strong>Unavailable</strong>
+      </div>
+    );
+  }
+
+  if (session) {
+    return (
+      <div className="cloud-account-control">
+        <div className="cloud-account-title">
+          <Cloud aria-hidden />
+          <span>Cloud saves</span>
+        </div>
+        <div className="cloud-account-row">
+          <strong>{session.email ?? session.playerName}</strong>
+          <button disabled={busy} onClick={onLogout}>Log out</button>
+        </div>
+        {message && <p className="cloud-account-message">{message}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="cloud-account-control">
+      <div className="cloud-account-title">
+        <Cloud aria-hidden />
+        <span>Cloud saves</span>
+      </div>
+      <div className="cloud-account-tabs" role="group" aria-label="Cloud account mode">
+        <button className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>Log in</button>
+        <button className={mode === "register" ? "active" : ""} onClick={() => setMode("register")}>Register</button>
+        <button className={mode === "claim" ? "active" : ""} onClick={() => setMode("claim")}>Claim</button>
+      </div>
+      <div className="cloud-account-fields">
+        {mode !== "login" && (
+          <input value={playerName} onChange={(event) => setPlayerName(event.target.value)} placeholder="Player name" />
+        )}
+        <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" />
+        {mode === "claim" && (
+          <input value={claimToken} onChange={(event) => setClaimToken(event.target.value)} placeholder="Claim token" />
+        )}
+        <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" />
+        <button
+          className="primary"
+          disabled={busy || !email.trim() || password.length < 6 || (mode === "register" && !playerName.trim()) || (mode === "claim" && !claimToken.trim())}
+          onClick={() => {
+            if (mode === "login") onLogin(email, password);
+            else if (mode === "register") onRegister(playerName, email, password);
+            else onClaim(email, claimToken, password, playerName);
+          }}
+        >
+          {mode === "login" ? "Log in" : mode === "register" ? "Register" : "Claim"}
+        </button>
+      </div>
+      {message && <p className="cloud-account-message">{message}</p>}
+    </div>
+  );
+}
+
 function WarbandList({
   rosters,
   onCreate,
@@ -628,7 +849,10 @@ function WarbandList({
   onDuplicate,
   onDelete,
   onExport,
-  onImportClick
+  onImportClick,
+  cloudAuthenticated,
+  cloudStateVersion,
+  onCloudSyncChange
 }: {
   rosters: Roster[];
   onCreate: () => void;
@@ -639,6 +863,9 @@ function WarbandList({
   onDelete: (id: string) => void;
   onExport: (roster: Roster) => void;
   onImportClick: () => void;
+  cloudAuthenticated: boolean;
+  cloudStateVersion: number;
+  onCloudSyncChange: (id: string, enabled: boolean) => void;
 }) {
   const [grade, setGrade] = useState("");
   const [race, setRace] = useState("");
@@ -661,7 +888,7 @@ function WarbandList({
       <section className="toolbar-band">
         <div>
           <h2>Saved Rosters</h2>
-          <p>{rosters.length} local roster{rosters.length === 1 ? "" : "s"}</p>
+          <p>{rosters.length} saved roster{rosters.length === 1 ? "" : "s"}</p>
         </div>
         <div className="button-row">
           <button className="primary" onClick={onCreate}>
@@ -677,36 +904,54 @@ function WarbandList({
         {rosters.length === 0 ? (
           <div className="empty-state">No saved rosters yet.</div>
         ) : (
-          rosters.map((roster) => (
-            <article className="roster-row" key={roster.id}>
-              <div className="roster-identity">
-                <WarbandBadge warbandTypeId={roster.warbandTypeId} />
-                <div>
-                <h3>{roster.name}</h3>
-                <p>
-                  {warbandName(roster.warbandTypeId)} · {calculateWarbandRating(roster, rulesDb)} rating ·{" "}
-                  {calculateRosterCost(roster, rulesDb)} gc
-                </p>
-              </div>
+          rosters.map((roster) => {
+            const cloudState = getRosterCloudState(roster.id);
+            const cloudStatus = rosterCloudStatus(cloudState, cloudAuthenticated);
+            const cloudOn = cloudState.enabled || cloudState.remote;
+            const nextCloudState = cloudState.lastError ? true : !cloudOn;
+            return (
+              <article className="roster-row" key={`${roster.id}-${cloudStateVersion}`}>
+                <div className="roster-identity">
+                  <WarbandBadge warbandTypeId={roster.warbandTypeId} />
+                  <div>
+                    <div className="roster-title-line">
+                      <h3>{roster.name}</h3>
+                      <span className={`pill ${cloudStatus.tone}`}>{cloudStatus.label}</span>
+                    </div>
+                    <p>
+                      {warbandName(roster.warbandTypeId)} · {calculateWarbandRating(roster, rulesDb)} rating ·{" "}
+                      {calculateRosterCost(roster, rulesDb)} gc
+                    </p>
+                    <small className="roster-cloud-detail">{cloudStatus.detail}</small>
+                  </div>
                 </div>
-              <div className="icon-row">
-                <button onClick={() => onSelect(roster.id)}>Play</button>
-                <button onClick={() => onEdit(roster.id)}>
-                  <Edit3 aria-hidden /> Edit warband
-                </button>
-                <button onClick={() => onCampaign(roster.id)}>Campaign</button>
-                <button aria-label={`Duplicate ${roster.name}`} onClick={() => onDuplicate(roster)}>
-                  <Copy aria-hidden />
-                </button>
-                <button aria-label={`Export ${roster.name}`} onClick={() => onExport(roster)}>
-                  <Download aria-hidden />
-                </button>
-                <button aria-label={`Delete ${roster.name}`} onClick={() => onDelete(roster.id)}>
-                  <Trash2 aria-hidden />
-                </button>
-              </div>
-            </article>
-          ))
+                <div className="icon-row">
+                  <button onClick={() => onSelect(roster.id)}>Play</button>
+                  <button onClick={() => onEdit(roster.id)}>
+                    <Edit3 aria-hidden /> Edit warband
+                  </button>
+                  <button onClick={() => onCampaign(roster.id)}>Campaign</button>
+                  {cloudEnabled && (
+                    <button
+                      disabled={!cloudAuthenticated}
+                      onClick={() => onCloudSyncChange(roster.id, nextCloudState)}
+                    >
+                      <Cloud aria-hidden /> {cloudState.lastError ? "Retry cloud" : cloudOn ? "Stop cloud" : "Save to cloud"}
+                    </button>
+                  )}
+                  <button aria-label={`Duplicate ${roster.name}`} onClick={() => onDuplicate(roster)}>
+                    <Copy aria-hidden />
+                  </button>
+                  <button aria-label={`Export ${roster.name}`} onClick={() => onExport(roster)}>
+                    <Download aria-hidden />
+                  </button>
+                  <button aria-label={`Delete ${roster.name}`} onClick={() => onDelete(roster.id)}>
+                    <Trash2 aria-hidden />
+                  </button>
+                </div>
+              </article>
+            );
+          })
         )}
       </section>
 
@@ -1929,9 +2174,13 @@ function PlayModeView({
   const [showDiceTools, setShowDiceTools] = useState(false);
   const [rulesQuery, setRulesQuery] = useState("");
   const [recentRuleIds, setRecentRuleIds] = useState<string[]>(() => readRecentRuleIds());
+  const [recentRollAssistTargets, setRecentRollAssistTargets] = useState<RollAssistRecentTarget[]>(
+    () => readRecentRollAssistTargets(roster.id)
+  );
 
   useEffect(() => {
     setBattleState(readBattleState(roster));
+    setRecentRollAssistTargets(readRecentRollAssistTargets(roster.id));
   }, [roster.id]);
 
   useEffect(() => {
@@ -1965,7 +2214,9 @@ function PlayModeView({
     if (!window.confirm("Reset temporary battle state for this warband? This will not change the saved roster.")) return;
     const next = createBattleState(roster);
     writeBattleState(next);
+    resetRollAssistTargetsStorage(roster.id);
     setBattleState(next);
+    setRecentRollAssistTargets([]);
   }
 
   function openRule(record: RuleLookupRecord) {
@@ -1974,6 +2225,15 @@ function PlayModeView({
     setRecentRuleIds(nextRecent);
     writeRecentRuleIds(nextRecent);
     onLookup({ type: "rule", item: resolvedRecord });
+  }
+
+  function rememberRollAssistTarget(target: RollAssistRecentTarget) {
+    setRecentRollAssistTargets((current) => {
+      const next = mergeRecentRollAssistTargets(current, target);
+      if (next === current) return current;
+      writeRecentRollAssistTargets(roster.id, next);
+      return next;
+    });
   }
 
   const playableMembers = roster.members.filter((member) => member.status !== "dead" && member.status !== "retired");
@@ -1992,6 +2252,13 @@ function PlayModeView({
     const state = battleState.members[member.id];
     return total + outOfActionCountForBattle(member, state);
   }, 0);
+  const battleStatusTotals = battleStatusCountsForRoster(playableMembers, battleState);
+  const routThreshold = calculateRoutThreshold(totalFighters);
+  const routRemaining = Math.max(0, routThreshold - outOfAction);
+  const battleXpTotal = playableMembers.reduce((total, member) => {
+    const state = battleState.members[member.id] ?? defaultBattleMemberState(member);
+    return total + state.enemyOoaXp + state.objectiveXp + state.otherXp;
+  }, 0);
   const warband = currentWarband(roster);
 
   return (
@@ -2006,37 +2273,76 @@ function PlayModeView({
             <p>{warband?.name ?? roster.warbandTypeId}</p>
           </div>
         </div>
-        <div className="play-metrics">
-          <Metric icon={<Shield aria-hidden />} label="Rating" value={calculateWarbandRating(roster, rulesDb).toString()} />
-          <Metric icon={<Swords aria-hidden />} label="Fighters" value={totalFighters.toString()} />
-          <Metric icon={<AlertTriangle aria-hidden />} label="Out" value={outOfAction.toString()} tone={outOfAction > 0 ? "bad" : undefined} />
-          <Metric icon={<BookOpen aria-hidden />} label="Rout at" value={`${calculateRoutThreshold(totalFighters)} out`} />
+        <div className="play-dashboard">
+          <div className="play-metrics">
+            <Metric icon={<Shield aria-hidden />} label="Rating" value={calculateWarbandRating(roster, rulesDb).toString()} />
+            <Metric icon={<Swords aria-hidden />} label="Fighters" value={totalFighters.toString()} />
+            <Metric icon={<AlertTriangle aria-hidden />} label="Out" value={outOfAction.toString()} tone={outOfAction > 0 ? "bad" : undefined} />
+            <Metric icon={<BookOpen aria-hidden />} label="Battle XP" value={`+${battleXpTotal}`} />
+          </div>
+          <div className={`battle-watch ${routRemaining === 0 ? "danger" : outOfAction > 0 ? "warning" : ""}`}>
+            <span>Rout watch</span>
+            <strong>{routRemaining > 0 ? `${routRemaining} until rout` : "Rout check due"}</strong>
+            <small>{outOfAction} out · threshold {routThreshold}</small>
+          </div>
+          <div className="battle-status-summary" aria-label="Battle status counts">
+            <span><b>{battleStatusTotals.active}</b> active</span>
+            <span><b>{battleStatusTotals.hidden}</b> hidden</span>
+            <span><b>{battleStatusTotals.knocked_down}</b> down</span>
+            <span><b>{battleStatusTotals.stunned}</b> stunned</span>
+          </div>
         </div>
         <div className="play-actions">
-          <button onClick={onExportPdf}>
-            <Printer aria-hidden /> Export PDF
-          </button>
-          <label className="toggle print-option-toggle">
-            <input
-              type="checkbox"
-              checked={includeCampaignInPdf}
-              onChange={(event) => onIncludeCampaignInPdfChange(event.target.checked)}
-            />
-            Include campaign in PDF
-          </label>
           <button onClick={() => setShowRulesSearch((value) => !value)}>
             <Search aria-hidden /> Rules
           </button>
           <button onClick={() => setShowDiceTools((value) => !value)}>
             <Dices aria-hidden /> Dice / Tables
           </button>
-          <button onClick={resetBattleState}>
-            <RotateCcw aria-hidden /> Reset Battle State
-          </button>
-          <button onClick={onEditRoster}>Edit roster</button>
           <button className="primary" onClick={onAfterBattle}>
             End Battle / After Battle
           </button>
+          <details className="play-more-actions">
+            <summary>
+              <MoreHorizontal aria-hidden /> More actions
+            </summary>
+            <div>
+              <button onClick={onExportPdf}>
+                <Printer aria-hidden /> Export PDF
+              </button>
+              <label className="toggle print-option-toggle">
+                <input
+                  type="checkbox"
+                  checked={includeCampaignInPdf}
+                  onChange={(event) => onIncludeCampaignInPdfChange(event.target.checked)}
+                />
+                Include campaign in PDF
+              </label>
+              <button onClick={onEditRoster}>
+                <Edit3 aria-hidden /> Edit roster
+              </button>
+              <button onClick={resetBattleState}>
+                <RotateCcw aria-hidden /> Reset Battle State
+              </button>
+              <div className="play-view-options" aria-label="Play Mode view options">
+                <label>
+                  <span>Fighter list</span>
+                  <select value={fighterFilter} onChange={(event) => setFighterFilter(event.target.value as "all" | "active")}>
+                    <option value="all">Show all fighters</option>
+                    <option value="active">Hide out of action</option>
+                  </select>
+                </label>
+                <label className="toggle">
+                  <input type="checkbox" checked={heroesFirst} onChange={(event) => setHeroesFirst(event.target.checked)} />
+                  Heroes first
+                </label>
+                <label className="toggle">
+                  <input type="checkbox" checked={compact} onChange={(event) => setCompact(event.target.checked)} />
+                  Compact density
+                </label>
+              </div>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -2051,24 +2357,6 @@ function PlayModeView({
 
       {showDiceTools && <DiceTablesPanel onLookup={onLookup} />}
 
-      <div className="play-controls" aria-label="Play Mode filters">
-        <label>
-          <span>Show fighters</span>
-          <select value={fighterFilter} onChange={(event) => setFighterFilter(event.target.value as "all" | "active")}>
-            <option value="all">Show all fighters</option>
-            <option value="active">Show active only</option>
-          </select>
-        </label>
-        <label className="toggle">
-          <input type="checkbox" checked={heroesFirst} onChange={(event) => setHeroesFirst(event.target.checked)} />
-          Heroes first
-        </label>
-        <label className="toggle">
-          <input type="checkbox" checked={compact} onChange={(event) => setCompact(event.target.checked)} />
-          Compact density
-        </label>
-      </div>
-
       <div className="play-card-grid">
         {visibleMembers.map((member) => (
           <FighterCard
@@ -2078,6 +2366,8 @@ function PlayModeView({
             battleState={battleState.members[member.id] ?? defaultBattleMemberState(member)}
             onBattleChange={(patch) => updateBattleMember(member, patch)}
             onOpenRule={openRule}
+            recentRollAssistTargets={recentRollAssistTargets}
+            onRememberRollAssistTarget={rememberRollAssistTarget}
           />
         ))}
       </div>
@@ -2427,16 +2717,21 @@ function FighterCard({
   member,
   battleState,
   onBattleChange,
-  onOpenRule
+  onOpenRule,
+  recentRollAssistTargets,
+  onRememberRollAssistTarget
 }: {
   roster: Roster;
   member: RosterMember;
   battleState: BattleMemberState;
   onBattleChange: (patch: Partial<BattleMemberState>) => void;
   onOpenRule: (record: RuleLookupRecord) => void;
+  recentRollAssistTargets: RollAssistRecentTarget[];
+  onRememberRollAssistTarget: (target: RollAssistRecentTarget) => void;
 }) {
   const fighterType = rulesDb.fighterTypes.find((item) => item.id === member.fighterTypeId)!;
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [rollAssistOpen, setRollAssistOpen] = useState(false);
   const equipment = member.equipment
     .map((itemId) => rulesDb.equipmentItems.find((item) => item.id === itemId))
     .filter((item): item is EquipmentItem => Boolean(item));
@@ -2471,17 +2766,42 @@ function FighterCard({
     : member.kind === "hired_sword"
       ? "Hired sword"
       : "Hero";
+  const displayedWounds = Math.min(battleState.currentWounds, maxWounds);
+  const rollAssistAttacker = useMemo(() => buildRollAssistAttacker({
+    name: member.displayName || fighterType.name,
+    profile: {
+      WS: member.currentProfile.WS,
+      BS: member.currentProfile.BS,
+      S: member.currentProfile.S,
+      W: member.currentProfile.W,
+      A: member.currentProfile.A
+    },
+    currentWounds: displayedWounds,
+    equipment,
+    skills,
+    specialRules
+  }), [displayedWounds, equipment, fighterType.name, member.currentProfile, member.displayName, skills, specialRules]);
+  const [isXpPickerOpen, setIsXpPickerOpen] = useState(false);
+  const xpReasonMenuId = `battle-xp-reasons-${member.id}`;
+
+  function addBattleXp(kind: "enemyOoaXp" | "objectiveXp" | "otherXp") {
+    onBattleChange({ [kind]: battleState[kind] + 1 });
+    setIsXpPickerOpen(false);
+  }
 
   function decrementBattleXp() {
     if (battleState.enemyOoaXp > 0) {
       onBattleChange({ enemyOoaXp: battleState.enemyOoaXp - 1 });
+      setIsXpPickerOpen(false);
       return;
     }
     if (battleState.objectiveXp > 0) {
       onBattleChange({ objectiveXp: battleState.objectiveXp - 1 });
+      setIsXpPickerOpen(false);
       return;
     }
     onBattleChange({ otherXp: Math.max(0, battleState.otherXp - 1) });
+    setIsXpPickerOpen(false);
   }
 
   return (
@@ -2502,36 +2822,77 @@ function FighterCard({
             <strong>{member.displayName || fighterType.name}</strong>
           </div>
         )}
-        <StatusPill status={battleState.status} onChange={(status) => onBattleChange({ status })} />
+        <BattleStatusControls status={battleState.status} onChange={(status) => onBattleChange({ status })} />
         <p className="print-only print-status">Battle status: {battleStatusLabel(battleState.status)}</p>
       </header>
 
-      <StatGrid profile={member.currentProfile} />
-
-      <div className="fighter-state-row">
-        <SmallPanel label="XP">
+      <div className="fighter-battle-strip">
+        <section className="battle-counter-card wounds">
+          <span>Wounds</span>
+          <strong>{displayedWounds} / {maxWounds}</strong>
+          <div>
+            <button aria-label="Apply one wound" onClick={() => onBattleChange({ currentWounds: Math.max(0, battleState.currentWounds - 1) })}>
+              Hit
+            </button>
+            <button aria-label="Restore one wound" onClick={() => onBattleChange({ currentWounds: Math.min(maxWounds, battleState.currentWounds + 1) })}>
+              Heal
+            </button>
+          </div>
+        </section>
+        <section className="battle-counter-card battle-xp-card">
+          <span>Battle XP</span>
+          <strong>+{battleXp}</strong>
+          <div className="battle-xp-actions">
+            <button
+              aria-controls={xpReasonMenuId}
+              aria-expanded={isXpPickerOpen}
+              aria-label="Add battle experience"
+              className="xp-add-toggle"
+              onClick={() => setIsXpPickerOpen((open) => !open)}
+              type="button"
+            >
+              <Plus aria-hidden />
+              XP
+            </button>
+            <button aria-label="Remove battle experience" disabled={battleXp === 0} onClick={decrementBattleXp} type="button">Undo</button>
+          </div>
+          {isXpPickerOpen && (
+            <div className="battle-xp-reasons" id={xpReasonMenuId}>
+              <button aria-label="Add enemy out of action experience" onClick={() => addBattleXp("enemyOoaXp")} type="button">OOA</button>
+              <button aria-label="Add objective experience" onClick={() => addBattleXp("objectiveXp")} type="button">Obj</button>
+              <button aria-label="Add other battle experience" onClick={() => addBattleXp("otherXp")} type="button">Other</button>
+            </div>
+          )}
+        </section>
+        <section className="battle-counter-card roster-xp-card">
+          <span>Roster XP</span>
           <strong>{currentXp}</strong>
-          <small>{member.kind === "henchman_group" ? "Shared group XP" : `Starting ${startingXp}`}</small>
-        </SmallPanel>
-        <SmallPanel label="Wounds">
-          <div className="inline-stepper">
-            <button aria-label="Reduce current wounds" onClick={() => onBattleChange({ currentWounds: Math.max(0, battleState.currentWounds - 1) })}>
-              -
-            </button>
-            <strong>{Math.min(battleState.currentWounds, maxWounds)} / {maxWounds}</strong>
-            <button aria-label="Increase current wounds" onClick={() => onBattleChange({ currentWounds: Math.min(maxWounds, battleState.currentWounds + 1) })}>
-              +
-            </button>
-          </div>
-        </SmallPanel>
-        <SmallPanel label="Battle XP">
-          <div className="inline-stepper battle-xp-stepper">
-            <button aria-label="Remove battle XP" onClick={decrementBattleXp}>-</button>
-            <strong>{battleXp}</strong>
-            <button aria-label="Add battle XP" onClick={() => onBattleChange({ enemyOoaXp: battleState.enemyOoaXp + 1 })}>+</button>
-          </div>
-        </SmallPanel>
+          <small>{member.kind === "henchman_group" ? "Shared group" : `Starts ${startingXp}`}</small>
+        </section>
       </div>
+
+      <div className="fighter-card-actions">
+        <button
+          aria-expanded={rollAssistOpen}
+          className={`roll-assist-toggle-button ${rollAssistOpen ? "active" : ""}`}
+          onClick={() => setRollAssistOpen((open) => !open)}
+          type="button"
+        >
+          <Crosshair aria-hidden />
+          Roll Assist
+        </button>
+      </div>
+
+      {rollAssistOpen && (
+        <RollAssistPanel
+          attacker={rollAssistAttacker}
+          recentTargets={recentRollAssistTargets}
+          onRememberTarget={onRememberRollAssistTarget}
+          onClose={() => setRollAssistOpen(false)}
+        />
+      )}
+
+      <StatGrid profile={member.currentProfile} />
 
       {member.kind === "henchman_group" && henchmanModels.length > 0 && (
         <section className="henchman-model-play-panel">
@@ -2607,6 +2968,378 @@ function FighterCard({
   );
 }
 
+function RollAssistPanel({
+  attacker,
+  recentTargets,
+  onRememberTarget,
+  onClose
+}: {
+  attacker: RollAssistAttacker;
+  recentTargets: RollAssistRecentTarget[];
+  onRememberTarget: (target: RollAssistRecentTarget) => void;
+  onClose: () => void;
+}) {
+  const [mode, setMode] = useState<RollAssistMode>("closeCombat");
+  const [selectedCloseWeaponId, setSelectedCloseWeaponId] = useState(attacker.closeCombatProfiles[0]?.id ?? "default-close-combat");
+  const [selectedShootingWeaponId, setSelectedShootingWeaponId] = useState(attacker.shootingProfiles[0]?.id ?? "");
+  const [closeTarget, setCloseTarget] = useState<RollAssistCloseCombatTarget>({
+    ws: 3,
+    toughness: 3,
+    armourSave: null,
+    state: "standing"
+  });
+  const [shootingTarget, setShootingTarget] = useState<RollAssistShootingContextState>({
+    toughness: 3,
+    armourSave: null,
+    cover: false,
+    range: "short",
+    shooterMoved: false,
+    largeTarget: false
+  });
+  const [closeDirty, setCloseDirty] = useState(false);
+  const [shootingDirty, setShootingDirty] = useState(false);
+
+  useEffect(() => {
+    if (!attacker.closeCombatProfiles.some((profile) => profile.id === selectedCloseWeaponId)) {
+      setSelectedCloseWeaponId(attacker.closeCombatProfiles[0]?.id ?? "default-close-combat");
+    }
+  }, [attacker.closeCombatProfiles, selectedCloseWeaponId]);
+
+  useEffect(() => {
+    if (!attacker.shootingProfiles.some((profile) => profile.id === selectedShootingWeaponId)) {
+      setSelectedShootingWeaponId(attacker.shootingProfiles[0]?.id ?? "");
+    }
+  }, [attacker.shootingProfiles, selectedShootingWeaponId]);
+
+  const selectedCloseWeapon = attacker.closeCombatProfiles.find((profile) => profile.id === selectedCloseWeaponId) ?? attacker.closeCombatProfiles[0];
+  const selectedShootingWeapon = attacker.shootingProfiles.find((profile) => profile.id === selectedShootingWeaponId) ?? attacker.shootingProfiles[0];
+
+  useEffect(() => {
+    if (selectedShootingWeapon?.supportsLongRange === false && shootingTarget.range === "long") {
+      setShootingTarget((current) => ({ ...current, range: "short" }));
+    }
+  }, [selectedShootingWeapon, shootingTarget.range]);
+
+  const closeResult = useMemo(() => calculateCloseCombatRoll(attacker, closeTarget, {
+    weapon: selectedCloseWeapon
+  }), [attacker, closeTarget, selectedCloseWeapon]);
+
+  const shootingResult = useMemo(() => {
+    if (!selectedShootingWeapon) return undefined;
+    return calculateShootingRoll(attacker, {
+      toughness: shootingTarget.toughness,
+      armourSave: shootingTarget.armourSave
+    }, {
+      weapon: selectedShootingWeapon,
+      cover: shootingTarget.cover,
+      range: selectedShootingWeapon.supportsLongRange ? shootingTarget.range : "short",
+      shooterMoved: shootingTarget.shooterMoved,
+      largeTarget: shootingTarget.largeTarget
+    });
+  }, [attacker, selectedShootingWeapon, shootingTarget]);
+
+  useEffect(() => {
+    if (!closeDirty) return;
+    onRememberTarget(createRecentCloseCombatTarget(closeTarget));
+  }, [closeDirty, closeTarget, onRememberTarget]);
+
+  useEffect(() => {
+    if (!shootingDirty) return;
+    onRememberTarget(createRecentShootingTarget(shootingTarget));
+  }, [onRememberTarget, shootingDirty, shootingTarget]);
+
+  const visibleRecentTargets = recentTargets.filter((target) => target.mode === mode).slice(0, 5);
+
+  return (
+    <section className="roll-assist-panel" aria-label={`${attacker.name} roll assist`}>
+      <div className="roll-assist-header">
+        <div>
+          <strong>Roll Assist</strong>
+          <p>{attacker.name} already brings the stats and gear.</p>
+        </div>
+        <button className="roll-assist-close" onClick={onClose} type="button">Close</button>
+      </div>
+
+      <div className="segmented-control roll-assist-mode" role="tablist" aria-label="Roll assist mode">
+        <button
+          aria-selected={mode === "closeCombat"}
+          className={mode === "closeCombat" ? "active" : ""}
+          onClick={() => setMode("closeCombat")}
+          role="tab"
+          type="button"
+        >
+          <Swords aria-hidden />
+          Close combat
+        </button>
+        <button
+          aria-selected={mode === "shooting"}
+          className={mode === "shooting" ? "active" : ""}
+          onClick={() => setMode("shooting")}
+          role="tab"
+          type="button"
+        >
+          <Crosshair aria-hidden />
+          Shooting
+        </button>
+      </div>
+
+      {visibleRecentTargets.length > 0 && (
+        <section className="roll-assist-recent">
+          <span>Recent targets</span>
+          <div className="chip-list">
+            {visibleRecentTargets.map((target) => (
+              <button
+                className="chip"
+                key={target.key}
+                onClick={() => {
+                  if (target.mode === "closeCombat") {
+                    setMode("closeCombat");
+                    setCloseDirty(true);
+                    setCloseTarget(target.profile);
+                    return;
+                  }
+                  setMode("shooting");
+                  setShootingDirty(true);
+                  setShootingTarget(target.profile);
+                }}
+                type="button"
+              >
+                {target.label}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {mode === "closeCombat" ? (
+        <div className="roll-assist-body">
+          <AssistChipGroup
+            label="Weapon"
+            options={attacker.closeCombatProfiles.map((profile) => ({ value: profile.id, label: profile.name }))}
+            value={selectedCloseWeapon?.id ?? ""}
+            onChange={(value) => setSelectedCloseWeaponId(value)}
+          />
+          <div className="roll-assist-input-grid">
+            <AssistChipGroup
+              label="Enemy WS"
+              options={([1, 2, 3, 4, 5] as RollAssistEnemyWs[]).map((value) => ({ value, label: value === 5 ? "5+" : value.toString() }))}
+              value={closeTarget.ws}
+              onChange={(value) => {
+                setCloseDirty(true);
+                setCloseTarget((current) => ({ ...current, ws: value }));
+              }}
+            />
+            <AssistChipGroup
+              label="Enemy Toughness"
+              options={([2, 3, 4, 5] as RollAssistEnemyToughness[]).map((value) => ({ value, label: value === 5 ? "5+" : value.toString() }))}
+              value={closeTarget.toughness}
+              onChange={(value) => {
+                setCloseDirty(true);
+                setCloseTarget((current) => ({ ...current, toughness: value }));
+              }}
+            />
+            <AssistChipGroup
+              label="Armour save"
+              options={[
+                { value: null, label: "None" },
+                { value: 6 as RollAssistArmourSave, label: "6+" },
+                { value: 5 as RollAssistArmourSave, label: "5+" },
+                { value: 4 as RollAssistArmourSave, label: "4+" }
+              ]}
+              value={closeTarget.armourSave}
+              onChange={(value) => {
+                setCloseDirty(true);
+                setCloseTarget((current) => ({ ...current, armourSave: value }));
+              }}
+            />
+            <AssistChipGroup
+              label="Target state"
+              options={[
+                { value: "standing" as RollAssistTargetState, label: "Standing" },
+                { value: "knocked_down" as RollAssistTargetState, label: "Knocked Down" },
+                { value: "stunned" as RollAssistTargetState, label: "Stunned" }
+              ]}
+              value={closeTarget.state}
+              onChange={(value) => {
+                setCloseDirty(true);
+                setCloseTarget((current) => ({ ...current, state: value }));
+              }}
+            />
+          </div>
+          <RollAssistSummary result={closeResult} />
+        </div>
+      ) : (
+        <div className="roll-assist-body">
+          {selectedShootingWeapon ? (
+            <>
+              <AssistChipGroup
+                label="Weapon"
+                options={attacker.shootingProfiles.map((profile) => ({ value: profile.id, label: profile.name }))}
+                value={selectedShootingWeapon.id}
+                onChange={(value) => setSelectedShootingWeaponId(value)}
+              />
+              <div className="roll-assist-input-grid">
+                <AssistChipGroup
+                  label="Enemy Toughness"
+                  options={([2, 3, 4, 5] as RollAssistEnemyToughness[]).map((value) => ({ value, label: value === 5 ? "5+" : value.toString() }))}
+                  value={shootingTarget.toughness}
+                  onChange={(value) => {
+                    setShootingDirty(true);
+                    setShootingTarget((current) => ({ ...current, toughness: value }));
+                  }}
+                />
+                <AssistChipGroup
+                  label="Armour save"
+                  options={[
+                    { value: null, label: "None" },
+                    { value: 6 as RollAssistArmourSave, label: "6+" },
+                    { value: 5 as RollAssistArmourSave, label: "5+" },
+                    { value: 4 as RollAssistArmourSave, label: "4+" }
+                  ]}
+                  value={shootingTarget.armourSave}
+                  onChange={(value) => {
+                    setShootingDirty(true);
+                    setShootingTarget((current) => ({ ...current, armourSave: value }));
+                  }}
+                />
+                <AssistChipGroup
+                  label="Cover"
+                  options={[
+                    { value: false, label: "None" },
+                    { value: true, label: "Cover" }
+                  ]}
+                  value={shootingTarget.cover}
+                  onChange={(value) => {
+                    setShootingDirty(true);
+                    setShootingTarget((current) => ({ ...current, cover: value }));
+                  }}
+                />
+                <AssistChipGroup
+                  label="Range"
+                  options={[
+                    { value: "short" as RollAssistRangeBand, label: "Short" },
+                    { value: "long" as RollAssistRangeBand, label: "Long", disabled: !selectedShootingWeapon.supportsLongRange }
+                  ]}
+                  value={shootingTarget.range}
+                  onChange={(value) => {
+                    setShootingDirty(true);
+                    setShootingTarget((current) => ({ ...current, range: value }));
+                  }}
+                />
+                <AssistChipGroup
+                  label="Shooter moved"
+                  options={[
+                    { value: false, label: "No" },
+                    { value: true, label: "Yes" }
+                  ]}
+                  value={shootingTarget.shooterMoved}
+                  onChange={(value) => {
+                    setShootingDirty(true);
+                    setShootingTarget((current) => ({ ...current, shooterMoved: value }));
+                  }}
+                />
+                <AssistChipGroup
+                  label="Large target"
+                  options={[
+                    { value: false, label: "No" },
+                    { value: true, label: "Yes" }
+                  ]}
+                  value={shootingTarget.largeTarget}
+                  onChange={(value) => {
+                    setShootingDirty(true);
+                    setShootingTarget((current) => ({ ...current, largeTarget: value }));
+                  }}
+                />
+              </div>
+              {shootingResult && <RollAssistSummary result={shootingResult} />}
+            </>
+          ) : (
+            <div className="empty-state">No missile weapon is equipped on this warrior.</div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function RollAssistSummary({ result }: { result: RollAssistResult }) {
+  return (
+    <section className="roll-assist-summary">
+      <div className="roll-assist-summary-header">
+        <strong>{result.weapon.name}</strong>
+        <span>{result.weapon.strength >= 0 ? `S${result.weapon.strength}` : result.weapon.name}</span>
+      </div>
+      <div className="roll-assist-result-grid" role="list" aria-label="Roll assist result summary">
+        <div role="listitem">
+          <span>Hit</span>
+          <strong>{formatHitTarget(result.hitTarget)}</strong>
+        </div>
+        <div role="listitem">
+          <span>Wound</span>
+          <strong>{result.woundTarget}+</strong>
+        </div>
+        <div role="listitem">
+          <span>Save</span>
+          <strong>{result.armourSaveTarget === null ? "No save" : `${result.armourSaveTarget}+`}</strong>
+        </div>
+      </div>
+      <p className="roll-assist-reminder">{result.injuryReminder}</p>
+      <details className="roll-assist-why">
+        <summary>Why?</summary>
+        <div>
+          {result.modifiers.length > 0 && (
+            <div className="lookup-tags roll-assist-modifiers">
+              {result.modifiers.map((modifier) => (
+                <span className="pill" key={`${modifier.label}-${modifier.value}`}>
+                  {modifier.value > 0 ? "+" : ""}
+                  {modifier.value} {modifier.label}
+                </span>
+              ))}
+            </div>
+          )}
+          <ul>
+            {result.explanation.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      </details>
+    </section>
+  );
+}
+
+function AssistChipGroup<T extends string | number | boolean | null>({
+  label,
+  options,
+  value,
+  onChange
+}: {
+  label: string;
+  options: Array<{ value: T; label: string; disabled?: boolean }>;
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <section className="roll-assist-chip-group">
+      <span>{label}</span>
+      <div className="roll-assist-chip-grid">
+        {options.map((option) => (
+          <button
+            aria-pressed={value === option.value}
+            className={value === option.value ? "selected" : ""}
+            disabled={option.disabled}
+            key={`${label}-${String(option.value)}`}
+            onClick={() => onChange(option.value)}
+            type="button"
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function StatGrid({ profile }: { profile: RosterMember["currentProfile"] }) {
   const stats = ["M", "WS", "BS", "S", "T", "W", "I", "A", "Ld"] as const;
   return (
@@ -2627,27 +3360,28 @@ function StatBox({ label, value }: { label: string; value: number }) {
   );
 }
 
-function StatusPill({ status, onChange }: { status: BattleStatus; onChange: (status: BattleStatus) => void }) {
+function BattleStatusControls({ status, onChange }: { status: BattleStatus; onChange: (status: BattleStatus) => void }) {
+  const options: Array<{ status: BattleStatus; label: string }> = [
+    { status: "active", label: "Active" },
+    { status: "hidden", label: "Hide" },
+    { status: "knocked_down", label: "Down" },
+    { status: "stunned", label: "Stun" },
+    { status: "out_of_action", label: "Out" }
+  ];
   return (
-    <label className={`fighter-status-pill status-${status}`}>
-      <span className="sr-only">Battle status</span>
-      <select value={status} onChange={(event) => onChange(event.target.value as BattleStatus)}>
-        <option value="active">Active</option>
-        <option value="hidden">Hidden</option>
-        <option value="knocked_down">Knocked down</option>
-        <option value="stunned">Stunned</option>
-        <option value="out_of_action">Out of action</option>
-      </select>
-    </label>
-  );
-}
-
-function SmallPanel({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <section className="fighter-small-panel">
-      <span>{label}</span>
-      <div>{children}</div>
-    </section>
+    <div className={`battle-status-controls status-${status}`} role="group" aria-label="Battle status">
+      {options.map((option) => (
+        <button
+          aria-pressed={status === option.status}
+          className={status === option.status ? "selected" : ""}
+          key={option.status}
+          onClick={() => onChange(option.status)}
+          type="button"
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -3110,9 +3844,25 @@ function AfterBattleView({
     setDraft((current) => syncDraftAdvances(updater(current)));
   }
 
+  const currentStep = steps[stepIndex];
+  const nextStep = steps[stepIndex + 1];
+  const currentStepStatus = afterBattleStepStatus(stepIndex, draft, roster);
+  const progressPercent = Math.round(((stepIndex + 1) / steps.length) * 100);
   const canContinue = canContinueAfterBattleStep(stepIndex, draft, roster);
   const stepBlocker = canContinue ? "" : afterBattleStepBlocker(stepIndex, draft, roster);
   const blockers = reviewBlockingMessages(draft, roster);
+
+  function goToStep(index: number) {
+    setStepIndex(index);
+  }
+
+  function goToNextStep() {
+    setStepIndex((index) => Math.min(steps.length - 1, index + 1));
+  }
+
+  function goToPreviousStep() {
+    setStepIndex((index) => Math.max(0, index - 1));
+  }
 
   return (
     <section className="after-battle">
@@ -3128,63 +3878,98 @@ function AfterBattleView({
         </div>
       </div>
 
-      <AfterBattleOverview
-        draft={draft}
-        roster={roster}
-        blockers={blockers}
-        currentStep={steps[stepIndex]}
-        onGoToStep={setStepIndex}
-      />
+      <details className="after-checkpoints" open={blockers.length > 0 || undefined}>
+        <summary>
+          <span>Draft checkpoints</span>
+          <strong>{blockers.length ? `${blockers.length} needs attention` : "Ready so far"}</strong>
+        </summary>
+        <AfterBattleOverview
+          draft={draft}
+          roster={roster}
+          blockers={blockers}
+          onGoToStep={goToStep}
+        />
+      </details>
 
-      <nav className="after-steps" aria-label="After Battle steps">
-        {steps.map((step, index) => (
-          <button
-            key={step.label}
-            className={index === stepIndex ? "active" : ""}
-            onClick={() => setStepIndex(index)}
-          >
-            <span>{index + 1}. {step.shortLabel}</span>
-            <small>{afterBattleStepStatus(index, draft, roster)}</small>
-          </button>
-        ))}
-      </nav>
+      <div className="after-flow-layout">
+        <aside className="after-flow-rail" aria-label="After Battle guide">
+          <div className="after-progress-panel">
+            <span className="eyebrow">Guided flow</span>
+            <strong>Step {stepIndex + 1} of {steps.length}</strong>
+            <div className="after-progress-bar" aria-hidden>
+              <span style={{ width: `${progressPercent}%` }} />
+            </div>
+            <p>{progressPercent}% through the report</p>
+          </div>
+          <nav className="after-steps" aria-label="After Battle steps">
+            {steps.map((step, index) => {
+              const status = afterBattleStepStatus(index, draft, roster);
+              return (
+                <button
+                  aria-current={index === stepIndex ? "step" : undefined}
+                  className={index === stepIndex ? "active" : ""}
+                  key={step.label}
+                  onClick={() => goToStep(index)}
+                  type="button"
+                >
+                  <span className="after-step-number">{index + 1}</span>
+                  <span className="after-step-copy">
+                    <span>{step.shortLabel}</span>
+                    <small>{status}</small>
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
 
-      <div className="after-step-body">
-        {stepIndex === 0 && <BattleResultStep draft={draft} roster={roster} onChange={updateDraft} />}
-        {stepIndex === 1 && <ExperienceStep draft={draft} onChange={updateDraft} />}
-        {stepIndex === 2 && <SeriousInjuriesStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
-        {stepIndex === 3 && <ExplorationStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
-        {stepIndex === 4 && <IncomeStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
-        {stepIndex === 5 && <TradingStep draft={draft} roster={roster} onChange={updateDraft} />}
-        {stepIndex === 6 && <AdvancesStep draft={draft} onChange={updateDraft} />}
-        {stepIndex === 7 && <RosterUpdatesStep draft={draft} roster={roster} onChange={updateDraft} />}
-        {stepIndex === 8 && (
-          <ReviewApplyStep
-            draft={draft}
-            roster={roster}
-            onApply={() => {
-              const updated = applyAfterBattleDraft(roster, draft);
-              clearAfterBattleDraft(roster.id);
-              resetBattleStateStorage(roster);
-              onApply(updated);
-            }}
-          />
-        )}
+        <div className="after-flow-main">
+          <div className="after-step-guide">
+            <div>
+              <span className="eyebrow">Step {stepIndex + 1}: {currentStep.label}</span>
+              <p>{currentStep.help}</p>
+            </div>
+            <span className="pill">{currentStepStatus}</span>
+          </div>
+
+          <div className="after-step-body">
+            {stepIndex === 0 && <BattleResultStep draft={draft} roster={roster} onChange={updateDraft} />}
+            {stepIndex === 1 && <ExperienceStep draft={draft} onChange={updateDraft} />}
+            {stepIndex === 2 && <SeriousInjuriesStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
+            {stepIndex === 3 && <ExplorationStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
+            {stepIndex === 4 && <IncomeStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
+            {stepIndex === 5 && <TradingStep draft={draft} roster={roster} onChange={updateDraft} />}
+            {stepIndex === 6 && <AdvancesStep draft={draft} roster={roster} onChange={updateDraft} onLookup={onLookup} />}
+            {stepIndex === 7 && <RosterUpdatesStep draft={draft} roster={roster} onChange={updateDraft} />}
+            {stepIndex === 8 && (
+              <ReviewApplyStep
+                draft={draft}
+                roster={roster}
+                onApply={() => {
+                  const updated = applyAfterBattleDraft(roster, draft);
+                  clearAfterBattleDraft(roster.id);
+                  resetBattleStateStorage(roster);
+                  onApply(updated);
+                }}
+              />
+            )}
+          </div>
+
+          <div className="after-step-actions">
+            <button disabled={stepIndex === 0} onClick={goToPreviousStep} type="button">
+              Previous
+            </button>
+            {stepIndex < steps.length - 1 ? (
+              <button className="primary" disabled={!canContinue} onClick={goToNextStep} type="button">
+                {nextStep ? `Next: ${nextStep.shortLabel}` : "Next"}
+              </button>
+            ) : (
+              <span className="muted">Review the draft, then apply when ready.</span>
+            )}
+          </div>
+          {stepBlocker && <p className="after-step-blocker">{stepBlocker}</p>}
+        </div>
       </div>
-
-      <div className="after-step-actions">
-        <button disabled={stepIndex === 0} onClick={() => setStepIndex((index) => Math.max(0, index - 1))}>
-          Previous
-        </button>
-        {stepIndex < steps.length - 1 ? (
-          <button className="primary" disabled={!canContinue} onClick={() => setStepIndex((index) => Math.min(steps.length - 1, index + 1))}>
-            Next
-          </button>
-        ) : (
-          <span className="muted">Review the draft, then apply when ready.</span>
-        )}
-      </div>
-      {stepBlocker && <p className="after-step-blocker">{stepBlocker}</p>}
     </section>
   );
 }
@@ -3193,13 +3978,11 @@ function AfterBattleOverview({
   draft,
   roster,
   blockers,
-  currentStep,
   onGoToStep
 }: {
   draft: AfterBattleDraft;
   roster: Roster;
   blockers: string[];
-  currentStep: (typeof AFTER_BATTLE_STEPS)[number];
   onGoToStep: (step: number) => void;
 }) {
   const xpEntries = draft.xp.filter((entry) => entry.gainedXp > 0);
@@ -3215,9 +3998,9 @@ function AfterBattleOverview({
   return (
     <section className="after-report-summary">
       <div className="after-report-current">
-        <span className="eyebrow">Current step</span>
-        <strong>{currentStep.label}</strong>
-        <p>{currentStep.help}</p>
+        <span className="eyebrow">Checkpoint</span>
+        <strong>Draft report</strong>
+        <p>Use these only when you need to jump to a problem or a total.</p>
       </div>
       <div className="after-report-metrics">
         <button type="button" onClick={() => onGoToStep(1)}>
@@ -3896,12 +4679,28 @@ function ExplorationStep({
   onLookup: (item: LookupItem) => void;
 }) {
   const [diceInput, setDiceInput] = useState(() => draft.exploration.diceValues.join(", "));
-  const [diceCount, setDiceCount] = useState(Math.max(1, draft.exploration.diceValues.length || 1));
+  const [isDiceCountManual, setIsDiceCountManual] = useState(false);
+  const [extraWyrdstoneInput, setExtraWyrdstoneInput] = useState(1);
+  const standardDice = standardExplorationDiceBreakdown(roster, draft);
+  const [diceCount, setDiceCount] = useState(() => draft.exploration.diceValues.length || standardDice.total);
+  const standardDiceOptions = useMemo(
+    () => Array.from({ length: standardDice.total + 1 }, (_, index) => index),
+    [standardDice.total]
+  );
+  const rollerDiceCount = Math.min(diceCount, standardDice.total);
   const incomeWarriors = countIncomeWarriors(roster);
 
   useEffect(() => {
     setDiceInput(draft.exploration.diceValues.join(", "));
+    setIsDiceCountManual(false);
+    setDiceCount(draft.exploration.diceValues.length || standardDice.total);
   }, [draft.id]);
+
+  useEffect(() => {
+    if (!isDiceCountManual) {
+      setDiceCount(draft.exploration.diceValues.length || standardDice.total);
+    }
+  }, [draft.exploration.diceValues.length, isDiceCountManual, standardDice.total]);
 
   function updateExploration(patch: Partial<AfterBattleDraft["exploration"]>) {
     onChange((current) => ({ ...current, exploration: { ...current.exploration, ...patch } }));
@@ -3921,18 +4720,48 @@ function ExplorationStep({
     }));
   }
 
+  function chartShardCountForDice(diceValues: number[]) {
+    return getExplorationDiceSummary(rulesLookupRecords, diceValues).wyrdstoneShards ?? 0;
+  }
+
+  function totalWithPreservedExtra(current: AfterBattleDraft, chartShardCount: number) {
+    const previousChartShards = chartShardCountForDice(current.exploration.diceValues);
+    const extraShards = Math.max(0, current.exploration.wyrdstoneShards - previousChartShards);
+    return Math.max(0, chartShardCount) + extraShards;
+  }
+
   function useExplorationShardCount(value: number) {
     onChange((current) => ({
       ...current,
       exploration: {
         ...current.exploration,
-        wyrdstoneShards: Math.max(0, value),
+        wyrdstoneShards: totalWithPreservedExtra(current, value),
         notes: appendUniqueNote(current.exploration.notes, `Recorded ${value} wyrdstone from exploration.`)
       },
       treasury: current.treasury.wyrdstoneSold === 0
-        ? treasuryWithWyrdstoneSale(current.treasury, Math.max(0, value), incomeWarriors)
+        ? treasuryWithWyrdstoneSale(current.treasury, totalWithPreservedExtra(current, value), incomeWarriors)
         : current.treasury
     }));
+  }
+
+  function addExtraWyrdstoneFound() {
+    const extraShards = Math.max(0, Math.floor(extraWyrdstoneInput));
+    if (extraShards === 0) return;
+
+    onChange((current) => {
+      const found = current.exploration.wyrdstoneShards + extraShards;
+      return {
+        ...current,
+        exploration: {
+          ...current.exploration,
+          wyrdstoneShards: found,
+          notes: appendUniqueNote(current.exploration.notes, `Added ${extraShards} extra wyrdstone from scenario or campaign rewards.`)
+        },
+        treasury: current.treasury.wyrdstoneSold === 0
+          ? treasuryWithWyrdstoneSale(current.treasury, found, incomeWarriors)
+          : current.treasury
+      };
+    });
   }
 
   function useExplorationSpecialResults(values: string[]) {
@@ -3971,11 +4800,13 @@ function ExplorationStep({
       exploration: {
         ...current.exploration,
         diceValues: roll.diceValues,
-        wyrdstoneShards: roll.wyrdstoneShards ?? current.exploration.wyrdstoneShards,
+        wyrdstoneShards: roll.wyrdstoneShards !== undefined
+          ? totalWithPreservedExtra(current, roll.wyrdstoneShards)
+          : current.exploration.wyrdstoneShards,
         specialResults: roll.specialResults ?? current.exploration.specialResults
       },
       treasury: current.treasury.wyrdstoneSold === 0 && roll.wyrdstoneShards !== undefined
-        ? treasuryWithWyrdstoneSale(current.treasury, roll.wyrdstoneShards, incomeWarriors)
+        ? treasuryWithWyrdstoneSale(current.treasury, totalWithPreservedExtra(current, roll.wyrdstoneShards), incomeWarriors)
         : current.treasury
     }));
   }
@@ -3996,6 +4827,11 @@ function ExplorationStep({
           <span>Dice total</span>
           <strong>{draft.exploration.diceValues.length ? draft.exploration.diceValues.reduce((total, value) => total + value, 0) : "-"}</strong>
           <p>{draft.exploration.diceValues.length ? describeExplorationDice(draft.exploration.diceValues) : "Enter dice or use the roller."}</p>
+        </article>
+        <article>
+          <span>Standard dice</span>
+          <strong>{standardDice.total}</strong>
+          <p>{standardDice.survivingHeroes} surviving Hero{standardDice.survivingHeroes === 1 ? "" : "es"}{standardDice.winBonus ? " + winner's die" : ""}. Out of Action Heroes do not count, even after Full Recovery.</p>
         </article>
         <article>
           <span>Wyrdstone found</span>
@@ -4022,6 +4858,10 @@ function ExplorationStep({
         </label>
         <NumberField label="Wyrdstone found" value={draft.exploration.wyrdstoneShards} onChange={updateWyrdstoneFound} />
       </div>
+      <div className="button-row">
+        <NumberField label="Extra wyrdstone" value={extraWyrdstoneInput} onChange={setExtraWyrdstoneInput} />
+        <button onClick={addExtraWyrdstoneFound}>Add extra wyrdstone</button>
+      </div>
       <ExplorationDiceInsight
         diceValues={draft.exploration.diceValues}
         onUseShardCount={useExplorationShardCount}
@@ -4034,17 +4874,20 @@ function ExplorationStep({
         rollKind="exploration"
         recordId="table-exploration"
         tableCaption="Number Of Wyrdstone Shards Found"
-        diceCount={diceCount}
-        diceCountOptions={[1, 2, 3, 4, 5, 6]}
-        onDiceCountChange={setDiceCount}
+        diceCount={rollerDiceCount}
+        diceCountOptions={standardDiceOptions}
+        onDiceCountChange={(value) => {
+          setIsDiceCountManual(true);
+          setDiceCount(value);
+        }}
         autoApply
-        helperText="Rolls exploration dice, sets the wyrdstone total, and records doubles or better."
+        helperText={`${standardDice.total} standard exploration dice from surviving Heroes${standardDice.winBonus ? " and the winner's die" : ""}.`}
         onLookup={onLookup}
         onUseResult={applyExplorationRoll}
       />
       <div className="button-row">
-        <button disabled={draft.exploration.diceValues.length >= 6} onClick={() => {
-          const diceValues = [...draft.exploration.diceValues, rollD6()].slice(0, 6);
+        <button disabled={draft.exploration.diceValues.length >= standardDice.total} onClick={() => {
+          const diceValues = [...draft.exploration.diceValues, rollD6()].slice(0, standardDice.total);
           setDiceInput(diceValues.join(", "));
           updateExploration({ diceValues });
         }}>
@@ -4565,15 +5408,180 @@ function TradingStep({
 
 function AdvancesStep({
   draft,
-  onChange
+  roster,
+  onChange,
+  onLookup
 }: {
   draft: AfterBattleDraft;
+  roster: Roster;
   onChange: (updater: (current: AfterBattleDraft) => AfterBattleDraft) => void;
+  onLookup: (item: LookupItem) => void;
 }) {
   function updateAdvance(advanceId: string, patch: Partial<AfterBattleAdvanceEntry>) {
     onChange((current) => ({
       ...current,
       advances: current.advances.map((entry) => (entry.id === advanceId ? { ...entry, ...patch } : entry))
+    }));
+  }
+
+  function memberForAdvance(advance: AfterBattleAdvanceEntry) {
+    return roster.members.find((member) => member.id === advance.fighterId);
+  }
+
+  function fighterTypeForAdvance(advance: AfterBattleAdvanceEntry) {
+    const member = memberForAdvance(advance);
+    return member ? fighterTypeForMember(member) : undefined;
+  }
+
+  function rollAdvanceForEntry(advance: AfterBattleAdvanceEntry) {
+    const member = memberForAdvance(advance);
+    const fighterType = fighterTypeForAdvance(advance);
+    if (!member || !fighterType) return;
+    const table = advanceTableForMember(member);
+    const maximumProfile = fighterType.maximumProfile;
+    const maxHeroes = currentWarband(roster)?.maxHeroes ?? 6;
+    const activeHeroes = activeWarbandRosterMembers(roster).filter((item) => item.kind === "hero").length;
+    const rerolled: string[] = [];
+
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const roll = rollAdvance(table);
+      if (roll.kind === "lad" && activeHeroes >= maxHeroes) {
+        rerolled.push(`${roll.dice.join("+")}=${roll.total} Lad's Got Talent (max Heroes)`);
+        continue;
+      }
+      if (roll.kind === "stat") {
+        if (!maximumProfile) {
+          updateAdvance(advance.id, advancePatchForRoll(roll, {
+            result: "",
+            notes: appendUniqueNote(advance.notes, "Maximum profile data is needed before this characteristic advance can be applied.")
+          }));
+          return;
+        }
+        const legalStats = legalAdvanceStats(member, fighterType, maximumProfile, roll.statOptions.length ? roll.statOptions : ADVANCE_STATS);
+        const fallbackStats = legalAdvanceStats(member, fighterType, maximumProfile);
+        const forcedStat = roll.forcedStat && legalStats.includes(roll.forcedStat) ? roll.forcedStat : undefined;
+        const pairedFallback = roll.forcedStat ? legalStats.find((stat) => stat !== roll.forcedStat) : undefined;
+        const automaticStat = forcedStat ?? pairedFallback ?? (legalStats.length === 1 ? legalStats[0] : undefined);
+        if (!automaticStat && legalStats.length === 0 && fallbackStats.length === 0) {
+          rerolled.push(`${roll.dice.join("+")}=${roll.total} ${roll.label} (no legal stat)`);
+          continue;
+        }
+        const selectedStat = automaticStat ?? (fallbackStats.length === 1 ? fallbackStats[0] : undefined);
+        updateAdvance(advance.id, advancePatchForRoll(roll, {
+          selectedStat,
+          result: selectedStat ? advanceResultLabel(roll, selectedStat) : "",
+          notes: appendUniqueNote(advance.notes, rerollNote(rerolled))
+        }));
+        return;
+      }
+      updateAdvance(advance.id, advancePatchForRoll(roll, {
+        result: roll.kind === "lad" ? "" : "",
+        ladGotTalentState: roll.kind === "lad" ? "pending" : undefined,
+        notes: appendUniqueNote(advance.notes, rerollNote(rerolled))
+      }));
+      return;
+    }
+  }
+
+  function chooseAdvanceStat(advance: AfterBattleAdvanceEntry, stat: AdvanceStat) {
+    const roll = advanceRollFromEntry(advance);
+    if (!roll) return;
+    updateAdvance(advance.id, {
+      selectedStat: stat,
+      result: advanceResultLabel(roll, stat)
+    });
+  }
+
+  function chooseAdvanceSkill(advance: AfterBattleAdvanceEntry, skillId: string) {
+    const skill = rulesDb.skills.find((item) => item.id === skillId);
+    const roll = advanceRollFromEntry(advance);
+    if (!skill || !roll) return;
+    updateAdvance(advance.id, {
+      selectedSkillId: skill.id,
+      selectedCastableRuleId: undefined,
+      duplicateCastableDecision: undefined,
+      result: advanceResultLabel(roll, undefined, skill.name)
+    });
+  }
+
+  function rollCastableAdvance(advance: AfterBattleAdvanceEntry) {
+    const member = memberForAdvance(advance);
+    const roll = advanceRollFromEntry(advance);
+    if (!member || !roll) return;
+    const selectedIds = new Set([
+      ...member.specialRules,
+      ...draft.advances
+        .filter((entry) => entry.id !== advance.id && entry.fighterId === advance.fighterId && entry.duplicateCastableDecision !== "difficulty")
+        .map((entry) => entry.selectedCastableRuleId)
+        .filter((ruleId): ruleId is string => Boolean(ruleId))
+    ]);
+    const step = rollRandomCastableRuleStep(member, roster, selectedIds);
+    if (!step) {
+      updateAdvance(advance.id, {
+        notes: appendUniqueNote(advance.notes, "No legal spell, prayer or ritual table is available for this advance.")
+      });
+      return;
+    }
+    if (step.type === "duplicate") {
+      updateAdvance(advance.id, {
+        selectedCastableRuleId: step.duplicate.rule.id,
+        selectedSkillId: undefined,
+        duplicateCastableDecision: undefined,
+        result: "",
+        notes: appendUniqueNote(advance.notes, duplicateChoiceSummary(step.duplicate))
+      });
+      return;
+    }
+    updateAdvance(advance.id, {
+      selectedCastableRuleId: step.result.rule.id,
+      selectedSkillId: undefined,
+      duplicateCastableDecision: undefined,
+      result: advanceResultLabel(roll, undefined, step.result.rule.name),
+      notes: appendUniqueNote(advance.notes, spellRollSummary(step.result))
+    });
+  }
+
+  function rerollDuplicateCastableAdvance(advance: AfterBattleAdvanceEntry) {
+    const rule = rulesDb.specialRules.find((item) => item.id === advance.selectedCastableRuleId);
+    const rerollingAdvance = {
+      ...advance,
+      selectedCastableRuleId: undefined,
+      duplicateCastableDecision: "reroll" as const,
+      result: "",
+      notes: rule ? appendUniqueNote(advance.notes, `Duplicate spell re-rolled: ${rule.name}.`) : advance.notes
+    };
+    rollCastableAdvance(rerollingAdvance);
+  }
+
+  function keepDuplicateCastableAdvance(advance: AfterBattleAdvanceEntry) {
+    const member = memberForAdvance(advance);
+    const rule = rulesDb.specialRules.find((item) => item.id === advance.selectedCastableRuleId);
+    const roll = advanceRollFromEntry(advance);
+    if (!member || !rule || !roll) return;
+    updateAdvance(advance.id, {
+      duplicateCastableDecision: "difficulty",
+      result: advanceResultLabel(roll, undefined, `${rule.name} difficulty -1`),
+      notes: appendUniqueNote(advance.notes, `Duplicate spell roll kept: ${rule.name}. ${rule.name} difficulty reduced by 1.`)
+    });
+  }
+
+  function queueLadPromotion(advance: AfterBattleAdvanceEntry) {
+    const member = memberForAdvance(advance);
+    if (!member) return;
+    const description = `${member.displayName} rolled Lad's Got Talent at ${advance.xpThreshold} XP. Promote one model to a Hero, choose two eligible skill lists, and roll one Hero advance for the new Hero.`;
+    onChange((current) => ({
+      ...current,
+      advances: current.advances.map((entry) => entry.id === advance.id
+        ? {
+            ...entry,
+            result: `${advance.rollDice?.join("+") ?? "2D6"}=${advance.rollTotal ?? ""}: Lad's Got Talent - promotion queued`,
+            ladGotTalentState: "queued",
+            notes: appendUniqueNote(entry.notes, description)
+          }
+        : entry),
+      rosterUpdates: current.rosterUpdates.some((entry) => entry.description === description)
+        ? current.rosterUpdates
+        : [...current.rosterUpdates, { id: id("update"), type: "advance", targetId: member.id, description }]
     }));
   }
 
@@ -4585,28 +5593,190 @@ function AdvancesStep({
       ) : (
         <div className="advance-grid">
           {draft.advances.map((advance) => (
-            <article className="advance-panel" key={advance.id}>
-              <strong>{advance.fighterName}</strong>
-              <p>XP threshold reached: {advance.xpThreshold}</p>
-              <label>
-                <span>Advance result</span>
-                <select value={advance.result} onChange={(event) => updateAdvance(advance.id, { result: event.target.value })}>
-                  <option value="">Select result</option>
-                  {ADVANCE_RESULTS.map((result) => (
-                    <option key={result}>{result}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Notes</span>
-                <input value={advance.notes ?? ""} onChange={(event) => updateAdvance(advance.id, { notes: event.target.value })} />
-              </label>
-            </article>
+            <AdvanceResolver
+              advance={advance}
+              fighterType={fighterTypeForAdvance(advance)}
+              key={advance.id}
+              member={memberForAdvance(advance)}
+              roster={roster}
+              onChooseSkill={chooseAdvanceSkill}
+              onChooseStat={chooseAdvanceStat}
+              onKeepDuplicateCastable={keepDuplicateCastableAdvance}
+              onLookup={onLookup}
+              onQueueLadPromotion={queueLadPromotion}
+              onRerollDuplicateCastable={rerollDuplicateCastableAdvance}
+              onRoll={rollAdvanceForEntry}
+              onRollCastable={rollCastableAdvance}
+              onUpdate={updateAdvance}
+            />
           ))}
         </div>
       )}
     </section>
   );
+}
+
+function AdvanceResolver({
+  advance,
+  member,
+  fighterType,
+  roster,
+  onChooseSkill,
+  onChooseStat,
+  onKeepDuplicateCastable,
+  onLookup,
+  onQueueLadPromotion,
+  onRerollDuplicateCastable,
+  onRoll,
+  onRollCastable,
+  onUpdate
+}: {
+  advance: AfterBattleAdvanceEntry;
+  member?: RosterMember;
+  fighterType?: FighterType;
+  roster: Roster;
+  onChooseSkill: (advance: AfterBattleAdvanceEntry, skillId: string) => void;
+  onChooseStat: (advance: AfterBattleAdvanceEntry, stat: AdvanceStat) => void;
+  onKeepDuplicateCastable: (advance: AfterBattleAdvanceEntry) => void;
+  onLookup: (item: LookupItem) => void;
+  onQueueLadPromotion: (advance: AfterBattleAdvanceEntry) => void;
+  onRerollDuplicateCastable: (advance: AfterBattleAdvanceEntry) => void;
+  onRoll: (advance: AfterBattleAdvanceEntry) => void;
+  onRollCastable: (advance: AfterBattleAdvanceEntry) => void;
+  onUpdate: (advanceId: string, patch: Partial<AfterBattleAdvanceEntry>) => void;
+}) {
+  const roll = advanceRollFromEntry(advance);
+  const legalStats = member && fighterType && roll?.kind === "stat"
+    ? legalAdvanceStats(member, fighterType, fighterType.maximumProfile, roll.statOptions.length ? roll.statOptions : ADVANCE_STATS)
+    : [];
+  const fallbackStats = member && fighterType && roll?.kind === "stat"
+    ? legalAdvanceStats(member, fighterType, fighterType.maximumProfile)
+    : [];
+  const skillOptions = member ? getAllowedSkills(member, roster, rulesDb).filter((option) => option.allowed) : [];
+  const castableOptions = member ? rollableCastableRulesForMember(member, roster) : [];
+  const selectedSkill = rulesDb.skills.find((skill) => skill.id === advance.selectedSkillId);
+  const selectedCastable = rulesDb.specialRules.find((rule) => rule.id === advance.selectedCastableRuleId);
+  const needsSkillChoice = roll?.kind === "skill" && !advance.result;
+  const duplicatePending = needsSkillChoice && selectedCastable && !advance.duplicateCastableDecision;
+  const needsStatChoice = roll?.kind === "stat" && !advance.result;
+
+  return (
+    <article className="advance-panel">
+      <div className="section-heading compact">
+        <div>
+          <strong>{advance.fighterName}</strong>
+          <p>XP threshold reached: {advance.xpThreshold}</p>
+        </div>
+        <span className="pill">{advance.tableType ?? (member ? advanceTableForMember(member) : "advance")}</span>
+      </div>
+      {!roll ? (
+        <button className="primary" disabled={!member || !fighterType} onClick={() => onRoll(advance)}>
+          <Dices aria-hidden /> Roll advance
+        </button>
+      ) : (
+        <div className="exploration-follow-up-result">
+          <strong>{roll.dice.join(" + ")} = {roll.total}: {roll.label}</strong>
+          {roll.followUpDie && <p>Follow-up D6: {roll.followUpDie}</p>}
+          {advance.result && <p>{advance.result}</p>}
+        </div>
+      )}
+      {needsStatChoice && (
+        <div className="button-row">
+          {(legalStats.length ? legalStats : fallbackStats).map((stat) => (
+            <button key={stat} onClick={() => onChooseStat(advance, stat)}>Take +1 {stat}</button>
+          ))}
+          {!fighterType?.maximumProfile && <p className="muted">Maximum profile data is missing for this fighter type.</p>}
+        </div>
+      )}
+      {needsSkillChoice && !duplicatePending && (
+        <div className="skill-picker">
+          <label>
+            <span>Choose skill</span>
+            <select value={advance.selectedSkillId ?? ""} onChange={(event) => event.target.value && onChooseSkill(advance, event.target.value)}>
+              <option value="">Select legal skill</option>
+              {skillOptions.map((option) => (
+                <option value={option.item.id} key={option.item.id}>{option.item.name}</option>
+              ))}
+            </select>
+          </label>
+          {castableOptions.length > 0 && (
+            <button onClick={() => onRollCastable(advance)}>
+              <Dices aria-hidden /> Roll spell / prayer
+            </button>
+          )}
+        </div>
+      )}
+      {duplicatePending && selectedCastable && (
+        <div className="duplicate-spell-choice" role="alert">
+          <div>
+            <strong>Duplicate rolled: {selectedCastable.name}</strong>
+            <p>Choose whether to re-roll it or keep it and reduce that spell's difficulty by 1.</p>
+          </div>
+          <div className="castable-roll-tools">
+            <button onClick={() => onRerollDuplicateCastable(advance)}>Re-roll duplicate</button>
+            <button onClick={() => onKeepDuplicateCastable(advance)}>Lower difficulty by 1</button>
+          </div>
+        </div>
+      )}
+      {roll?.kind === "lad" && !advance.result && (
+        <div className="exploration-result-callout">
+          <strong>Lad's Got Talent</strong>
+          <p>Queue the required promotion details in Roster Updates before final review.</p>
+          <button onClick={() => onQueueLadPromotion(advance)}>Queue promotion update</button>
+        </div>
+      )}
+      <label>
+        <span>Notes</span>
+        <input value={advance.notes ?? ""} onChange={(event) => onUpdate(advance.id, { notes: event.target.value })} />
+      </label>
+      {(selectedSkill || selectedCastable) && (
+        <div className="chip-list">
+          {selectedSkill && <button className="chip" onClick={() => onLookup({ type: "skill", item: selectedSkill })}>{selectedSkill.name}</button>}
+          {selectedCastable && <button className="chip" onClick={() => onLookup({ type: "specialRule", item: selectedCastable })}>{selectedCastable.name}</button>}
+        </div>
+      )}
+    </article>
+  );
+}
+
+function advancePatchForRoll(roll: AdvanceRoll, patch: Partial<AfterBattleAdvanceEntry> = {}): Partial<AfterBattleAdvanceEntry> {
+  return {
+    tableType: roll.table,
+    rollDice: roll.dice,
+    rollTotal: roll.total,
+    advanceKind: roll.kind,
+    advanceLabel: roll.label,
+    statOptions: roll.statOptions,
+    forcedStat: roll.forcedStat,
+    followUpRolls: roll.followUpDie ? [roll.followUpDie] : [],
+    selectedStat: undefined,
+    selectedSkillId: undefined,
+    selectedCastableRuleId: undefined,
+    duplicateCastableDecision: undefined,
+    ladGotTalentState: undefined,
+    result: "",
+    ...patch
+  };
+}
+
+function advanceRollFromEntry(advance: AfterBattleAdvanceEntry): AdvanceRoll | undefined {
+  if (!advance.tableType || !advance.rollDice || typeof advance.rollTotal !== "number" || !advance.advanceKind || !advance.advanceLabel) {
+    return undefined;
+  }
+  return {
+    table: advance.tableType,
+    dice: advance.rollDice,
+    total: advance.rollTotal,
+    kind: advance.advanceKind,
+    label: advance.advanceLabel,
+    statOptions: advance.statOptions ?? [],
+    followUpDie: advance.followUpRolls?.[0],
+    forcedStat: advance.forcedStat
+  };
+}
+
+function rerollNote(rerolled: string[]) {
+  return rerolled.length ? `Automatic re-rolls: ${rerolled.join("; ")}.` : undefined;
 }
 
 function RosterUpdatesStep({
@@ -6569,7 +7739,11 @@ function warbandBadgeMeta(warbandTypeId: string, warband?: WarbandType): { mark:
     ostlanders: { mark: "OS", title: "Ostlanders" },
     reiklanders: { mark: "RK", title: "Reiklanders" },
     middenheimers: { mark: "MH", title: "Middenheimers" },
-    marienburgers: { mark: "MB", title: "Marienburgers" }
+    marienburgers: { mark: "MB", title: "Marienburgers" },
+    "amazons-lustria": { mark: "AL", title: "Amazons (Lustria)" },
+    "amazons-mordheim": { mark: "AM", title: "Amazons (Mordheim)" },
+    pirates: { mark: "PI", title: "Pirates" },
+    "gunnery-school-of-nuln": { mark: "GN", title: "Gunnery School of Nuln" }
   };
   if (known[warbandTypeId]) return known[warbandTypeId];
 
@@ -6665,21 +7839,6 @@ const SIMPLE_SERIOUS_INJURY_FOLLOW_UPS = {
     helperText: "Rolls the Deep Wound D3 result using a D6 table and records how many games are missed."
   }
 } as const;
-
-const ADVANCE_RESULTS = [
-  "+1 M",
-  "+1 WS",
-  "+1 BS",
-  "+1 S",
-  "+1 T",
-  "+1 W",
-  "+1 I",
-  "+1 A",
-  "+1 Ld",
-  "New skill",
-  "New spell / prayer",
-  "Other / custom"
-];
 
 function buildRulesLookupRecords(): RuleLookupRecord[] {
   return uniqueById([
@@ -6918,6 +8077,31 @@ function writeRecentRuleIds(ids: string[]) {
   localStorage.setItem("mordheim.recentRules", JSON.stringify(ids));
 }
 
+function readRecentRollAssistTargets(rosterId: string): RollAssistRecentTarget[] {
+  try {
+    return JSON.parse(localStorage.getItem(rollAssistTargetsKey(rosterId)) ?? "[]") as RollAssistRecentTarget[];
+  } catch {
+    return [];
+  }
+}
+
+function writeRecentRollAssistTargets(rosterId: string, targets: RollAssistRecentTarget[]) {
+  localStorage.setItem(rollAssistTargetsKey(rosterId), JSON.stringify(targets));
+}
+
+function resetRollAssistTargetsStorage(rosterId: string) {
+  localStorage.removeItem(rollAssistTargetsKey(rosterId));
+}
+
+function rollAssistTargetsKey(rosterId: string) {
+  return `mordheim.rollAssistTargets.${rosterId}`;
+}
+
+function mergeRecentRollAssistTargets(current: RollAssistRecentTarget[], target: RollAssistRecentTarget) {
+  if (current[0]?.key === target.key) return current;
+  return [target, ...current.filter((entry) => entry.key !== target.key)].slice(0, 8);
+}
+
 function maxBattleWounds(member: RosterMember) {
   return Math.max(1, member.currentProfile.W * memberModelCount(member));
 }
@@ -6990,8 +8174,41 @@ function outOfActionCountForBattle(member: RosterMember, battleState?: BattleMem
   return battleState.status === "out_of_action" ? 1 : 0;
 }
 
+function battleStatusCountsForRoster(members: RosterMember[], battleState: BattleState): Record<BattleStatus, number> {
+  const totals: Record<BattleStatus, number> = {
+    active: 0,
+    hidden: 0,
+    knocked_down: 0,
+    stunned: 0,
+    out_of_action: 0
+  };
+
+  for (const member of members) {
+    const state = battleState.members[member.id] ?? defaultBattleMemberState(member);
+    if (member.kind === "henchman_group") {
+      const models = henchmanModelsForMember(member);
+      if (models.length > 0) {
+        for (const model of models) {
+          totals[modelStatusForBattle(model, state)] += 1;
+        }
+        continue;
+      }
+      totals[state.status] += memberModelCount(member);
+      continue;
+    }
+    totals[state.status] += 1;
+  }
+
+  return totals;
+}
+
 function memberHasOutOfAction(member: RosterMember, battleState?: BattleMemberState) {
   return outOfActionCountForBattle(member, battleState) > 0;
+}
+
+function survivedBattleXp(member: RosterMember, battleState?: BattleMemberState) {
+  if (memberModelCount(member) === 0) return 0;
+  return outOfActionCountForBattle(member, battleState) < memberModelCount(member) ? 1 : 0;
 }
 
 function hasMissNextGameReminder(member: RosterMember) {
@@ -7012,6 +8229,22 @@ function countRosterFighters(members: RosterMember[]) {
 
 function countIncomeWarriors(roster: Roster) {
   return Math.max(1, countRosterFighters(activeWarbandRosterMembers(roster)));
+}
+
+function standardExplorationDiceBreakdown(roster: Roster, draft: AfterBattleDraft) {
+  const battleState = ensureBattleState(roster, draft.battleStateSnapshot);
+  const survivingHeroes = activeWarbandRosterMembers(roster).filter((member) => {
+    if (member.kind !== "hero") return false;
+    const state = battleState.members[member.id] ?? defaultBattleMemberState(member);
+    return state.status !== "out_of_action";
+  }).length;
+  const winBonus = draft.battleResult.result === "win" ? 1 : 0;
+
+  return {
+    survivingHeroes,
+    winBonus,
+    total: Math.max(0, Math.min(6, survivingHeroes + winBonus))
+  };
 }
 
 function calculateWyrdstoneSaleIncome(wyrdstoneSold: number, warriorCount: number) {
@@ -7259,12 +8492,19 @@ function mergeAfterBattleDraftWithBattleState(draft: AfterBattleDraft, roster: R
     if (!fighterType?.canGainExperience) return [];
     return [afterBattleXpEntryForMember(member, fighterType, snapshot)];
   });
+  const memberById = new Map(activeMembers.map((member) => [member.id, member]));
   const xp = [...draft.xp.map((entry) => {
+    const member = memberById.get(entry.fighterId);
     const memberState = snapshot.members[entry.fighterId];
     const previousState = previousSnapshot.members[entry.fighterId];
     if (!memberState) return recalculateXpEntry(entry);
+    const previousSurvived = member ? survivedBattleXp(member, previousState) : entry.survived;
+    const nextSurvived = member ? survivedBattleXp(member, memberState) : entry.survived;
     return recalculateXpEntry({
       ...entry,
+      survived: entry.survived === previousSurvived || (entry.survived === 0 && previousSurvived === 1)
+        ? nextSurvived
+        : entry.survived,
       enemyOoa: !previousState || entry.enemyOoa === previousState.enemyOoaXp ? memberState.enemyOoaXp : entry.enemyOoa,
       objective: !previousState || entry.objective === previousState.objectiveXp ? memberState.objectiveXp : entry.objective,
       other: !previousState || entry.other === previousState.otherXp ? memberState.otherXp : entry.other
@@ -7312,7 +8552,7 @@ function afterBattleXpEntryForMember(member: RosterMember, fighterType: FighterT
     fighterName: member.displayName || fighterType.name,
     startingXp,
     previousXp,
-    survived: 0,
+    survived: survivedBattleXp(member, memberBattleState),
     leaderBonus: 0,
     enemyOoa: memberBattleState.enemyOoaXp,
     objective: memberBattleState.objectiveXp,
@@ -7502,6 +8742,35 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
     }
 
     if (advances.length) {
+      for (const advance of advances) {
+        if (advance.selectedStat) {
+          next = { ...next, currentProfile: applyStatAdvance(next.currentProfile, advance.selectedStat) };
+        }
+        if (advance.selectedSkillId) {
+          next = { ...next, skills: uniquePreserveOrder([...next.skills, advance.selectedSkillId]) };
+        }
+        if (advance.selectedCastableRuleId) {
+          if (advance.duplicateCastableDecision === "difficulty") {
+            const rule = rulesDb.specialRules.find((item) => item.id === advance.selectedCastableRuleId);
+            next = {
+              ...next,
+              castableDifficultyAdjustments: [
+                ...(next.castableDifficultyAdjustments ?? []),
+                {
+                  id: id("castable-difficulty"),
+                  ruleId: advance.selectedCastableRuleId,
+                  modifier: -1,
+                  source: "advance-duplicate-spell-roll",
+                  date: draft.battleResult.datePlayed || now,
+                  notes: rule ? `${rule.name} duplicate advance roll at ${advance.xpThreshold} XP.` : advance.notes
+                }
+              ]
+            };
+          } else {
+            next = { ...next, specialRules: uniquePreserveOrder([...next.specialRules, advance.selectedCastableRuleId]) };
+          }
+        }
+      }
       next = {
         ...next,
         advances: [...next.advances, ...advances.map((advance) => `${advance.xpThreshold}: ${advance.result}`)],
@@ -7511,6 +8780,17 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
             id: advance.id,
             xpAt: advance.xpThreshold,
             result: advance.result,
+            tableType: advance.tableType,
+            rollDice: advance.rollDice,
+            rollTotal: advance.rollTotal,
+            advanceKind: advance.advanceKind,
+            advanceLabel: advance.advanceLabel,
+            followUpRolls: advance.followUpRolls,
+            selectedStat: advance.selectedStat,
+            selectedSkillId: advance.selectedSkillId,
+            selectedCastableRuleId: advance.selectedCastableRuleId,
+            duplicateCastableDecision: advance.duplicateCastableDecision,
+            ladGotTalentState: advance.ladGotTalentState,
             date: draft.battleResult.datePlayed || now,
             notes: advance.notes
           }))
@@ -7635,6 +8915,17 @@ function applyAfterBattleDraft(roster: Roster, draft: AfterBattleDraft): Roster 
             fighterName: entry.fighterName,
             xpThreshold: entry.xpThreshold,
             result: entry.result,
+            tableType: entry.tableType,
+            rollDice: entry.rollDice,
+            rollTotal: entry.rollTotal,
+            advanceKind: entry.advanceKind,
+            advanceLabel: entry.advanceLabel,
+            followUpRolls: entry.followUpRolls,
+            selectedStat: entry.selectedStat,
+            selectedSkillId: entry.selectedSkillId,
+            selectedCastableRuleId: entry.selectedCastableRuleId,
+            duplicateCastableDecision: entry.duplicateCastableDecision,
+            ladGotTalentState: entry.ladGotTalentState,
             notes: entry.notes
           })),
           rosterUpdates: draft.rosterUpdates.map((entry) => ({
@@ -7745,6 +9036,15 @@ function reviewBlockingMessages(draft: AfterBattleDraft, roster: Roster): string
   }
   for (const advance of draft.advances) {
     if (!advance.result.trim()) messages.push(`${advance.fighterName} needs an advance result for ${advance.xpThreshold} XP.`);
+    if (advance.advanceKind === "stat" && !advance.selectedStat) {
+      messages.push(`${advance.fighterName} needs a characteristic selected for the ${advance.xpThreshold} XP advance.`);
+    }
+    if (advance.selectedCastableRuleId && !advance.result.trim()) {
+      messages.push(`${advance.fighterName} needs the duplicate spell roll decision resolved.`);
+    }
+    if (advance.ladGotTalentState === "pending") {
+      messages.push(`${advance.fighterName} needs Lad's Got Talent promotion details queued or the result re-rolled.`);
+    }
   }
   for (const transaction of draft.transactions) {
     if (!transaction.equipmentItemId && !transaction.itemName.trim()) messages.push("A trading entry needs an item name.");
@@ -8077,8 +9377,9 @@ function prependNote(note: string, existing?: string) {
   return [note, existing].filter(Boolean).join(" ");
 }
 
-function appendUniqueNote(existing: string | undefined, note: string) {
+function appendUniqueNote(existing: string | undefined, note?: string) {
   const current = existing?.trim();
+  if (!note?.trim()) return current ?? "";
   if (!current) return note;
   return current.includes(note) ? current : `${current}\n${note}`;
 }
@@ -8102,6 +9403,35 @@ function uniqueById<T extends { id: string }>(items: T[]): T[] {
 
 function uniqueRostersById(items: Roster[]) {
   return uniqueById(items);
+}
+
+function rosterCloudStatus(state: RosterCloudState, authenticated: boolean) {
+  if (!cloudEnabled) {
+    return { label: "Cloud unavailable", detail: "This build is saving rosters on this device.", tone: "warning" };
+  }
+  if (state.lastError) {
+    return { label: "Sync failed", detail: state.lastError, tone: "error" };
+  }
+  if (state.enabled || state.remote) {
+    if (!authenticated) {
+      return { label: "Cloud paused", detail: "Log in to resume cloud syncing for this roster.", tone: "warning" };
+    }
+    return {
+      label: "Cloud synced",
+      detail: state.lastSyncedAt ? `Last cloud save: ${formatDateTime(state.lastSyncedAt)}` : "This roster will sync on its next save.",
+      tone: "success"
+    };
+  }
+  if (authenticated) {
+    return { label: "Local only", detail: "Use Save to cloud when you want this warband on your account.", tone: "" };
+  }
+  return { label: "Local only", detail: "Log in to make cloud saves available.", tone: "" };
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
 function mergeSavedRoster(current: Roster[], saved: Roster, existingId?: string, moveToTop = true) {
@@ -8144,6 +9474,54 @@ function createRosterDraft(warbandTypeId: string): Roster {
 
 function currentWarband(roster: Roster) {
   return rulesDb.warbandTypes.find((warband) => warband.id === roster.warbandTypeId);
+}
+
+function createRecentCloseCombatTarget(profile: RollAssistCloseCombatTarget): RollAssistRecentTarget {
+  const label = [
+    `WS${formatBracketLabel(profile.ws)}`,
+    `T${formatBracketLabel(profile.toughness)}`,
+    formatArmourSaveLabel(profile.armourSave),
+    profile.state === "standing" ? "" : titleCase(profile.state.replaceAll("_", " "))
+  ].filter(Boolean).join(" · ");
+  return {
+    key: `close:${profile.ws}:${profile.toughness}:${profile.armourSave ?? "none"}:${profile.state}`,
+    mode: "closeCombat",
+    label,
+    profile
+  };
+}
+
+function createRecentShootingTarget(profile: RollAssistShootingContextState): RollAssistRecentTarget {
+  const label = [
+    `T${formatBracketLabel(profile.toughness)}`,
+    formatArmourSaveLabel(profile.armourSave),
+    profile.cover ? "Cover" : "",
+    profile.range === "long" ? "Long" : "",
+    profile.shooterMoved ? "Moved" : "",
+    profile.largeTarget ? "Large" : ""
+  ].filter(Boolean).join(" · ");
+  return {
+    key: `shoot:${profile.toughness}:${profile.armourSave ?? "none"}:${profile.cover ? 1 : 0}:${profile.range}:${profile.shooterMoved ? 1 : 0}:${profile.largeTarget ? 1 : 0}`,
+    mode: "shooting",
+    label,
+    profile
+  };
+}
+
+function formatBracketLabel(value: number) {
+  return value >= 5 ? "5+" : value.toString();
+}
+
+function formatArmourSaveLabel(value: RollAssistArmourSave) {
+  return value === null ? "None" : `${value}+`;
+}
+
+function formatHitTarget(value: RollAssistResult["hitTarget"]) {
+  return value === "auto" ? "Auto" : `${value}+`;
+}
+
+function titleCase(value: string) {
+  return value.replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function campaignLogEntry(

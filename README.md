@@ -2,7 +2,7 @@
 
 An unofficial local-first Mordheim roster and campaign helper. The app separates canonical rules data from player roster state so rosters reference structured records for fighter types, equipment, skills, special rules, source documents and campaign log entries.
 
-The first fully seeded warbands are **Witch Hunters**, the official **Mercenaries** variants, **Averlanders**, **Kislevites**, **Ostlanders**, **Sisters of Sigmar**, **Carnival of Chaos**, **Cult of the Possessed**, **Skaven**, **Skaven of Clan Pestilens**, **Undead**, **Orc Mob**, **Dwarf Treasure Hunters**, **Beastmen Raiders**, **Shadow Warriors**, **Lizardmen**, **Forest Goblins**, and **Black Orcs**. The attached workbook was used as a roster layout and data-entry reference only; Broheim-hosted rule documents are treated as the source references.
+The first fully seeded warbands are **Witch Hunters**, the official **Mercenaries** variants, **Averlanders**, **Kislevites**, **Ostlanders**, **Sisters of Sigmar**, **Carnival of Chaos**, **Cult of the Possessed**, **Skaven**, **Skaven of Clan Pestilens**, **Undead**, **Orc Mob**, **Dwarf Treasure Hunters**, **Beastmen Raiders**, **Shadow Warriors**, **Lizardmen**, **Forest Goblins**, **Black Orcs**, **Amazons (Lustria)**, **Amazons (Mordheim)**, **Pirates**, and **Gunnery School of Nuln**. The attached workbook was used as a roster layout and data-entry reference only; Broheim-hosted rule documents are treated as the source references.
 
 ## Stack
 
@@ -17,7 +17,7 @@ The first fully seeded warbands are **Witch Hunters**, the official **Mercenarie
 
 This app is ready to deploy to Netlify as a static Vite site. Netlify uses `netlify.toml`, runs `npm run build`, and publishes `dist`.
 
-On Netlify, roster data is saved in each player's browser storage. No paid database or server is required, but players should use JSON export/import to back up or move rosters between devices. Players can also use Export PDF from Play Mode or the roster editor, then choose "Save as PDF" in the browser print dialog.
+On Netlify, the app can still run local-first in each player's browser storage, but it now also supports Turso-backed cloud accounts through Netlify Functions for shared scheduler data and cross-device roster saves. If the cloud backend is not configured, players should use JSON export/import to back up or move rosters between devices. Players can also use Export PDF from Play Mode or the roster editor, then choose "Save as PDF" in the browser print dialog.
 
 See `NETLIFY_DEPLOY.md` for step-by-step setup and the GitHub upload checklist.
 
@@ -25,18 +25,53 @@ See `NETLIFY_DEPLOY.md` for step-by-step setup and the GitHub upload checklist.
 
 The Netlify site is configured as an installable web app. On iPhone or iPad, open the site in Safari, tap Share, then choose Add to Home Screen. On Mac Safari, use File, then Add to Dock.
 
-App icon files live in `public/pwa-icon-192.png`, `public/pwa-icon-512.png`, and `public/apple-touch-icon.png`. Replace those files with the final app icon artwork before publishing if you want a different icon.
+App icon files live in `public/pwa-icon-192.png`, `public/pwa-icon-512.png`, and `public/apple-touch-icon.png`. The current checked-in icon is the Mordheim skull artwork. Warband icon assets live in matching `public/warband-icons/light` and `public/warband-icons/dark` slug-named files.
 
 ## Run Locally
 
-Requires Node 24+ because the local SQLite API uses `node:sqlite`. The Netlify deployment does not run that local API; it uses browser storage instead.
+Requires Node 24+ because the local development API uses `node:sqlite` when Turso credentials are not present. The Netlify deployment uses Netlify Functions plus Turso for cloud accounts.
+
+On macOS, double-click:
+
+```text
+Open Mordheim App.command
+```
+
+On Windows, use:
+
+```text
+Open Mordheim App.bat
+```
+
+Or run the friendly launcher:
+
+```bash
+npm start
+```
+
+The launcher installs dependencies if needed, starts the local API and Vite app, then opens the browser.
+
+The lower-level development commands are:
 
 ```bash
 npm install
 npm run dev
 ```
 
-The Vite app runs at `http://127.0.0.1:5173` and the local API runs at `http://127.0.0.1:5174`. Roster state is stored in `.local/mordheim.sqlite`; rules data stays in `src/data`.
+The Vite app runs at `http://127.0.0.1:5173` and the local API runs at `http://127.0.0.1:5174`. Local cloud-dev state is stored in `.local/mordheim-cloud.sqlite`; rules data stays in `src/data`.
+
+To enable the Turso cloud path, set:
+
+```text
+VITE_CLOUD_BACKEND=turso
+VITE_SCHEDULER_CAMPAIGN_ID=autumn-in-the-city
+VITE_SCHEDULER_CAMPAIGN_NAME=Autumn in the City
+TURSO_DATABASE_URL=libsql://YOUR_DATABASE.turso.io
+TURSO_AUTH_TOKEN=YOUR_TURSO_AUTH_TOKEN
+MORDHEIM_AUTH_SECRET=change-this-long-random-secret
+```
+
+See `.env.example` for the current project values.
 
 ## Tests
 
@@ -82,18 +117,30 @@ Rules live in JSON seed files under `src/data`; campaign roster state is saved s
 - **Roster Editor**: the existing long-term roster builder and campaign editor.
 - **Campaign**: a campaign dashboard for history, economy, fighter progression, notes and between-game reminders.
 - **Schedule**: a shared game scheduler for campaign games, invitations, a compact month calendar and optional Google Calendar invites.
-- **Play Mode**: opened by the Roster button for quick table use, dice/table helpers, temporary fighter status, wound tracking, rules lookup and printable PDF roster sheets.
-- **After Battle**: a guided post-game draft for result, XP, serious injuries, exploration, income, trading, advances, roster updates and final review.
+- **Play Mode**: opened by the Roster button for quick table use. It has a compact battle dashboard, rout watch, status totals, rules lookup, dice/table helpers and an After Battle handoff. Secondary actions such as PDF export, roster editing, battle reset and view filters sit under More actions. Fighter cards use segmented battle status controls, wound tracking, a compact `+ XP` picker for OOA/objective/other battle XP, relevant-rules lookup and printable PDF roster sheets.
+- **After Battle**: a guided post-game flow with a progress rail, checkpoint drawer and focused next/previous steps for result, XP, serious injuries, exploration, income, trading, advances, roster updates and final review.
 
 The Create Warband screen also includes legal starter roster templates for implemented warbands. Templates live in `src/data/starterRosters.ts`, use canonical fighter/equipment ids, and are verified by the Node rules check.
 
-The After Battle flow compares pre-battle XP with final XP using the central advancement threshold helper in `src/rules/engine.ts`, queues one advance slot per crossed threshold, and writes one campaign history entry when updates are applied. Serious injury and exploration steps use the shared dice/table helper in `src/rules/tableDice.ts`, so rolls can fill draft fields while still allowing manual overrides.
+The After Battle flow compares pre-battle XP with final XP using the central advancement threshold helper in `src/rules/engine.ts`, queues one advance slot per crossed threshold, and writes one campaign history entry when updates are applied. Serious injury and exploration steps use the shared dice/table helper in `src/rules/tableDice.ts`, so rolls can fill draft fields while still allowing manual overrides. Exploration defaults to one die per Hero who was not Out of Action in the battle snapshot, plus one winner's die for a win; Heroes who later make a Full Recovery still do not add an exploration die for that battle.
 
 The Trading step is a post-battle ledger. Canonical equipment records can be bought, sold, found, moved between stash and fighters, or logged as discarded. Gold changes are folded into the treasury preview, and canonical stash/fighter equipment changes are applied only when the final After Battle review is confirmed. Custom items and unusual trading outcomes can still be logged as notes.
 
 ## Game Scheduler
 
 The Schedule page is separate from local warband storage. It stores the local player profile in browser storage, then uses a scheduler store abstraction in `src/scheduler/store.ts`.
+
+When Turso is configured, scheduler login uses app-owned email/password accounts through Netlify Functions, shared schedule data lives in Turso tables, and roster saves are mirrored to the signed-in player's cloud account. If Turso is not configured, the scheduler can still use the older Apps Script backend or local fallback mode.
+
+Turso setup commands:
+
+```bash
+npm run turso:schema
+npm run turso:export-supabase
+npm run turso:import-supabase
+```
+
+The Supabase export command writes `.local/migration/supabase-export.json`. The import command loads those rows into Turso and writes `.local/migration/turso-claim-links.csv`; migrated players use the Claim tab in Cloud Saves to set a new password because Supabase Auth passwords cannot be exported.
 
 Scheduler data is designed to be shared through this Google Sheet:
 
@@ -117,9 +164,9 @@ Suggested Google Sheet tabs are created by the Apps Script if missing:
 - `Invitations`
 - `Players`
 
-Google Calendar invites are also created by Apps Script. The app calls `createGoogleCalendarInvite`, Apps Script creates the event with attendee emails, then writes the event id/link fields back to the `Games` tab. No private Google credentials are stored in the frontend.
+Google Calendar invites are still created only by Apps Script. The Turso cloud path shows a planned-later message for calendar invites rather than storing Google credentials in the app backend.
 
-Scheduler player login is also handled by Apps Script. Players register with a name, optional email and password. The script stores a salted password hash and a session token hash in the `Players` tab; the frontend stores only the returned session token in that player's browser. If the Apps Script endpoint is not configured, login falls back to local test mode and is not shared protection.
+If Turso is configured, scheduler login uses email/password accounts stored as salted password hashes plus hashed session tokens in Turso. If Turso is not configured but the Apps Script endpoint is, scheduler login is handled by Apps Script. If neither backend is configured, login falls back to local test mode and is not shared protection.
 
 ## Rules Validation
 
@@ -156,6 +203,10 @@ Hired swords are seeded from local data and can be hired from the Roster Editor.
 - Lizardmen
 - Forest Goblins
 - Black Orcs
+- Amazons (Lustria)
+- Amazons (Mordheim)
+- Pirates
+- Gunnery School of Nuln
 
 The currently tracked Grade 1a official warbands in `src/data/warbandIndex.json` are seeded and covered by rules-engine verification.
 

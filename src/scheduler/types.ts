@@ -57,7 +57,7 @@ export type SchedulerSnapshot = {
   games: ScheduledGame[];
   invitations: GameInvitation[];
   players: PlayerProfile[];
-  backend: "google-sheet" | "local";
+  backend: "turso" | "google-sheet" | "local";
   warning?: string;
 };
 
@@ -70,6 +70,7 @@ export type CreateGameInput = {
   locationName: string;
   maxPlayers: number;
   notes: string;
+  hostWarbandName?: string;
   invitedPlayers: Array<{
     playerId?: string;
     playerName: string;

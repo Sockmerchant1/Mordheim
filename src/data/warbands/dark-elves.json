@@ -1,0 +1,283 @@
+{
+  "warbandType": {
+    "id": "dark-elves",
+    "name": "Dark Elves",
+    "race": "Dark Elf",
+    "broheimGrade": "1b",
+    "sourceCode": "TC12",
+    "sourceDocumentId": "tc12-dark-elves",
+    "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+    "implementationStatus": "tested",
+    "startingGold": 500,
+    "minWarriors": 3,
+    "maxWarriors": 12,
+    "maxHeroes": 5,
+    "leaderFighterTypeId": "high-born",
+    "notes": "Town Cryer #12 Dark Elves warband. Includes Kindred Hatred (Hate High Elves), Excellent Sight, and the Black Powder Weapons restriction. Features Beastmasters with Cold One Beasthounds and a Sorceress using Dark Elf Magic."
+  },
+  "fighterTypes": [
+    {
+      "id": "high-born",
+      "warbandTypeId": "dark-elves",
+      "name": "High Born",
+      "category": "hero",
+      "minCount": 1,
+      "maxCount": 1,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 70,
+      "startingExperience": 20,
+      "profile": { "M": 5, "WS": 5, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 6, "A": 1, "Ld": 9 },
+      "equipmentListIds": ["dark-elf-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "academic", "strength", "speed", "dark-elf-special"],
+      "specialRuleIds": ["leader", "kindred-hatred", "excellent-sight", "black-powder-weapons"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Required leader.",
+      "source": {
+        "sourceDocumentId": "tc12-dark-elves",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+        "pageRef": "Dark Elves p. 1",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "beastmaster",
+      "warbandTypeId": "dark-elves",
+      "name": "Beastmaster",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 1,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 45,
+      "startingExperience": 8,
+      "profile": { "M": 5, "WS": 4, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 6, "A": 1, "Ld": 8 },
+      "equipmentListIds": ["dark-elf-equipment"],
+      "skillCategoryIds": ["combat", "shooting", "speed", "dark-elf-special"],
+      "specialRuleIds": ["kindred-hatred", "excellent-sight", "black-powder-weapons", "beastmaster-hounds"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "May be accompanied by up to two Cold One Beasthounds (bought as henchmen). Beastmaster-only equipment includes the Beastlash.",
+      "source": {
+        "sourceDocumentId": "tc12-dark-elves",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+        "pageRef": "Dark Elves p. 2",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "fellblade",
+      "warbandTypeId": "dark-elves",
+      "name": "Fellblade",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 40,
+      "startingExperience": 12,
+      "profile": { "M": 5, "WS": 5, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 6, "A": 1, "Ld": 8 },
+      "equipmentListIds": ["dark-elf-fellblade-equipment"],
+      "skillCategoryIds": ["combat", "strength", "speed", "dark-elf-special"],
+      "specialRuleIds": ["kindred-hatred", "excellent-sight", "black-powder-weapons", "melee-specialists"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "May not use missile weapons (Melee Specialists). Up to two may be hired.",
+      "source": {
+        "sourceDocumentId": "tc12-dark-elves",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+        "pageRef": "Dark Elves p. 2",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "dark-elf-sorceress",
+      "warbandTypeId": "dark-elves",
+      "name": "Dark Elf Sorceress",
+      "category": "hero",
+      "minCount": 0,
+      "maxCount": 1,
+      "groupMinSize": null,
+      "groupMaxSize": null,
+      "hireCost": 55,
+      "startingExperience": 12,
+      "profile": { "M": 5, "WS": 4, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 6, "A": 1, "Ld": 8 },
+      "equipmentListIds": ["dark-elf-equipment"],
+      "skillCategoryIds": ["academic", "speed", "dark-elf-special"],
+      "specialRuleIds": ["kindred-hatred", "excellent-sight", "black-powder-weapons", "spellcaster", "dark-elf-magic", "cannot-cast-spells-in-armour"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Wizard - uses Dark Elf Magic. May not cast spells if wearing armour.",
+      "source": {
+        "sourceDocumentId": "tc12-dark-elves",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+        "pageRef": "Dark Elves p. 3",
+        "label": "Heroes"
+      }
+    },
+    {
+      "id": "corsair",
+      "warbandTypeId": "dark-elves",
+      "name": "Corsair",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": null,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 35,
+      "startingExperience": 0,
+      "profile": { "M": 5, "WS": 4, "BS": 4, "S": 3, "T": 3, "W": 1, "I": 6, "A": 1, "Ld": 8 },
+      "equipmentListIds": ["dark-elf-equipment", "dark-elf-corsair-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["kindred-hatred", "excellent-sight", "black-powder-weapons"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Bought in groups of 1-5. May wear Sea Dragon Cloaks (from Corsair equipment list).",
+      "source": {
+        "sourceDocumentId": "tc12-dark-elves",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+        "pageRef": "Dark Elves p. 4",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "shade",
+      "warbandTypeId": "dark-elves",
+      "name": "Shade",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": 5,
+      "groupMinSize": 1,
+      "groupMaxSize": 5,
+      "hireCost": 30,
+      "startingExperience": 0,
+      "profile": { "M": 5, "WS": 3, "BS": 3, "S": 3, "T": 3, "W": 1, "I": 5, "A": 1, "Ld": 8 },
+      "equipmentListIds": ["dark-elf-shade-equipment"],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["kindred-hatred", "excellent-sight", "black-powder-weapons", "natural-stealth"],
+      "canGainExperience": true,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Up to five may be hired. Scout/skirmisher variants with their own equipment list.",
+      "source": {
+        "sourceDocumentId": "tc12-dark-elves",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+        "pageRef": "Dark Elves p. 4",
+        "label": "Henchmen"
+      }
+    },
+    {
+      "id": "cold-one-beasthound",
+      "warbandTypeId": "dark-elves",
+      "name": "Cold One Beasthound",
+      "category": "henchman",
+      "minCount": 0,
+      "maxCount": 2,
+      "groupMinSize": 1,
+      "groupMaxSize": 2,
+      "hireCost": 30,
+      "startingExperience": 0,
+      "profile": { "M": 6, "WS": 3, "BS": 0, "S": 4, "T": 4, "W": 1, "I": 1, "A": 1, "Ld": 4 },
+      "equipmentListIds": [],
+      "skillCategoryIds": [],
+      "specialRuleIds": ["kindred-hatred", "excellent-sight", "black-powder-weapons", "animals", "beastmaster-hounds", "cold-one-beasthound-stupidity", "cold-one-beasthound-scaly-skin", "fear"],
+      "canGainExperience": false,
+      "isLargeCreature": false,
+      "ratingOverride": null,
+      "notes": "Requires a Beastmaster in the warband. If the Beastmaster dies, the hounds leave the warband. Animals - never gain experience.",
+      "validation": {
+        "maxCountPerFighterTypeIds": [
+          {
+            "fighterTypeIds": ["beastmaster"],
+            "multiplier": 2,
+            "description": "Cold One Beasthounds require a Beastmaster and are limited to two per Beastmaster."
+          }
+        ]
+      },
+      "source": {
+        "sourceDocumentId": "tc12-dark-elves",
+        "sourceUrl": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves,%20Errata'd.pdf",
+        "pageRef": "Dark Elves p. 5",
+        "label": "Henchmen"
+      }
+    }
+  ],
+  "equipmentLists": [
+    {
+      "id": "dark-elf-equipment",
+      "name": "Dark Elf Equipment List",
+      "warbandTypeId": "dark-elves",
+      "allowedEquipmentItemIds": [
+        "dagger",
+        "axe",
+        "sword",
+        "spear",
+        "halberd",
+        "beastlash",
+        "double-handed-weapon",
+        "dark-elf-blade",
+        "repeater-crossbow",
+        "crossbow-pistol",
+        "buckler",
+        "shield",
+        "helmet",
+        "light-armour",
+        "sea-dragon-cloak",
+        "dark-venom"
+      ],
+      "appliesToFighterTypeIds": ["high-born", "beastmaster", "fellblade", "dark-elf-sorceress", "corsair"],
+      "notes": "General Dark Elf equipment list."
+    },
+    {
+      "id": "dark-elf-corsair-equipment",
+      "name": "Dark Elf Corsair Equipment List",
+      "warbandTypeId": "dark-elves",
+      "allowedEquipmentItemIds": [
+        "sea-dragon-cloak"
+      ],
+      "appliesToFighterTypeIds": ["corsair"],
+      "notes": "Corsairs may also purchase Sea Dragon Cloaks."
+    },
+    {
+      "id": "dark-elf-shade-equipment",
+      "name": "Shades Equipment List",
+      "warbandTypeId": "dark-elves",
+      "allowedEquipmentItemIds": [
+        "dagger",
+        "axe",
+        "sword",
+        "repeater-crossbow",
+        "helmet",
+        "light-armour"
+      ],
+      "appliesToFighterTypeIds": ["shade"],
+      "notes": "Shades have a restricted equipment list representing their scout/scavenger role."
+    },
+    {
+      "id": "dark-elf-fellblade-equipment",
+      "name": "Fellblade Equipment List",
+      "warbandTypeId": "dark-elves",
+      "allowedEquipmentItemIds": [
+        "dagger",
+        "axe",
+        "sword",
+        "spear",
+        "halberd",
+        "double-handed-weapon",
+        "dark-elf-blade",
+        "buckler",
+        "shield",
+        "helmet",
+        "light-armour"
+      ],
+      "appliesToFighterTypeIds": ["fellblade"],
+      "notes": "Fellblades are melee specialists and may not use missile weapons."
+    }
+  ]
+}

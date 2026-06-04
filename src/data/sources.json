@@ -128,6 +128,14 @@
     "notes": "Broheim-hosted Forest Goblins warband PDF from the Nemesis Crown supplement. The app stores concise rules summaries and page references."
   },
   {
+    "id": "nc-gunnery-school-of-nuln",
+    "title": "Gunnery School of Nuln",
+    "url": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Gunnery%20School%20Of%20Nuln.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1b",
+    "notes": "Broheim-hosted Gunnery School of Nuln warband PDF from the Nemesis Crown supplement. The app stores concise rules summaries and page references."
+  },
+  {
     "id": "nc-black-orcs",
     "title": "Black Orcs",
     "url": "https://broheim.net/downloads/warbands/supplement/nemesiscrown/Black%20Orcs.pdf",
@@ -142,6 +150,46 @@
     "type": "warband_pdf",
     "broheimGrade": "1b",
     "notes": "Broheim-hosted Town Cryer #29 Skaven of Clan Pestilens warband. The app stores concise rules summaries and page references."
+  },
+  {
+    "id": "tc12-dark-elves",
+    "title": "Dark Elves",
+    "url": "https://broheim.net/downloads/warbands/unofficial/Dark%20Elves%2C%20Errata%27d.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1b",
+    "notes": "Broheim-hosted Town Cryer #12 Dark Elves warband, errata'd. The app stores concise rules summaries and page references."
+  },
+  {
+    "id": "tc13-norse-explorers",
+    "title": "Norse Explorers",
+    "url": "https://broheim.net/downloads/warbands/unofficial/Norse%20Explorers%2C%20TC13%20Errata%27d.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1b",
+    "notes": "Broheim-hosted Town Cryer #13 Norse Explorers warband, errata'd. The app stores concise rules summaries and page references."
+  },
+  {
+    "id": "tc15-amazons-lustria",
+    "title": "Amazons (Lustria)",
+    "url": "https://broheim.net/downloads/towncryer/TownCryer15.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1b",
+    "notes": "Broheim-hosted Town Cryer #15 Lustria Amazons warband. The app stores concise rules summaries and page references."
+  },
+  {
+    "id": "tc23-amazons-mordheim",
+    "title": "Amazons (Mordheim)",
+    "url": "https://broheim.net/downloads/warbands/unofficial/Amazons.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1b",
+    "notes": "Broheim-hosted Town Cryer #23 Mordheim Amazons warband. The app stores concise rules summaries and page references."
+  },
+  {
+    "id": "tc9-pirates",
+    "title": "Pirates",
+    "url": "https://broheim.net/downloads/warbands/unofficial/Pirates%2C%20Errata%27d.pdf",
+    "type": "warband_pdf",
+    "broheimGrade": "1b",
+    "notes": "Broheim-hosted Town Cryer #9 Pirates warband, errata'd. The app stores concise rules summaries and page references."
   },
   {
     "id": "eif-empire-in-flames",
