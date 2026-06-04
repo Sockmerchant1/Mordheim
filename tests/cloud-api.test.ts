@@ -21,7 +21,10 @@ describe("cloud API", () => {
   it("registers, rejects bad login, and logs in with email/password", async () => {
     const registered = await register("Alice", "alice@example.com", "secret1");
     expect(registered.playerId).toMatch(/^player-/);
-    await expect(login("alice@example.com", "wrongpw")).rejects.toThrow(/Incorrect/);
+    const badLogin = await rawPost("/api/auth/login", { email: "alice@example.com", password: "wrongpw" });
+    const badLoginBody = await badLogin.json();
+    expect(badLogin.status).toBe(500);
+    expect(badLoginBody.error).toMatch(/Incorrect/);
     const loggedIn = await login("alice@example.com", "secret1");
     expect(loggedIn.playerId).toBe(registered.playerId);
     expect(loggedIn.sessionToken).toBeTruthy();
@@ -128,11 +131,15 @@ describe("cloud API", () => {
   }
 
   async function post<T>(path: string, body: unknown) {
-    return parse<T>(await handleCloudApiRequest(new Request(`${baseUrl}${path}`, {
+    return parse<T>(await rawPost(path, body));
+  }
+
+  async function rawPost(path: string, body: unknown) {
+    return handleCloudApiRequest(new Request(`${baseUrl}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
-    }), { db }));
+    }), { db });
   }
 
   async function put<T>(path: string, body: unknown, profile: PlayerProfile) {

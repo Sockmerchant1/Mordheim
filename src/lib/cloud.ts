@@ -29,7 +29,7 @@ export async function cloudJson<T>(path: string, options: RequestInit = {}): Pro
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok || body?.ok === false) {
-    throw new Error(body?.error || response.statusText || "Cloud request failed.");
+    throw new Error(body?.error || body?.errorMessage || response.statusText || "Cloud request failed.");
   }
   return body as T;
 }

@@ -50,9 +50,9 @@ export async function handleCloudApiRequest(request: Request, context: ApiContex
     const segments = path.split("/").filter(Boolean);
     if (segments[0] !== "api") return json({ error: "Not found" }, 404);
     if (segments[1] === "health") return json({ ok: true, backend: "turso" });
-    if (segments[1] === "auth") return handleAuth(request, handlerContext, segments[2]);
-    if (segments[1] === "rosters") return handleRosters(request, handlerContext, segments[2]);
-    if (segments[1] === "scheduler") return handleScheduler(request, handlerContext);
+    if (segments[1] === "auth") return await handleAuth(request, handlerContext, segments[2]);
+    if (segments[1] === "rosters") return await handleRosters(request, handlerContext, segments[2]);
+    if (segments[1] === "scheduler") return await handleScheduler(request, handlerContext);
     return json({ error: "Not found" }, 404);
   } catch (error) {
     return json({ error: errorMessage(error) }, 500);
