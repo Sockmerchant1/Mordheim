@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
-import { schedulerConfig } from "../scheduler/config";
 import type { PlayerProfile } from "../scheduler/types";
+import { cloudAuthHeaders, cloudEnabled, cloudJson } from "./cloud";
 import { errorMessage } from "./errors";
-import { getSupabaseSession, subscribeToSupabaseAuth, supabase, supabaseEnabled } from "./supabase";
 
 const profileKey = "mordheim.scheduler.playerProfile";
 
 export type AppAccount = {
-  session: Session | null;
+  session: PlayerProfile | null;
   profile?: PlayerProfile;
   authenticated: boolean;
   busy: boolean;
@@ -16,101 +14,102 @@ export type AppAccount = {
   refresh: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (playerName: string, email: string, password: string) => Promise<void>;
+  claim: (email: string, claimToken: string, password: string, playerName?: string) => Promise<void>;
   logout: () => Promise<void>;
   clearMessage: () => void;
 };
 
+type ProfileResponse = {
+  profile?: PlayerProfile;
+};
+
 export function useAppAccount(): AppAccount {
-  const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<PlayerProfile | undefined>(() => readAccountProfile());
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
   async function refresh() {
-    if (!supabaseEnabled) {
-      setSession(null);
+    if (!cloudEnabled) {
       setProfile(readAccountProfile());
       return;
     }
-    const nextSession = await getSupabaseSession();
-    setSession(nextSession);
-    setProfile(nextSession ? await loadAccountProfile(nextSession) : undefined);
+    const stored = readAccountProfile();
+    if (!stored?.sessionToken) {
+      setProfile(undefined);
+      return;
+    }
+    const loaded = await cloudJson<ProfileResponse>("/api/auth/me", {
+      headers: cloudAuthHeaders(stored)
+    });
+    const next = loaded.profile ? saveAccountProfile({ ...loaded.profile, sessionToken: stored.sessionToken }) : undefined;
+    setProfile(next);
   }
 
   useEffect(() => {
-    if (!supabaseEnabled) return;
+    if (!cloudEnabled) return;
     let active = true;
-    void getSupabaseSession().then(async (nextSession) => {
-      if (!active) return;
-      setSession(nextSession);
-      setProfile(nextSession ? await loadAccountProfile(nextSession) : undefined);
-    }).catch((error) => {
-      if (active) setMessage(errorMessage(error));
-    });
-    const unsubscribe = subscribeToSupabaseAuth((nextSession) => {
-      setSession(nextSession);
-      setMessage("");
-      void (nextSession ? loadAccountProfile(nextSession) : Promise.resolve(undefined))
-        .then((nextProfile) => setProfile(nextProfile))
-        .catch((error) => setMessage(errorMessage(error)));
+    void refresh().catch((error) => {
+      clearAccountProfile();
+      if (active) {
+        setProfile(undefined);
+        setMessage(errorMessage(error));
+      }
     });
     return () => {
       active = false;
-      unsubscribe();
     };
   }, []);
 
   async function login(email: string, password: string) {
-    if (!supabase) return;
-    setBusy(true);
-    setMessage("");
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      if (error) throw error;
-      if (!data.session) throw new Error("Login did not return a session.");
-      setSession(data.session);
-      setProfile(await loadAccountProfile(data.session));
-    } catch (error) {
-      setMessage(errorMessage(error));
-    } finally {
-      setBusy(false);
-    }
+    await runAccountAction(async () => {
+      const response = await cloudJson<ProfileResponse>("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password })
+      });
+      if (!response.profile?.sessionToken) throw new Error("Login did not return a session.");
+      setProfile(saveAccountProfile(response.profile));
+    });
   }
 
   async function register(playerName: string, email: string, password: string) {
-    if (!supabase) return;
+    await runAccountAction(async () => {
+      const response = await cloudJson<ProfileResponse>("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ playerName, email, password })
+      });
+      if (!response.profile?.sessionToken) throw new Error("Registration did not return a session.");
+      setProfile(saveAccountProfile(response.profile));
+    });
+  }
+
+  async function claim(email: string, claimToken: string, password: string, playerName?: string) {
+    await runAccountAction(async () => {
+      const response = await cloudJson<ProfileResponse>("/api/auth/claim", {
+        method: "POST",
+        body: JSON.stringify({ email, claimToken, password, playerName })
+      });
+      if (!response.profile?.sessionToken) throw new Error("Claim did not return a session.");
+      setProfile(saveAccountProfile(response.profile));
+    });
+  }
+
+  async function logout() {
     setBusy(true);
     setMessage("");
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: { data: { player_name: playerName.trim() } }
-      });
-      if (error) throw error;
-      if (!data.session) {
-        setMessage("Account created. Confirm the email from Supabase, then log in.");
-        return;
-      }
-      setSession(data.session);
-      setProfile(await loadAccountProfile(data.session, playerName));
-    } catch (error) {
-      setMessage(errorMessage(error));
+      clearAccountProfile();
+      setProfile(undefined);
     } finally {
       setBusy(false);
     }
   }
 
-  async function logout() {
-    if (!supabase) return;
+  async function runAccountAction(action: () => Promise<void>) {
+    if (!cloudEnabled) return;
     setBusy(true);
     setMessage("");
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      clearAccountProfile();
-      setSession(null);
-      setProfile(undefined);
+      await action();
     } catch (error) {
       setMessage(errorMessage(error));
     } finally {
@@ -119,14 +118,15 @@ export function useAppAccount(): AppAccount {
   }
 
   return {
-    session,
+    session: profile ?? null,
     profile,
-    authenticated: Boolean(profile?.playerId),
+    authenticated: Boolean(profile?.playerId && profile.sessionToken && isSessionCurrent(profile)),
     busy,
     message,
     refresh,
     login,
     register,
+    claim,
     logout,
     clearMessage: () => setMessage("")
   };
@@ -157,55 +157,31 @@ export function clearAccountProfile() {
   localStorage.removeItem(profileKey);
 }
 
-export async function loadAccountProfile(session?: Session | null, preferredName?: string): Promise<PlayerProfile | undefined> {
-  const nextSession = session ?? await getSupabaseSession();
-  if (!nextSession?.user) {
-    clearAccountProfile();
-    return undefined;
-  }
-  const profile = await ensureAccountProfile(nextSession, preferredName);
-  await ensureAccountCampaignMembership(profile);
-  return saveAccountProfile({
-    ...profile,
-    sessionExpiresAt: nextSession.expires_at ? new Date(nextSession.expires_at * 1000).toISOString() : undefined
+export async function loadAccountProfile(): Promise<PlayerProfile | undefined> {
+  const stored = readAccountProfile();
+  if (!cloudEnabled || !stored?.sessionToken) return stored;
+  const response = await cloudJson<ProfileResponse>("/api/auth/me", {
+    headers: cloudAuthHeaders(stored)
   });
-}
-
-export async function ensureAccountProfile(session: Session, preferredName?: string): Promise<PlayerProfile> {
-  if (!supabase) throw new Error("Supabase is not configured.");
-  const fallbackName = preferredName?.trim()
-    || stringValue(session.user.user_metadata.player_name)
-    || stringValue(session.user.user_metadata.full_name)
-    || session.user.email?.split("@")[0]
-    || "Player";
-  const { data, error } = await supabase
-    .from("profiles")
-    .upsert({
-      id: session.user.id,
-      player_name: fallbackName,
-      email: session.user.email ?? null
-    })
-    .select("id, player_name, email, updated_at")
-    .single();
-  if (error) throw error;
-  return {
-    playerId: String(data.id),
-    playerName: String(data.player_name),
-    email: typeof data.email === "string" ? data.email : undefined,
-    lastSeenAt: typeof data.updated_at === "string" ? data.updated_at : undefined
-  };
+  return response.profile ? saveAccountProfile({ ...response.profile, sessionToken: stored.sessionToken }) : undefined;
 }
 
 export async function ensureAccountCampaignMembership(profile: PlayerProfile) {
-  if (!supabase) return;
-  const { error } = await supabase.from("campaign_members").insert({
-    campaign_id: schedulerConfig.campaignId,
-    user_id: profile.playerId,
-    role: "member"
+  if (!cloudEnabled || !profile.sessionToken) return;
+  await cloudJson("/api/scheduler", {
+    method: "POST",
+    body: JSON.stringify({
+      action: "upsertPlayer",
+      player: profile,
+      auth: {
+        playerId: profile.playerId,
+        sessionToken: profile.sessionToken
+      }
+    })
   });
-  if (error && error.code !== "23505") throw error;
 }
 
-function stringValue(value: unknown) {
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+function isSessionCurrent(profile: PlayerProfile) {
+  if (!profile.sessionExpiresAt) return true;
+  return new Date(profile.sessionExpiresAt).getTime() > Date.now();
 }

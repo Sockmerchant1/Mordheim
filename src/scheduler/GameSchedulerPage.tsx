@@ -73,7 +73,7 @@ export function GameSchedulerPage({
       void refreshSchedule();
     } else {
       setLoading(false);
-      setSnapshot({ games: [], invitations: [], players: [], backend: schedulerConfig.supabaseEnabled ? "supabase" : schedulerConfig.appsScriptUrl ? "google-sheet" : "local" });
+      setSnapshot({ games: [], invitations: [], players: [], backend: schedulerConfig.cloudEnabled ? "turso" : schedulerConfig.appsScriptUrl ? "google-sheet" : "local" });
     }
   }, [schedulerAuthenticated, profile?.playerId]);
 
@@ -405,8 +405,8 @@ function NextGamePanel({
 }
 
 function schedulerBackendFootnote(backend: SchedulerSnapshot["backend"]) {
-  if (backend === "supabase") {
-    return `Shared cloud backend: Supabase. Campaign: ${schedulerConfig.campaignName} (${schedulerConfig.campaignId}).`;
+  if (backend === "turso") {
+    return `Shared cloud backend: Turso. Campaign: ${schedulerConfig.campaignName} (${schedulerConfig.campaignId}).`;
   }
   if (backend === "google-sheet") {
     return `Shared sheet: ${schedulerConfig.googleSheetId}. Backend: Google Sheet via Apps Script.`;

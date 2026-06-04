@@ -1,7 +1,8 @@
 import { rosterSchema } from "../rules/schemas";
 import type { Roster } from "../rules/types";
 import { errorMessage } from "../lib/errors";
-import { getSupabaseSession, supabase, supabaseEnabled } from "../lib/supabase";
+import { cloudAuthHeaders, cloudEnabled, cloudJson } from "../lib/cloud";
+import { readAccountProfile } from "../lib/account";
 
 const localKey = "mordheim.rosters";
 const cloudStateKey = "mordheim.rosterCloudState";
@@ -22,25 +23,32 @@ type StoredCloudState = {
   lastError: Record<string, string>;
 };
 
-type SupabaseRosterRow = {
+type CloudRosterRow = {
   id: string;
   roster_json: unknown;
   updated_at: string | null;
 };
 
+type RosterListResponse = {
+  rosters: Roster[];
+  rows: CloudRosterRow[];
+};
+
+type RosterResponse = {
+  roster: Roster;
+};
+
 export async function listRosters(): Promise<Roster[]> {
   const local = readLocal();
-  if (shouldUseSupabase()) {
-    const userId = await authenticatedUserId();
-    if (!userId || !supabase) return local;
+  if (shouldUseCloud()) {
+    const profile = readAccountProfile();
+    if (!profile?.sessionToken) return local;
     try {
-      const { data, error } = await supabase
-        .from("rosters")
-        .select("id, roster_json, updated_at")
-        .order("updated_at", { ascending: false });
-      if (error) throw error;
-      const remoteRows = (data ?? []) as SupabaseRosterRow[];
-      const remote = rosterSchema.array().parse(remoteRows.map((row) => row.roster_json));
+      const response = await cloudJson<RosterListResponse>("/api/rosters", {
+        headers: cloudAuthHeaders(profile)
+      });
+      const remoteRows = response.rows ?? [];
+      const remote = rosterSchema.array().parse(response.rosters);
       markRemoteRosters(remoteRows);
       const merged = mergeRemoteAndLocal(remote, local);
       writeLocal(merged);
@@ -61,28 +69,19 @@ export async function listRosters(): Promise<Roster[]> {
 
 export async function saveRoster(roster: Roster, options: { forceCloud?: boolean } = {}): Promise<Roster> {
   const parsed = rosterSchema.parse({ ...roster, updatedAt: new Date().toISOString() });
-  if (shouldUseSupabase() && (options.forceCloud || isRosterCloudEnabled(parsed.id))) {
-    const userId = await authenticatedUserId();
-    if (!userId || !supabase) {
+  if (shouldUseCloud() && (options.forceCloud || isRosterCloudEnabled(parsed.id))) {
+    const profile = readAccountProfile();
+    if (!profile?.sessionToken) {
       writeLocal(upsertLocal(parsed));
       return parsed;
     }
     try {
-      const { data, error } = await supabase
-        .from("rosters")
-        .upsert({
-          id: parsed.id,
-          owner_user_id: userId,
-          name: parsed.name,
-          warband_type_id: parsed.warbandTypeId,
-          roster_json: parsed,
-          created_at: parsed.createdAt,
-          updated_at: parsed.updatedAt
-        })
-        .select("roster_json")
-        .single();
-      if (error) throw error;
-      const saved = rosterSchema.parse(data.roster_json);
+      const response = await cloudJson<RosterResponse>(`/api/rosters/${parsed.id}`, {
+        method: "PUT",
+        headers: cloudAuthHeaders(profile),
+        body: JSON.stringify(parsed)
+      });
+      const saved = rosterSchema.parse(response.roster);
       markRosterCloudSynced(saved.id, saved.updatedAt);
       writeLocal(upsertLocal(saved));
       return saved;
@@ -117,11 +116,13 @@ export async function saveRoster(roster: Roster, options: { forceCloud?: boolean
 
 export async function deleteRoster(id: string): Promise<void> {
   const cloudState = getRosterCloudState(id);
-  if (shouldUseSupabase() && supabase && (cloudState.enabled || cloudState.remote)) {
-    const userId = await authenticatedUserId();
-    if (userId) {
-      const { error } = await supabase.from("rosters").delete().eq("id", id);
-      if (error) throw error;
+  if (shouldUseCloud() && (cloudState.enabled || cloudState.remote)) {
+    const profile = readAccountProfile();
+    if (profile?.sessionToken) {
+      await cloudJson(`/api/rosters/${id}`, {
+        method: "DELETE",
+        headers: cloudAuthHeaders(profile)
+      });
       writeLocal(readLocal().filter((roster) => roster.id !== id));
       clearRosterCloudState(id);
       return;
@@ -139,19 +140,21 @@ export async function deleteRoster(id: string): Promise<void> {
 }
 
 export async function enableRosterCloudSync(roster: Roster): Promise<Roster> {
-  if (!shouldUseSupabase() || !supabase) throw new Error("Cloud saves are not configured.");
-  const userId = await authenticatedUserId();
-  if (!userId) throw new Error("Log in before saving this warband to cloud.");
+  if (!shouldUseCloud()) throw new Error("Cloud saves are not configured.");
+  const profile = readAccountProfile();
+  if (!profile?.sessionToken) throw new Error("Log in before saving this warband to cloud.");
   setRosterCloudEnabled(roster.id, true);
   return saveRoster(roster, { forceCloud: true });
 }
 
 export async function disableRosterCloudSync(id: string): Promise<void> {
-  if (shouldUseSupabase() && supabase) {
-    const userId = await authenticatedUserId();
-    if (userId) {
-      const { error } = await supabase.from("rosters").delete().eq("id", id);
-      if (error) throw error;
+  if (shouldUseCloud()) {
+    const profile = readAccountProfile();
+    if (profile?.sessionToken) {
+      await cloudJson(`/api/rosters/${id}`, {
+        method: "DELETE",
+        headers: cloudAuthHeaders(profile)
+      });
     }
   }
   setRosterCloudEnabled(id, false);
@@ -168,15 +171,15 @@ export function getRosterCloudState(id: string): RosterCloudState {
 }
 
 function shouldUseRemoteApi() {
-  if (shouldUseSupabase()) return false;
+  if (shouldUseCloud()) return false;
   if (storageMode === "local") return false;
   if (storageMode === "remote") return true;
   if (apiBaseUrl) return true;
   return ["localhost", "127.0.0.1"].includes(window.location.hostname);
 }
 
-function shouldUseSupabase() {
-  return storageMode !== "local" && supabaseEnabled;
+function shouldUseCloud() {
+  return storageMode !== "local" && cloudEnabled;
 }
 
 function apiUrl(path: string) {
@@ -243,7 +246,7 @@ function setRosterCloudEnabled(id: string, enabled: boolean) {
   writeCloudState(state);
 }
 
-function markRemoteRosters(rows: SupabaseRosterRow[]) {
+function markRemoteRosters(rows: CloudRosterRow[]) {
   const state = readCloudState();
   for (const row of rows) {
     if (!row.id) continue;
@@ -288,11 +291,6 @@ function objectOfStrings(value: unknown): Record<string, string> {
 
 function uniqueStrings(items: string[]) {
   return Array.from(new Set(items));
-}
-
-async function authenticatedUserId() {
-  const session = await getSupabaseSession();
-  return session?.user.id ?? null;
 }
 
 function mergeRemoteAndLocal(primary: Roster[], secondary: Roster[]) {

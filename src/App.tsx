@@ -22,7 +22,6 @@ import {
   Trash2,
   Upload
 } from "lucide-react";
-import type { Session } from "@supabase/supabase-js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
@@ -35,8 +34,8 @@ import {
   type RosterCloudState
 } from "./api/rosters";
 import { useAppAccount } from "./lib/account";
+import { cloudEnabled } from "./lib/cloud";
 import { errorMessage } from "./lib/errors";
-import { supabaseEnabled } from "./lib/supabase";
 import rulesLookupSeed from "./data/rulesLookup.json";
 import { rulesDb, warbandIndex, type WarbandIndexRecord } from "./data/rulesDb";
 import {
@@ -74,6 +73,7 @@ import {
 } from "./rules/rollAssist";
 import { rosterSchema } from "./rules/schemas";
 import { GameSchedulerPage } from "./scheduler/GameSchedulerPage";
+import type { PlayerProfile } from "./scheduler/types";
 import {
   ADVANCE_STATS,
   advanceResultLabel,
@@ -428,7 +428,7 @@ export default function App() {
     account.clearMessage();
     try {
       if (enabled) {
-        if (!supabaseEnabled) {
+        if (!cloudEnabled) {
           window.alert("Cloud saves are not configured for this build.");
           return;
         }
@@ -529,6 +529,7 @@ export default function App() {
           message={account.message}
           onLogin={account.login}
           onRegister={account.register}
+          onClaim={account.claim}
           onLogout={account.logout}
         />
         <nav aria-label="Main">
@@ -757,21 +758,24 @@ function CloudAccountControl({
   message,
   onLogin,
   onRegister,
+  onClaim,
   onLogout
 }: {
-  session: Session | null;
+  session: PlayerProfile | null;
   busy: boolean;
   message: string;
   onLogin: (email: string, password: string) => void;
   onRegister: (playerName: string, email: string, password: string) => void;
+  onClaim: (email: string, claimToken: string, password: string, playerName?: string) => void;
   onLogout: () => void;
 }) {
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register" | "claim">("login");
   const [playerName, setPlayerName] = useState("");
   const [email, setEmail] = useState("");
+  const [claimToken, setClaimToken] = useState("");
   const [password, setPassword] = useState("");
 
-  if (!supabaseEnabled) {
+  if (!cloudEnabled) {
     return (
       <div className="cloud-account-control unavailable">
         <div className="cloud-account-title">
@@ -791,7 +795,7 @@ function CloudAccountControl({
           <span>Cloud saves</span>
         </div>
         <div className="cloud-account-row">
-          <strong>{session.user.email ?? "Signed in"}</strong>
+          <strong>{session.email ?? session.playerName}</strong>
           <button disabled={busy} onClick={onLogout}>Log out</button>
         </div>
         {message && <p className="cloud-account-message">{message}</p>}
@@ -808,19 +812,27 @@ function CloudAccountControl({
       <div className="cloud-account-tabs" role="group" aria-label="Cloud account mode">
         <button className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>Log in</button>
         <button className={mode === "register" ? "active" : ""} onClick={() => setMode("register")}>Register</button>
+        <button className={mode === "claim" ? "active" : ""} onClick={() => setMode("claim")}>Claim</button>
       </div>
       <div className="cloud-account-fields">
-        {mode === "register" && (
+        {mode !== "login" && (
           <input value={playerName} onChange={(event) => setPlayerName(event.target.value)} placeholder="Player name" />
         )}
         <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" />
+        {mode === "claim" && (
+          <input value={claimToken} onChange={(event) => setClaimToken(event.target.value)} placeholder="Claim token" />
+        )}
         <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" />
         <button
           className="primary"
-          disabled={busy || !email.trim() || password.length < 6 || (mode === "register" && !playerName.trim())}
-          onClick={() => mode === "login" ? onLogin(email, password) : onRegister(playerName, email, password)}
+          disabled={busy || !email.trim() || password.length < 6 || (mode === "register" && !playerName.trim()) || (mode === "claim" && !claimToken.trim())}
+          onClick={() => {
+            if (mode === "login") onLogin(email, password);
+            else if (mode === "register") onRegister(playerName, email, password);
+            else onClaim(email, claimToken, password, playerName);
+          }}
         >
-          {mode === "login" ? "Log in" : "Register"}
+          {mode === "login" ? "Log in" : mode === "register" ? "Register" : "Claim"}
         </button>
       </div>
       {message && <p className="cloud-account-message">{message}</p>}
@@ -919,7 +931,7 @@ function WarbandList({
                     <Edit3 aria-hidden /> Edit warband
                   </button>
                   <button onClick={() => onCampaign(roster.id)}>Campaign</button>
-                  {supabaseEnabled && (
+                  {cloudEnabled && (
                     <button
                       disabled={!cloudAuthenticated}
                       onClick={() => onCloudSyncChange(roster.id, nextCloudState)}
@@ -9394,7 +9406,7 @@ function uniqueRostersById(items: Roster[]) {
 }
 
 function rosterCloudStatus(state: RosterCloudState, authenticated: boolean) {
-  if (!supabaseEnabled) {
+  if (!cloudEnabled) {
     return { label: "Cloud unavailable", detail: "This build is saving rosters on this device.", tone: "warning" };
   }
   if (state.lastError) {

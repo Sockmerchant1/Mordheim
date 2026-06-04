@@ -17,7 +17,7 @@ The first fully seeded warbands are **Witch Hunters**, the official **Mercenarie
 
 This app is ready to deploy to Netlify as a static Vite site. Netlify uses `netlify.toml`, runs `npm run build`, and publishes `dist`.
 
-On Netlify, the app can still run local-first in each player's browser storage, but it now also supports Supabase-backed cloud accounts for shared scheduler data and cross-device roster saves. If Supabase is not configured, players should use JSON export/import to back up or move rosters between devices. Players can also use Export PDF from Play Mode or the roster editor, then choose "Save as PDF" in the browser print dialog.
+On Netlify, the app can still run local-first in each player's browser storage, but it now also supports Turso-backed cloud accounts through Netlify Functions for shared scheduler data and cross-device roster saves. If the cloud backend is not configured, players should use JSON export/import to back up or move rosters between devices. Players can also use Export PDF from Play Mode or the roster editor, then choose "Save as PDF" in the browser print dialog.
 
 See `NETLIFY_DEPLOY.md` for step-by-step setup and the GitHub upload checklist.
 
@@ -29,7 +29,7 @@ App icon files live in `public/pwa-icon-192.png`, `public/pwa-icon-512.png`, and
 
 ## Run Locally
 
-Requires Node 24+ because the local SQLite API uses `node:sqlite`. The Netlify deployment does not run that local API; it uses browser storage instead.
+Requires Node 24+ because the local development API uses `node:sqlite` when Turso credentials are not present. The Netlify deployment uses Netlify Functions plus Turso for cloud accounts.
 
 On macOS, double-click:
 
@@ -58,15 +58,17 @@ npm install
 npm run dev
 ```
 
-The Vite app runs at `http://127.0.0.1:5173` and the local API runs at `http://127.0.0.1:5174`. Roster state is stored in `.local/mordheim.sqlite`; rules data stays in `src/data`.
+The Vite app runs at `http://127.0.0.1:5173` and the local API runs at `http://127.0.0.1:5174`. Local cloud-dev state is stored in `.local/mordheim-cloud.sqlite`; rules data stays in `src/data`.
 
-To enable the Supabase cloud path, set:
+To enable the Turso cloud path, set:
 
 ```text
-VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+VITE_CLOUD_BACKEND=turso
 VITE_SCHEDULER_CAMPAIGN_ID=autumn-in-the-city
 VITE_SCHEDULER_CAMPAIGN_NAME=Autumn in the City
+TURSO_DATABASE_URL=libsql://YOUR_DATABASE.turso.io
+TURSO_AUTH_TOKEN=YOUR_TURSO_AUTH_TOKEN
+MORDHEIM_AUTH_SECRET=change-this-long-random-secret
 ```
 
 See `.env.example` for the current project values.
@@ -128,7 +130,17 @@ The Trading step is a post-battle ledger. Canonical equipment records can be bou
 
 The Schedule page is separate from local warband storage. It stores the local player profile in browser storage, then uses a scheduler store abstraction in `src/scheduler/store.ts`.
 
-When Supabase is configured, scheduler login uses Supabase Auth, shared schedule data lives in Postgres tables with RLS, and roster saves are mirrored to the signed-in player's cloud account. If Supabase is not configured, the scheduler can still use the older Apps Script backend or local fallback mode.
+When Turso is configured, scheduler login uses app-owned email/password accounts through Netlify Functions, shared schedule data lives in Turso tables, and roster saves are mirrored to the signed-in player's cloud account. If Turso is not configured, the scheduler can still use the older Apps Script backend or local fallback mode.
+
+Turso setup commands:
+
+```bash
+npm run turso:schema
+npm run turso:export-supabase
+npm run turso:import-supabase
+```
+
+The Supabase export command writes `.local/migration/supabase-export.json`. The import command loads those rows into Turso and writes `.local/migration/turso-claim-links.csv`; migrated players use the Claim tab in Cloud Saves to set a new password because Supabase Auth passwords cannot be exported.
 
 Scheduler data is designed to be shared through this Google Sheet:
 
@@ -152,9 +164,9 @@ Suggested Google Sheet tabs are created by the Apps Script if missing:
 - `Invitations`
 - `Players`
 
-Google Calendar invites are still created by Apps Script. The app calls `createGoogleCalendarInvite`, Apps Script creates the event with attendee emails, then writes the event id/link fields back to the `Games` tab. No private Google credentials are stored in the frontend. The new Supabase backend does not yet replace that calendar automation path.
+Google Calendar invites are still created only by Apps Script. The Turso cloud path shows a planned-later message for calendar invites rather than storing Google credentials in the app backend.
 
-If Supabase is configured, scheduler login uses Supabase Auth email/password accounts and the shared scheduler data lives in Supabase tables. If Supabase is not configured but the Apps Script endpoint is, scheduler login is handled by Apps Script. Players register with a name, optional email and password. The script stores a salted password hash and a session token hash in the `Players` tab; the frontend stores only the returned session token in that player's browser. If neither backend is configured, login falls back to local test mode and is not shared protection.
+If Turso is configured, scheduler login uses email/password accounts stored as salted password hashes plus hashed session tokens in Turso. If Turso is not configured but the Apps Script endpoint is, scheduler login is handled by Apps Script. If neither backend is configured, login falls back to local test mode and is not shared protection.
 
 ## Rules Validation
 

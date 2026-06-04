@@ -1,6 +1,8 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
+  readonly VITE_CLOUD_BACKEND?: "turso" | "google-sheet" | "local";
+  readonly VITE_CLOUD_API_BASE_URL?: string;
   readonly VITE_ROSTER_API_BASE_URL?: string;
   readonly VITE_ROSTER_STORAGE?: "auto" | "local" | "remote";
   readonly VITE_SCHEDULER_APPS_SCRIPT_URL?: string;
@@ -8,8 +10,6 @@ interface ImportMetaEnv {
   readonly VITE_SCHEDULER_CAMPAIGN_NAME?: string;
   readonly VITE_SCHEDULER_GOOGLE_SHEET_ID?: string;
   readonly VITE_SCHEDULER_GOOGLE_CALENDAR_ID?: string;
-  readonly VITE_SUPABASE_URL?: string;
-  readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
 }
 
 interface ImportMeta {

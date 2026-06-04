@@ -5,10 +5,12 @@
 [build.environment]
   NODE_VERSION = "22.12.0"
   VITE_ROSTER_STORAGE = "auto"
-  VITE_SUPABASE_URL = "https://cgrlqpimcizxogitlxmf.supabase.co"
-  VITE_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_FBdjdxxOTc-ohdH59TqWTA_S0uoh6pq"
+  VITE_CLOUD_BACKEND = "turso"
   VITE_SCHEDULER_CAMPAIGN_ID = "autumn-in-the-city"
   VITE_SCHEDULER_CAMPAIGN_NAME = "Autumn in the City"
+
+# Set TURSO_DATABASE_URL, TURSO_AUTH_TOKEN, and MORDHEIM_AUTH_SECRET
+# as server-side environment variables in Netlify, not as VITE_* values.
 
 [[redirects]]
   from = "/*"

@@ -1,6 +1,6 @@
 # Deploying To Netlify
 
-This app can run on Netlify as a static Vite site. On Netlify, rosters are stored in each user's browser storage. That means no paid database or server is required, but each player should use JSON export/import to back up or move rosters between devices.
+This app runs on Netlify as a Vite site with Netlify Functions. Without cloud env vars, rosters are stored in each user's browser storage. With Turso configured, signed-in players get shared scheduler data and cross-device roster saves.
 
 ## Recommended Setup
 
@@ -15,12 +15,37 @@ The configured settings are:
 - Build command: `npm run build`
 - Publish directory: `dist`
 - Node version: `22.12.0`
-- Roster storage: browser local storage
-- Scheduler storage: Google Sheet through a Google Apps Script web app, if configured
+- Roster storage: browser local storage, or Turso when cloud saves are enabled
+- Scheduler storage: Turso through Netlify Functions, with the older Google Apps Script path still available for legacy setups
 
-## Scheduler Environment Variables
+## Turso Cloud Environment Variables
 
-The game scheduler can share data through this Google Sheet:
+Create a Turso database, then set these in Netlify under **Site configuration > Environment variables**:
+
+```text
+VITE_CLOUD_BACKEND=turso
+TURSO_DATABASE_URL=libsql://YOUR_DATABASE.turso.io
+TURSO_AUTH_TOKEN=YOUR_TURSO_AUTH_TOKEN
+MORDHEIM_AUTH_SECRET=change-this-long-random-secret
+VITE_SCHEDULER_CAMPAIGN_ID=autumn-in-the-city
+VITE_SCHEDULER_CAMPAIGN_NAME=Autumn in the City
+```
+
+Only `VITE_CLOUD_BACKEND` and the scheduler name/id are public browser variables. `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and `MORDHEIM_AUTH_SECRET` are server-side Function secrets.
+
+Apply the schema and migrate existing Supabase data from a trusted local shell:
+
+```bash
+npm run turso:schema
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY npm run turso:export-supabase
+npm run turso:import-supabase
+```
+
+The import writes `.local/migration/turso-claim-links.csv`. Give each player their claim token so they can use the Cloud Saves Claim tab to set a new password.
+
+## Legacy Apps Script Scheduler Variables
+
+The older game scheduler can still share data through this Google Sheet:
 
 ```text
 1n2hA3dIFmkJ_gha16WkRD0hqNC5Zt9tmiUHwuJsVCkE
@@ -36,9 +61,9 @@ VITE_SCHEDULER_GOOGLE_SHEET_ID=1n2hA3dIFmkJ_gha16WkRD0hqNC5Zt9tmiUHwuJsVCkE
 VITE_SCHEDULER_GOOGLE_CALENDAR_ID=
 ```
 
-Leave `VITE_SCHEDULER_GOOGLE_CALENDAR_ID` blank to use the Apps Script owner's default calendar. If `VITE_SCHEDULER_APPS_SCRIPT_URL` is blank, the schedule page uses local fallback data and will not be shared between players.
+Leave `VITE_SCHEDULER_GOOGLE_CALENDAR_ID` blank to use the Apps Script owner's default calendar. If neither Turso nor `VITE_SCHEDULER_APPS_SCRIPT_URL` is configured, the schedule page uses local fallback data and will not be shared between players.
 
-The scheduler now requires players to register or log in. Password checking happens inside Apps Script. The `Players` sheet stores salted password hashes and session token hashes, not plain passwords. After updating `scripts/googleAppsScriptScheduler.js`, paste the new full script into Google Apps Script and redeploy the Web App so Netlify uses the password-protected backend.
+The Apps Script scheduler requires players to register or log in. Password checking happens inside Apps Script. The `Players` sheet stores salted password hashes and session token hashes, not plain passwords.
 
 ## What To Upload To GitHub
 
@@ -73,17 +98,8 @@ Those folders are local machine files and are already ignored by `.gitignore`.
 
 The Netlify version is local-first. If someone opens the app on another computer or browser, their rosters will not automatically appear there. Use the app's JSON export/import for backups and transfers.
 
-Game scheduling is different: it is intended to be shared through the configured Google Sheet and Apps Script endpoint. Each player still keeps a small local profile on their own device so invitations can be matched to them.
+Game scheduling is shared through Turso when `VITE_CLOUD_BACKEND=turso` is configured. Each player still keeps a small local profile and session token on their own device so invitations can be matched to them.
 
 The local Windows version can still use the SQLite helper server when run with `npm run dev`.
 
-## Optional Future Upgrade
-
-If you later want shared accounts or cloud rosters, add a real hosted database/API and set:
-
-```text
-VITE_ROSTER_STORAGE=remote
-VITE_ROSTER_API_BASE_URL=https://your-api.example.com
-```
-
-That is not required for the current Netlify setup.
+Google Calendar invite creation is planned for a later Turso cloud update. The legacy Apps Script path can still create calendar invites if that backend is configured instead.
